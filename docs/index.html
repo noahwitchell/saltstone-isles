@@ -44,7 +44,7 @@ button:focus-visible{outline:2px solid #fff;outline-offset:2px}
 #dest{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;font-size:11px;padding:8px 10px;color:var(--paper);background:var(--glass);border:2px solid var(--line);box-shadow:none}
 #dest .arr{display:inline-block;width:12px;text-align:center;color:#6fe0e0;margin-right:4px}
 .sp{flex:1}
-#view,#pause{pointer-events:auto;font-family:var(--mono);font-size:11px;padding:8px 10px}
+#view,#pause,#center{pointer-events:auto;font-family:var(--mono);font-size:11px;padding:8px 10px}
 #stallBan{position:fixed;left:50%;top:calc(var(--st) + 44px);transform:translateX(-50%);font-family:var(--mono);font-size:14px;background:var(--bad);color:#fff;padding:5px 12px;letter-spacing:.1em;pointer-events:none}
 #toast{position:fixed;left:50%;top:calc(var(--st) + 46px);transform:translateX(-50%);max-width:min(560px,74vw);background:var(--paper);color:var(--ink);padding:9px 13px;font-size:15px;line-height:1.3;
   box-shadow:4px 4px 0 #0008;pointer-events:none;text-align:center;text-wrap:balance}
@@ -132,6 +132,7 @@ h3{font-family:var(--mono);font-size:11px;letter-spacing:.08em;color:var(--ink2)
     <button id="dest" aria-label="Change destination"><span class="arr" id="arr">▲</span><span id="destTxt">—</span></button>
     <div class="sp"></div>
     <div class="pill" id="alt">0<small>FT</small><span id="vsi"></span></div>
+    <button id="center" aria-label="Recenter tilt" hidden>CENTER</button>
     <button id="view" aria-label="Change view">CHASE</button>
     <button id="pause" aria-label="Pause">II</button>
   </div>
@@ -779,7 +780,7 @@ function setTOD(k){tod=k;const T=TOD[k];
 
 /* ---------- save data ---------- */
 const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}};
-const settings=Object.assign({steady:true,stallGuard:true,autoTrim:true,tips:true,invert:false,sound:true,shadows:true,pixels:'classic',light:'golden'},store.get('tac-settings',{}));
+const settings=Object.assign({steady:true,stallGuard:true,autoTrim:true,tips:true,invert:false,sound:true,shadows:true,tilt:false,pixels:'classic',light:'golden'},store.get('tac-settings',{}));
 if(!TOD[settings.light])settings.light='golden';
 const log=Object.assign({fields:{},sights:{},goals:{},trips:0,flights:0,tips:{},howto:false,stamps:0,met:{},mail:{day:1,bag:[],active:false}},store.get('tac-log',{}));
 if(!log.mail)log.mail={day:1,bag:[],active:false};if(!log.met)log.met={};if(log.stamps==null)log.stamps=0;
@@ -1081,7 +1082,7 @@ function spawnApproach(s,dirSign){
   tip('approach0','You\'re on approach. Keep the runway ahead, hold about 55 knots, and follow the lights beside the runway down.',.5);
 }
 function pickDest(cur){const md=mailDest();if(md){dest=md;return;}const opts=STRIPS.filter(s=>s.id!==cur);opts.sort((a,b)=>((log.fields[a.id]||{}).landings||0)-((log.fields[b.id]||{}).landings||0));dest=opts[0];}
-function startFly(){mode='fly';hideModal();$('title').hidden=true;$('flightUI').hidden=false;snd.init();snd.setOn(settings.sound);
+function startFly(){if(settings.tilt){if(!tilt.listening)enableTilt();recenterTilt();setTimeout(recenterTilt,600);}updTiltUI();mode='fly';hideModal();$('title').hidden=true;$('flightUI').hidden=false;snd.init();snd.setOn(settings.sound);
   try{navigator.wakeLock&&navigator.wakeLock.request('screen').catch(()=>{});}catch(e){}
   setThrottleUI();updFlaps();updSwitches();refreshBag();mapT=0;
   if(!log.howto){log.howto=true;saveL();showHowTo();}
@@ -1176,6 +1177,26 @@ function updPAPI(){for(const P of PAPIS){const s=P.s,l=toLocal(s,ac.pos.x,ac.pos
   const dist=P.base.distanceTo(camera.position);P.g.scale.setScalar(clamp(dist*.006,1,30));
   const ang=Math.atan2(ac.pos.y-AC.gearH-s.elev,along)/DEG;P.lights.forEach((m,j)=>m.material.color.setHex(ang>PAPI_T[j]?0xfff4dc:0xff3b30));}}
 
+/* ---------- tilt steering ---------- */
+// Gravity in screen space from deviceorientation (beta/gamma are the same on iOS and Android).
+// Bank = how far the phone is turned like a steering wheel. Nose = tip toward/away from you, measured from where you held it at the start (recenter).
+const tilt={listening:false,ok:false,roll:0,pitch:0,p0:null,raw:null};
+const orientAngle=()=>{const a=(screen.orientation&&typeof screen.orientation.angle==='number')?screen.orientation.angle:(window.orientation||0);return ((a%360)+360)%360;};
+function onOrient(e){if(e.beta==null||e.gamma==null)return;const b=e.beta*DEG,gm=e.gamma*DEG;
+  const ux=-Math.cos(b)*Math.sin(gm),uy=Math.sin(b),uz=Math.cos(b)*Math.cos(gm),a=orientAngle();
+  let sx,sy;if(a===90){sx=-uy;sy=ux;}else if(a===270){sx=uy;sy=-ux;}else if(a===180){sx=-ux;sy=-uy;}else{sx=ux;sy=uy;}
+  const roll=Math.asin(clamp(-sx,-1,1)),pit=Math.atan2(uz,sy);tilt.raw={roll,pit};tilt.ok=true;if(tilt.p0==null)tilt.p0=pit;
+  const dz=(v,d)=>Math.abs(v)<d?0:v-Math.sign(v)*d;
+  tilt.roll=lerp(tilt.roll,clamp(dz(roll,2.5*DEG)/(28*DEG),-1,1),.5);tilt.pitch=lerp(tilt.pitch,clamp(dz(pit-tilt.p0,2.5*DEG)/(22*DEG),-1,1),.5);}
+function recenterTilt(){if(tilt.raw)tilt.p0=tilt.raw.pit;tilt.pitch=0;}
+async function enableTilt(){
+  try{if(typeof DeviceOrientationEvent!=='undefined'&&typeof DeviceOrientationEvent.requestPermission==='function'){const r=await DeviceOrientationEvent.requestPermission();if(r!=='granted')throw new Error('denied');}
+    if(!tilt.listening){addEventListener('deviceorientation',onOrient);tilt.listening=true;}
+    tilt.p0=null;setTimeout(()=>{if(!tilt.ok&&settings.tilt)toast('No tilt sensor found here. The touch stick still works.',3.5);},1500);return true;}
+  catch(e){settings.tilt=false;saveS();updTiltUI();toast('Tilt needs motion access. You can allow it next time you switch Tilt on.',4);return false;}}
+function disableTilt(){if(tilt.listening){removeEventListener('deviceorientation',onOrient);tilt.listening=false;}tilt.ok=false;tilt.roll=tilt.pitch=0;}
+function updTiltUI(){const b=$('center');if(b)b.hidden=!settings.tilt;const h=$('ringHint');if(h)h.textContent=settings.tilt?'TILT TO FLY · OR DRAG HERE':'STICK · DRAG ANYWHERE';}
+
 /* ---------- input ---------- */
 const stick={id:null,ox:0,oy:0,x:0,y:0},R_STICK=64;
 const stickEl=$('stick'),ring=$('ring'),knob=$('knob');
@@ -1207,12 +1228,13 @@ function setView(v){camMode=v;$('view').textContent=VNAME[v];snapCam=true;camera
   if(v==='cockpit')tip('cockpit','Cockpit view. Left: speed, attitude, turn, heading. Right: altitude, climb, and the GLIDE box for lining up.');}
 $('view').addEventListener('click',()=>setView(VIEWS[(VIEWS.indexOf(camMode)+1)%3]));
 $('pause').addEventListener('click',()=>{if(mode==='fly')openMenu();});
+$('center').addEventListener('click',()=>{recenterTilt();toast('Tilt centered. Hold the phone like this to fly level.',2);});
 $('dest').addEventListener('click',()=>{const i=STRIPS.indexOf(dest);dest=STRIPS[(i+1)%STRIPS.length];toast('Heading for '+dest.name,1.6);});
 $('mapc').addEventListener('click',()=>{if(mode==='fly'){mode='paused';bigMap();}});
 const keys={};
 addEventListener('keydown',e=>{keys[e.code]=true;if(mode!=='fly')return;
   if(e.code==='KeyF')$('flaps').dispatchEvent(new Event('pointerdown'));if(e.code==='KeyV')$('view').click();if(e.code==='KeyB')bOn();if(e.code==='KeyM'){mode='paused';bigMap();}
-  if(e.code==='KeyC')$('swCarb').click();if(e.code==='KeyL')$('swLight').click();
+  if(e.code==='KeyC')$('swCarb').click();if(e.code==='KeyT')recenterTilt();if(e.code==='KeyL')$('swLight').click();
   if(e.code==='Escape'||e.code==='KeyP')openMenu();if(e.code.startsWith('Arrow'))e.preventDefault();});
 addEventListener('keyup',e=>{keys[e.code]=false;if(e.code==='KeyB')bOff();});
 const kb={p:0,r:0};
@@ -1222,7 +1244,7 @@ function readInput(dt){
   if(keys.KeyW||keys.ShiftLeft){ac.throttle=clamp(ac.throttle+dt*.6,0,1);setThrottleUI();}
   if(keys.KeyS||keys.ControlLeft){ac.throttle=clamp(ac.throttle-dt*.6,0,1);setThrottleUI();}
   const ex=v=>Math.sign(v)*Math.pow(Math.abs(v),1.5);
-  const sx=stick.id!==null?stick.x:kb.r,sy=stick.id!==null?stick.y:kb.p;
+  const useTilt=stick.id===null&&settings.tilt&&tilt.ok;const sx=stick.id!==null?stick.x:useTilt?tilt.roll:kb.r,sy=stick.id!==null?stick.y:useTilt?tilt.pitch:kb.p;
   inp.roll=ex(sx);inp.pitch=ex(sy)*(settings.invert?-1:1);inp.yaw=(keys.KeyE?1:0)-(keys.KeyQ?1:0);
   ac.brake=ac.brakeHeld?Math.min(1,ac.brake+dt*1.25):0;brk.style.setProperty('--b',Math.round(ac.brake*100)+'%');
 }
@@ -1343,7 +1365,7 @@ function logbook(){
   const go=GOALS.map(g=>`<div class="item ${log.goals[g.id]?'done':''}"><span><b>${g.name}</b><span class="d">${g.hint}</span></span><span class="chk">${log.goals[g.id]?'✓':''}</span></div>`).join('');
   const done=GOALS.filter(g=>log.goals[g.id]).length;
   showCard(`<h2>Your logbook</h2><div class="sub">${log.flights} FLIGHTS · ${log.trips} TRIPS · ${log.stamps} STAMPS · ${done}/${GOALS.length} GOALS</div><h3>PEOPLE</h3><div class="list">${ppl}</div><h3>FIELDS</h3><div class="list">${f}</div><h3>SIGHTS</h3><div class="list">${si}</div><h3>GOALS</h3><div class="list">${go}</div>`,[['Back',back,true]]);}
-const SET=[['steady','Steady wings','Levels the wings when you let go, and handles the rudder.'],['stallGuard','Stall guard','Stops you pulling the nose up far enough to stall.'],
+const SET=[['tilt','Tilt to steer','Turn the phone like a steering wheel to bank. Tip it toward you to raise the nose, away to lower it. CENTER resets the level point. The touch stick still works.'],['steady','Steady wings','Levels the wings when you let go, and handles the rudder.'],['stallGuard','Stall guard','Stops you pulling the nose up far enough to stall.'],
   ['autoTrim','Auto-trim','Holds your current speed when you let go of the stick.'],['tips','Tips','Short pointers the first time things happen.'],
   ['invert','Invert pitch','Drag up to raise the nose instead of down.'],['shadows','Shadows','Long shadows from the sun and moon. Turn off if your phone gets warm.'],['sound','Sound','Engine, wind and the stall horn.']];
 function settingsCard(){
@@ -1352,7 +1374,7 @@ function settingsCard(){
   const lt=Object.keys(TOD).map(k=>`<button data-lt="${k}" class="${settings.light===k?'primary':''}">${TOD[k].name.toUpperCase()}</button>`).join('');
   showCard(`<h2>Settings</h2><div class="sub">ASSISTS · TURN THEM OFF ONE AT A TIME AS YOU IMPROVE</div>${rows}<h3>TIME OF DAY</h3><div class="btns">${lt}</div><h3>PIXELS</h3><div class="btns">${px}</div>`,[['Back',back,true]]);
   const cb=$('cardBody');
-  cb.querySelectorAll('[data-k]').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.k;settings[k]=!settings[k];saveS();if(k==='sound')snd.setOn(settings.sound);settingsCard();}));
+  cb.querySelectorAll('[data-k]').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.k;if(k==='tilt'){if(!settings.tilt){settings.tilt=true;saveS();enableTilt().then(()=>{updTiltUI();settingsCard();});}else{settings.tilt=false;saveS();disableTilt();updTiltUI();settingsCard();}return;}settings[k]=!settings[k];saveS();if(k==='sound')snd.setOn(settings.sound);settingsCard();}));
   cb.querySelectorAll('[data-px]').forEach(b=>b.addEventListener('click',()=>{settings.pixels=b.dataset.px;pixMode=settings.pixels;saveS();resize();settingsCard();}));
   cb.querySelectorAll('[data-lt]').forEach(b=>b.addEventListener('click',()=>{settings.light=b.dataset.lt;saveS();setTOD(settings.light);settingsCard();}));}
 function showHowTo(){mode='card';
