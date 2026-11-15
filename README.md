@@ -1,4 +1,4 @@
-# Takeoff and Chill
+# Saltwhistle Skies
 
 A cozy pixel-art flight game for phones: fly the mail around a small island, meet the locals, and learn to fly from Bea's logbook.
 
