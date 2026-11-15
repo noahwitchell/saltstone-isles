@@ -395,7 +395,7 @@ function goal(id,quiet){if(log.goals[id])return false;log.goals[id]=Date.now();s
 
 /* ---------- tips & toast ---------- */
 let toastT=0;
-function toast(msg,sec=3){const t=$('toast');t.textContent=msg;t.hidden=false;toastT=sec;t.classList.toggle('up',!$('stallBan').hidden);}
+function toast(msg,sec=3){const t=$('toast');t.textContent=msg;fixNums(t);t.hidden=false;toastT=sec;t.classList.toggle('up',!$('stallBan').hidden);}
 const tipQ=[];
 function tip(id,text,delay=0){if(!settings.tips||log.tips[id]||tipQ.some(q=>q.id===id))return;tipQ.push({id,text,delay});}
 function runTips(dt){if(!tipQ.length||toastT>0.5)return;const q=tipQ[0];q.delay-=dt;if(q.delay>0)return;tipQ.shift();log.tips[q.id]=1;saveL();toast(q.text,6.5);}
@@ -530,14 +530,14 @@ function drawMiniMap(dt){mapT-=dt;if(mapT>0)return;mapT=.08;const W=96,x=mctx;x.
   if(dest){x.fillStyle='#8ff0e8';x.beginPath();x.arc(dest.x,dest.z,3.5/k,0,TAU);x.fill();}
   x.restore();
   x.fillStyle='#fff8ec';x.strokeStyle='#241c2e';x.lineWidth=1;x.beginPath();x.moveTo(W/2,cy-6);x.lineTo(W/2-4,cy+4);x.lineTo(W/2,cy+2);x.lineTo(W/2+4,cy+4);x.closePath();x.fill();x.stroke();
-  const na=-hdg;x.fillStyle='#ffb02e';x.font='bold 9px Silkscreen, monospace';x.textAlign='center';x.textBaseline='middle';x.fillText('N',clamp(W/2+Math.sin(na)*40,6,W-6),clamp(cy-Math.cos(na)*40,6,W-6));
+  const na=-hdg;x.fillStyle='#ffb02e';x.font='13px VT323, monospace';x.textAlign='center';x.textBaseline='middle';x.fillText('N',clamp(W/2+Math.sin(na)*40,6,W-6),clamp(cy-Math.cos(na)*40,6,W-6));
   if(dest&&near>R*.9){const brg=Math.atan2(dest.x-ac.pos.x,-(dest.z-ac.pos.z))-hdg;x.fillStyle='#8ff0e8';x.beginPath();x.arc(clamp(W/2+Math.sin(brg)*44,4,W-4),clamp(cy-Math.cos(brg)*44,4,W-4),3,0,TAU);x.fill();}}
 function bigMap(){
   showCard(`<h2>Bea's chart</h2><div class="sub">DASHED LINES SHOW WHERE TO LINE UP FOR ${dest?dest.name.toUpperCase():'EACH RUNWAY'}</div><canvas id="bigmap" width="512" height="384"></canvas>`,[['Back to flying',()=>{hideModal();mode='fly';},true]]);
   $('cardBody').parentElement.querySelector('.card').classList.add('wide');
   const c=$('bigmap'),x=c.getContext('2d');x.imageSmoothingEnabled=false;const k=512/6400;x.save();x.translate(256,192);x.scale(k,k);
   x.drawImage(mapBase,-MAPW/2,-MAPW/2,MAPW,MAPW);drawStripsOn(x,k,dest);x.restore();
-  const P=(wx,wz)=>[256+wx*k,192+wz*k];x.font='bold 11px Silkscreen, monospace';x.textBaseline='middle';
+  const P=(wx,wz)=>[256+wx*k,192+wz*k];x.font='15px VT323, monospace';x.textBaseline='middle';
   const label=(t,wx,wz,col,dy=-12)=>{const [a,b]=P(wx,wz);x.textAlign='center';x.fillStyle='#241c2e';x.fillText(t,a+1,b+dy+1);x.fillStyle=col;x.fillText(t,a,b+dy);};
   for(const s of STRIPS)label(s.name.toUpperCase(),s.x,s.z,s===dest?'#8ff0e8':'#fff8ec',-14);
   for(const [k_,v] of Object.entries(sights)){if(!log.sights[k_])continue;const [a,b]=P(v.x,v.z);x.fillStyle='#ffb02e';x.fillRect(a-2,b-2,5,5);label(v.name.toUpperCase(),v.x,v.z,'#ffd890',10);}
@@ -585,9 +585,15 @@ function scriptify(root){if(!scriptReady)return;
     el.dataset.px=1;el.setAttribute('aria-label',txt);el.innerHTML=`<img class="px-img" src="${r.url}" alt="${txt.replace(/"/g,'&quot;')}" width="${r.w*sc}" height="${r.h*sc}" style="width:${r.w*sc}px">`;});}
 document.fonts&&document.fonts.load(`${SCRIPT.weight} 26px "${SCRIPT.family}"`).then(f=>{if(f&&f.length){scriptReady=true;scriptify(document);}}).catch(()=>{});
 
+/* numbers in running text use VT323, whose digits can't be mistaken for letters */
+function fixNums(root){const tw=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,{acceptNode:n=>/\d/.test(n.nodeValue)&&!(n.parentElement&&n.parentElement.closest('.num,.k,.sub,.got,button,script,style'))?NodeFilter.FILTER_ACCEPT:NodeFilter.FILTER_REJECT});
+  const list=[];while(tw.nextNode())list.push(tw.currentNode);
+  for(const n of list){const f=document.createDocumentFragment();let last=0;const s=n.nodeValue;s.replace(/\d+(?:[.,:]\d+)*(?:[–-]\d+(?:[.,:]\d+)*)?/g,(m,i)=>{if(i>last)f.appendChild(document.createTextNode(s.slice(last,i)));const sp=document.createElement('span');sp.className='num';sp.textContent=m;f.appendChild(sp);last=i+m.length;return m;});
+    if(last<s.length)f.appendChild(document.createTextNode(s.slice(last)));n.parentNode.replaceChild(f,n);}}
+
 /* ---------- menus ---------- */
 function showCard(html,buttons){$('cardBody').innerHTML=html+'<div class="btns"></div>';$('cardBody').classList.remove('wide');const b=$('cardBody').querySelector('.btns:last-child');
-  (buttons||[]).forEach(([l,fn,p])=>{const el=document.createElement('button');el.textContent=l;if(p)el.className='primary';el.addEventListener('click',fn);b.appendChild(el);});$('modal').hidden=false;$('cardBody').scrollTop=0;scriptify($('cardBody'));}
+  (buttons||[]).forEach(([l,fn,p])=>{const el=document.createElement('button');el.textContent=l;if(p)el.className='primary';el.addEventListener('click',fn);b.appendChild(el);});$('modal').hidden=false;$('cardBody').scrollTop=0;scriptify($('cardBody'));fixNums($('cardBody'));}
 function hideModal(){$('modal').hidden=true;}
 function back(){hideModal();if(mode==='title')$('title').hidden=false;else if(mode==='paused'||mode==='card')openMenu();}
 function openMenu(){if(mode==='fly')mode='paused';showCard(`<h2>Paused</h2><div class="sub">${dest?'HEADING FOR '+dest.name.toUpperCase():''}${mail.active?' · '+mail.bag.length+' IN THE BAG':''} · ${log.stamps} STAMPS</div>`,[

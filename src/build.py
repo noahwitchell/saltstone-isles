@@ -5,7 +5,7 @@ world=open('src/world.js').read()
 game=open('src/game.js').read()
 out=head+'\n<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>\n<script>\n'+world+'\n</script>\n<script>\n'+game+'\n</script>\n'
 open('game.html','w').write(out)
-open('_test.html','w').write('<meta charset="utf-8">\n'+out)
+open('_test.html','w').write('<!doctype html><meta charset="utf-8">\n'+out)
 print('built',len(out))
 
 # ---- home-screen web app (GitHub Pages serves /docs) ----
