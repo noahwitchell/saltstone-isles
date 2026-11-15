@@ -27,6 +27,9 @@ button:focus-visible{outline:2px solid #fff;outline-offset:2px}
   box-shadow:none;font-variant-numeric:tabular-nums;white-space:nowrap}
 .pill small{font-size:9px;opacity:.75;margin-left:3px}
 #spd.warn{background:var(--bad);border-color:#ffb0a0}
+.pill.ok{background:rgba(52,110,48,.85);border-color:#8fe08a}.pill.caution{background:rgba(170,120,30,.9);border-color:#f1c84a}
+#vsi.ok{color:#8fe08a}#vsi.caution{color:#f1c84a}#vsi.bad{color:#ff8a7a}
+#callout{position:fixed;left:50%;top:40%;transform:translate(-50%,-50%);font-family:var(--mono);font-size:30px;color:var(--paper);text-shadow:3px 3px 0 var(--ink);pointer-events:none}
 #vsi{font-size:10px;margin-left:6px;opacity:.9}
 #dest{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;font-size:11px;padding:8px 10px;color:var(--paper);background:var(--glass);border:2px solid var(--line);box-shadow:none}
 #dest .arr{display:inline-block;width:12px;text-align:center;color:#6fe0e0;margin-right:4px}
@@ -122,6 +125,7 @@ h3{font-family:var(--mono);font-size:11px;letter-spacing:.08em;color:var(--ink2)
     <button id="pause" aria-label="Pause">II</button>
   </div>
   <div id="stallBan" hidden>STALL</div>
+  <div id="callout" hidden></div>
   <div id="thr" aria-label="Throttle"><div id="thrFill"></div><div id="thrKnob"></div><span>PWR</span><span id="thrPct">0%</span></div>
   <div id="lcol"><canvas id="mapc" width="96" height="96" aria-label="Map. Tap for the full chart."></canvas>
     <div id="sw"><button id="swCarb">CARB<br>HEAT</button><button id="swMix">MIX<br>RICH</button><button id="swLight">LAND<br>LIGHT</button></div></div>
@@ -219,14 +223,22 @@ const nearStrip=(x,z,m)=>STRIPS.some(s=>{const l=toLocal(s,x,z);return Math.abs(
 const glCanvas=document.getElementById('gl'), hudCanvas=document.getElementById('hud');
 const renderer=new THREE.WebGLRenderer({canvas:glCanvas,antialias:false,powerPreference:'high-performance'});
 renderer.setPixelRatio(1);
-renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.BasicShadowMap;
+renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFShadowMap;
 const scene=new THREE.Scene();
 const camera=new THREE.PerspectiveCamera(58,1,.4,14000);
 const hctx=hudCanvas.getContext('2d');
 
 const gradTex=new THREE.DataTexture(new Uint8Array([78,78,78,255, 145,145,145,255, 205,205,205,255, 255,255,255,255]),4,1,THREE.RGBAFormat);
 gradTex.minFilter=gradTex.magFilter=THREE.NearestFilter; gradTex.needsUpdate=true;
-const toon=(o={})=>new THREE.MeshToonMaterial(Object.assign({vertexColors:true,gradientMap:gradTex,flatShading:true},o));
+/* baked sun shadow (mountains, hills) applied inside the sun's lighting for every toon material, so ground, runways, trees and houses agree */
+const NVg=201,bakeData=new Uint8Array(NVg*NVg*4);const bakeTex=new THREE.DataTexture(bakeData,NVg,NVg,THREE.RGBAFormat);bakeTex.minFilter=bakeTex.magFilter=THREE.LinearFilter;bakeTex.needsUpdate=true;
+const BAKE_LIGHT=THREE.ShaderChunk.lights_fragment_begin.replace('getDirectionalDirectLightIrradiance( directionalLight, geometry, directLight );','getDirectionalDirectLightIrradiance( directionalLight, geometry, directLight );\n\t\tdirectLight.color *= 1.0 - texture2D( bakeTex, vBakeUV ).r;');
+function bakeify(m){m.onBeforeCompile=sh=>{sh.uniforms.bakeTex={value:bakeTex};
+  sh.vertexShader='varying vec2 vBakeUV;\n'+sh.vertexShader.replace('#include <project_vertex>','#include <project_vertex>\nvec4 bwp=vec4(transformed,1.0);\n#ifdef USE_INSTANCING\nbwp=instanceMatrix*bwp;\n#endif\nbwp=modelMatrix*bwp;\nvBakeUV=(bwp.xz+4000.0)/8000.0*(200.0/201.0)+(0.5/201.0);');
+  sh.fragmentShader='uniform sampler2D bakeTex;varying vec2 vBakeUV;\n'+sh.fragmentShader.replace('#include <lights_fragment_begin>',BAKE_LIGHT);};return m;}
+const planeLit={value:1};
+function litify(m){m.onBeforeCompile=sh=>{sh.uniforms.uLit=planeLit;sh.fragmentShader='uniform float uLit;\n'+sh.fragmentShader.replace('#include <lights_fragment_begin>',THREE.ShaderChunk.lights_fragment_begin.replace('getDirectionalDirectLightIrradiance( directionalLight, geometry, directLight );','getDirectionalDirectLightIrradiance( directionalLight, geometry, directLight );\n\t\tdirectLight.color *= uLit;'));};return m;}
+const toon=(o={},bake=true)=>{const m=new THREE.MeshToonMaterial(Object.assign({vertexColors:true,gradientMap:gradTex,flatShading:true},o));return bake?bakeify(m):m;};
 
 /* lighting presets */
 const TOD={
@@ -244,7 +256,7 @@ const TOD={
 const hemi=new THREE.HemisphereLight(0xffffff,0x888888,.6); scene.add(hemi);
 const sunL=new THREE.DirectionalLight(0xffffff,1); scene.add(sunL); scene.add(sunL.target);
 scene.fog=new THREE.Fog(0xffffff,700,5600);
-sunL.castShadow=true;sunL.shadow.mapSize.set(2048,2048);{const sc=sunL.shadow.camera;sc.left=-750;sc.right=750;sc.top=750;sc.bottom=-750;sc.near=10;sc.far=6000;}sunL.shadow.bias=-0.0005;sunL.shadow.normalBias=1.2;
+sunL.castShadow=true;sunL.shadow.mapSize.set(2048,2048);const SHADOW_HALF=230;{const sc=sunL.shadow.camera;sc.left=-SHADOW_HALF;sc.right=SHADOW_HALF;sc.top=SHADOW_HALF;sc.bottom=-SHADOW_HALF;sc.near=10;sc.far=4000;}sunL.shadow.bias=-0.0004;sunL.shadow.normalBias=.35;
 const sunDir=new V3();
 
 /* sky dome */
@@ -278,10 +290,11 @@ function merge(items){
   const out=new THREE.BufferGeometry();out.setAttribute('position',new THREE.BufferAttribute(P,3));out.setAttribute('normal',new THREE.BufferAttribute(N,3));out.setAttribute('color',new THREE.BufferAttribute(C,3));return out;
 }
 const BOX=(w,h,d)=>new THREE.BoxGeometry(w,h,d);
+let terrainMesh=null,terrainVI=null,terrainBase=null;
 const LIGHTP=[],LIGHTC=[];const _lc=new THREE.Color();
 function addLight(x,y,z,col){LIGHTP.push(x,y,z);_lc.setHex(col);LIGHTC.push(_lc.r,_lc.g,_lc.b);}
 const shadowy=(m,cast=true)=>{m.castShadow=cast;m.receiveShadow=true;return m;};
-let glideCock=null;
+let glideCock=null,tachCock=null;
 /* farmland: fields on a grid rotated 20 degrees */
 const FA=20*DEG,FCs=Math.cos(FA),FSn=Math.sin(FA);
 const FIELDC=[0xd8c46c,0x9cc45a,0xb08a5a,0xc9d27a,0x8fb860,0xe0b45c,0x7fae4f];
@@ -308,12 +321,13 @@ function terrainColor(h,ny,x,z){
   const j=1+(hash2(x|0,z|0,5)-.5)*.07; tc.r*=j;tc.g*=j;tc.b*=j; return tc;
 }
 (function buildTerrain(){
-  const P=[],C=[];const a=new V3(),b=new V3(),c=new V3(),e1=new V3(),e2=new V3();
+  const P=[],C=[],VI=[];const a=new V3(),b=new V3(),c=new V3(),e1=new V3(),e2=new V3();
   function tri(x1,z1,x2,z2,x3,z3){
     const h1=groundH(x1,z1)??0; a.set(x1,hAtW(x1,z1),z1);b.set(x2,hAtW(x2,z2),z2);c.set(x3,hAtW(x3,z3),z3);
     e1.subVectors(b,a);e2.subVectors(c,a);const n=e1.cross(e2).normalize();
     const col=terrainColor((a.y+b.y+c.y)/3,Math.abs(n.y),(x1+x2+x3)/3,(z1+z2+z3)/3);
     P.push(a.x,a.y,a.z,b.x,b.y,b.z,c.x,c.y,c.z);for(let k=0;k<3;k++)C.push(col.r,col.g,col.b);
+    for(const [vx,vz] of [[x1,z1],[x2,z2],[x3,z3]])VI.push(Math.round((vz+HALF)/CELL)*NV+Math.round((vx+HALF)/CELL));
   }
   function hAtW(x,z){return hAt(Math.round((x+HALF)/CELL),Math.round((z+HALF)/CELL));}
   for(let j=0;j<CELLS;j++)for(let i=0;i<CELLS;i++){
@@ -322,8 +336,19 @@ function terrainColor(h,ny,x,z){
     tri(x0,z0,x0,z1,x1,z0); tri(x1,z0,x0,z1,x1,z1);
   }
   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(P,3));g.setAttribute('color',new THREE.Float32BufferAttribute(C,3));g.computeVertexNormals();
-  scene.add(shadowy(new THREE.Mesh(g,toon())));
+  const m=new THREE.Mesh(g,toon());m.receiveShadow=true;scene.add(m);
+  terrainMesh=m;terrainVI=Int32Array.from(VI);terrainBase=Float32Array.from(C);
 })();
+/* terrain shadows are baked from the heightfield for each sun position: clean, stable, and they reach for kilometers */
+function bakeTerrainShadow(dir,amt){
+  const S=new Float32Array(NV*NV),hl=Math.hypot(dir.x,dir.z);
+  if(hl>1e-3&&dir.y>0){const ux=dir.x/hl,uz=dir.z/hl,tan=dir.y/hl,st=CELL*.75;
+    for(let j=0;j<NV;j++)for(let i=0;i<NV;i++){const h0=HGT[j*NV+i];if(h0<-6)continue;const x=-HALF+i*CELL,z=-HALF+j*CELL;
+      for(let k=1;k<140;k++){const d=k*st,ray=h0+d*tan+1.5;if(ray>720)break;if(groundH(x+ux*d,z+uz*d)>ray){S[j*NV+i]=1;break;}}}}
+  for(let j=0;j<NV;j++)for(let i=0;i<NV;i++){let t=0,n=0;for(let a=-1;a<=1;a++)for(let b=-1;b<=1;b++){const ii=i+a,jj=j+b;if(ii<0||jj<0||ii>=NV||jj>=NV)continue;const wgt=a||b?1:2;t+=S[jj*NV+ii]*wgt;n+=wgt;}
+    bakeData[(j*NV+i)*4]=Math.round(t/n*255*(1-amt*.35));}
+  bakeTex.needsUpdate=true;
+}
 
 /* ---------------- water ---------------- */
 const hData=new Uint8Array(NV*NV*4);
@@ -415,8 +440,8 @@ function buildPlane(pal){
     for(const zz of [-.95,-.2]) beam(body,new V3(sx*.56,-.3,zz),new V3(sx*2.7,.7,zz-.05),.07,dark);
   }
   const g=new THREE.Group();
-  const bodyM=new THREE.Mesh(merge(body),toon()),wingM=new THREE.Mesh(merge(wing),toon());
-  const blades=new THREE.Mesh(merge([{geo:BOX(.16,2.0,.05),m:M([0,0,0]),color:0x3a3438}]),toon());blades.position.set(0,-.05,-2.82);
+  const bodyM=new THREE.Mesh(merge(body),litify(toon({},false))),wingM=new THREE.Mesh(merge(wing),litify(toon({},false)));
+  const blades=new THREE.Mesh(merge([{geo:BOX(.16,2.0,.05),m:M([0,0,0]),color:0x3a3438}]),toon({},false));blades.position.set(0,-.05,-2.82);
   const disc=new THREE.Mesh(new THREE.CircleGeometry(1.0,18),new THREE.MeshBasicMaterial({color:0xe9e0d0,transparent:true,opacity:.18,depthWrite:false}));disc.position.set(0,-.05,-2.84);
   bodyM.castShadow=wingM.castShadow=true;g.add(bodyM,wingM,blades,disc); g.userData={bodyM,wingM,blades,disc}; return g;
 }
@@ -505,7 +530,7 @@ function scanTo(x,z,dx,dz,cond,max=4000,step=10){for(let d=0;d<max;d+=step){cons
   const sheep=[];const L=STRIPS[1];
   for(let t=0;t<4000&&sheep.length<90;t++){const near=sheep.length<45;const x=near?L.x+(rnd()-.5)*1100:(rnd()-.5)*6000,z=near?L.z+(rnd()-.5)*700:(rnd()-.5)*4200,h=groundH(x,z);const sl=slopeAt(x,z);
     if(h<6||h>260||sl>.25||nearStrip(x,z,20))continue;if(!near&&!(isFarm(x,z,h,sl)&&fieldColor(x,z)<0))continue;sheep.push({x,z,h,r:rnd()*TAU});}
-  const body=new THREE.InstancedMesh(BOX(1.3,1,2),new THREE.MeshToonMaterial({color:0xf2eee4,gradientMap:gradTex,flatShading:true}),sheep.length);
+  const body=new THREE.InstancedMesh(BOX(1.3,1,2),bakeify(new THREE.MeshToonMaterial({color:0xf2eee4,gradientMap:gradTex,flatShading:true})),sheep.length);
   const head=new THREE.InstancedMesh(BOX(.6,.6,.7),new THREE.MeshToonMaterial({color:0x2c2833,gradientMap:gradTex,flatShading:true}),sheep.length);
   const mm=new THREE.Matrix4(),q=new Q();sheep.forEach((sp,i)=>{q.setFromEuler(new THREE.Euler(0,sp.r,0));mm.compose(new V3(sp.x,sp.h+.7,sp.z),q,new V3(1,1,1));body.setMatrixAt(i,mm);
     mm.compose(new V3(sp.x-Math.sin(sp.r)*1.2,sp.h+1,sp.z-Math.cos(sp.r)*1.2),q,new V3(1,1,1));head.setMatrixAt(i,mm);});
@@ -570,11 +595,11 @@ const trees=[];
   const pine=[0x3f6b3a,0x4b7a3d,0x557f40,0x3a5f3c,0x2f5534], round=[0x6a9a42,0x7ba746,0x5f8f3e,0x4f7f38,0xb8a042,0xc98f3e];
   const vc=villageC;const ok=(x,z)=>!nearStrip(x,z,55)&&Math.hypot(x-vc.x,z-vc.z)>230&&!farmSpots.some(f=>Math.hypot(f.x-x,f.z-z)<f.r);
   let tries=0,hedge=0;
-  while(hedge<1900&&tries<60000){tries++;const x=(rnd()-.5)*6400,z=(rnd()-.5)*4600,h=groundH(x,z);if(h<4)continue;const sl=slopeAt(x,z);if(!isFarm(x,z,h,sl))continue;
+  while(hedge<2600&&tries<80000){tries++;const x=(rnd()-.5)*6400,z=(rnd()-.5)*4600,h=groundH(x,z);if(h<4)continue;const sl=slopeAt(x,z);if(!isFarm(x,z,h,sl))continue;
     const [u,v]=fieldUV(x,z),fu=u-Math.floor(u),fv=v-Math.floor(v);if(!(fu<.07||fv<.09))continue;if(!ok(x,z))continue;
     trees.push({x,z,h,pine:false,s:.55+rnd()*.35});hedge++;}
   tries=0;let n=0;
-  while(n<6200&&tries<90000){tries++;
+  while(n<11000&&tries<170000){tries++;
     const x=(rnd()-.5)*6600,z=(rnd()-.5)*4800,h=groundH(x,z);if(h<3||h>500)continue;const sl=slopeAt(x,z);if(sl>.6)continue;
     if(isFarm(x,z,h,sl))continue;
     const f=fbm(x*.0026,z*.0026,3,41);const dens=smooth(-.12,.25,f)*(h<30?.5:1);if(rnd()>dens*.95+.04)continue;
@@ -583,11 +608,22 @@ const trees=[];
   }
   const crownP=new THREE.ConeGeometry(3.2,9,6).translate(0,6.5,0), crownR=new THREE.IcosahedronGeometry(3.8,0).translate(0,5.6,0), trunk=new THREE.CylinderGeometry(.45,.6,3,5).translate(0,1.5,0);
   const ps=trees.filter(t=>t.pine), rs_=trees.filter(t=>!t.pine);
-  const mat=new THREE.MeshToonMaterial({gradientMap:gradTex,flatShading:true});
+  const mat=bakeify(new THREE.MeshToonMaterial({gradientMap:gradTex,flatShading:true}));
   const mk=(geo,list,cols,isTrunk)=>{const m=new THREE.InstancedMesh(geo,mat,list.length);const mm=new THREE.Matrix4(),c=new THREE.Color();
     list.forEach((t,i)=>{mm.compose(new V3(t.x,t.h-.5,t.z),new Q().setFromEuler(new THREE.Euler(0,hash2(i,7,3)*6,0)),new V3(t.s,t.s*(.9+hash2(i,2,2)*.3),t.s));m.setMatrixAt(i,mm);
       c.setHex(isTrunk?0x6b4f3a:cols[(hash2(i,9,1)*cols.length)|0]);m.setColorAt(i,c);});m.castShadow=!isTrunk;m.receiveShadow=true;scene.add(m);};
   mk(crownP,ps,pine);mk(trunk,ps,null,true);mk(crownR,rs_,round);mk(trunk,rs_,null,true);
+  // bushes and rocks: small detail, no collision
+  const bush=[],rock=[];let t2=0;
+  while((bush.length<4500||rock.length<1400)&&t2<120000){t2++;const x=(rnd()-.5)*6600,z=(rnd()-.5)*4800,h=groundH(x,z);if(h<2.5||nearStrip(x,z,30))continue;const sl=slopeAt(x,z);
+    if(sl>.38||h>380){if(rock.length<1400&&rnd()<.6)rock.push({x,z,h,s:1+rnd()*3.5});continue;}
+    if(isFarm(x,z,h,sl))continue;if(Math.hypot(x-vc.x,z-vc.z)<200)continue;
+    if(bush.length<4500&&rnd()<.55+smooth(-.2,.2,fbm(x*.0026,z*.0026,3,41))*.4)bush.push({x,z,h,s:.35+rnd()*.3});else if(rock.length<1400&&rnd()<.08)rock.push({x,z,h,s:.8+rnd()*1.6});}
+  const bm=new THREE.InstancedMesh(new THREE.IcosahedronGeometry(3.4,0).translate(0,2.2,0),mat,bush.length),rm=new THREE.InstancedMesh(new THREE.DodecahedronGeometry(1,0),mat,rock.length),mm=new THREE.Matrix4(),c=new THREE.Color();
+  const bc=[0x5f8f3e,0x6e9c45,0x7aa64c,0x8a9c48,0xa89a50];const rc=[0x9c8a80,0x8a7a74,0xa89a90,0x7e7068];
+  bush.forEach((b,i)=>{mm.compose(new V3(b.x,b.h-.3,b.z),new Q().setFromEuler(new THREE.Euler(0,hash2(i,5,5)*6,0)),new V3(b.s*1.2,b.s*(.7+hash2(i,6,6)*.3),b.s*1.2));bm.setMatrixAt(i,mm);c.setHex(bc[(hash2(i,8,2)*bc.length)|0]);bm.setColorAt(i,c);});
+  rock.forEach((r,i)=>{mm.compose(new V3(r.x,r.h,r.z),new Q().setFromEuler(new THREE.Euler(hash2(i,1,7)*3,hash2(i,2,7)*6,0)),new V3(r.s*1.3,r.s*.8,r.s));rm.setMatrixAt(i,mm);c.setHex(rc[(hash2(i,3,7)*rc.length)|0]);rm.setColorAt(i,c);});
+  bm.castShadow=rm.castShadow=true;bm.receiveShadow=rm.receiveShadow=true;scene.add(bm,rm);
 })();
 
 /* ---------------- clouds ---------------- */
@@ -596,7 +632,7 @@ const cloudGroup=new THREE.Group();scene.add(cloudGroup);
   for(let c=0;c<16;c++){const cx=(rnd()-.5)*9000,cz=(rnd()-.5)*8000,cy=620+rnd()*380;const n=5+(rnd()*5|0);
     for(let k=0;k<n;k++){const s=40+rnd()*60;const y=cy+(rnd()-.3)*20;
       it.push({geo:new THREE.IcosahedronGeometry(1,1),m:M([cx+(rnd()-.5)*220,y,cz+(rnd()-.5)*120],[0,rnd()*3,0],[s,s*.55,s*.9]),color:y>cy?0xfff8f0:0xeae2f2});}}
-  cloudGroup.add(new THREE.Mesh(merge(it),toon()));
+  cloudGroup.add(new THREE.Mesh(merge(it),toon({},false)));
 })();
 
 /* ---------------- life: boats, birds, smoke ---------------- */
@@ -690,15 +726,14 @@ const C={bezel:rgba(0x1b1720),face:rgba(0x2b2734),tick:rgba(0xeae2cf),dim:rgba(0
 function buildFrame(){
   const w=LW,h=LH,f=new PixBuf(w,h),k=(window.devicePixelRatio||1)/PS,land=w/h>1.1;
   const lp=Math.round(205*k);
-  const r=Math.max(10,Math.min(Math.floor(h*.095),Math.floor((w-lp)/14)));
-  const gap=Math.round(r*2.3),yb=h-r-5,yt=yb-(2*r+7),xa=lp+r+4,xb=xa+gap,xR2=w-r-5,xR1=xR2-gap;
-  gaugeLayout=[{x:xa,y:yt,r},{x:xb,y:yt,r},{x:xR1,y:yt,r},{x:xa,y:yb,r},{x:xb,y:yb,r},{x:xR2,y:yt,r}];
-  glideCock={x:Math.round((xR1+xR2)/2),y:yb,r};
-  const topS=yt-r-7,topC=h-Math.round(h*.055),lEnd=xb+r+8,rStart=xR1-r-8;
-  const topAt=x=>{if(x<=lEnd||x>=rStart)return topS;const d=Math.min(x-lEnd,rStart-x);return Math.round(lerp(topS,topC,smooth(0,16,d)));};
-  for(let x=0;x<w;x++){const y0=topAt(x);f.rect(x,y0,1,h-y0,C.panel);f.px(x,y0,C.panelHi);f.px(x,y0+1,C.panelHi);f.px(x,y0+2,C.panelLo);}
-  const topBand=Math.round(h*.045);f.rect(0,0,w,topBand,C.post);f.rect(0,topBand,w,1,C.panelLo);
-  for(let y=topBand;y<topS+2;y++){const t=(y-topBand)/Math.max(1,topS-topBand);const x0=Math.round(lerp(w*.05,0,t)),x1=Math.round(lerp(w*.085,w*.025,t));f.rect(x0,y,x1-x0,1,C.post);f.rect(w-x1,y,x1-x0,1,C.post);}
+  const r=Math.max(10,Math.min(Math.floor(h*.095),Math.floor((w/2-lp)/5.4)));
+  const gap=Math.round(r*2.3),yb=h-r-6,yt=yb-gap;
+  const lx1=lp+r+6,lx2=lx1+gap,rx2=w-lp-r-6,rx1=rx2-gap;
+  gaugeLayout=[{x:lx1,y:yt,r},{x:lx2,y:yt,r},{x:rx1,y:yt,r},{x:lx1,y:yb,r},{x:lx2,y:yb,r},{x:rx2,y:yt,r}];
+  glideCock={x:rx1,y:yb,r};tachCock={x:rx2,y:yb,r};
+  const pod=(x0,x1)=>{const y0=yt-r-7,rad=8;for(let y=y0;y<h;y++){const dy=y-y0;let inset=0;if(dy<rad){const q=rad-dy;inset=Math.round(rad-Math.sqrt(Math.max(0,rad*rad-q*q)));}
+    f.rect(x0+inset,y,x1-x0-2*inset,1,y-y0<2?C.panelHi:C.panel);}f.rect(x0+rad,y0+2,x1-x0-2*rad,1,C.panelLo);};
+  pod(lx1-r-7,lx2+r+8);pod(rx1-r-8,rx2+r+7);
   frameLayer=f.d.slice();
   const pc=land?3:2,pr=land?2:3,tp=Math.round(46*k),right=land?w*.76:w;let r2=Math.floor(Math.min((h-tp-12)/(pr*2.5),(right-lp)/(pc*2.45)));r2=Math.max(12,r2);
   const gp=Math.round(r2*2.45),cx0=Math.round(lp+(right-lp)/2-gp*(pc-1)/2);
@@ -761,7 +796,8 @@ function setTOD(k){tod=k;const T=TOD[k];
   const u=skyMat.uniforms;u.cZen.value.setHex(T.zen);u.cHigh.value.setHex(T.high);u.cHor.value.setHex(T.hor);u.cHaze.value.setHex(T.haze);u.cSun.value.setHex(T.sunc);u.uStars.value=T.stars;u.uDisc.value=T.disc;
   const w=waterMat.uniforms;w.fogColor.value.setHex(T.hor);w.fogNear.value=T.fogN;w.fogFar.value=T.fogF;w.cDeep.value.setHex(T.deep);w.cMid.value.setHex(T.mid);w.cShal.value.setHex(T.shal);w.cGlint.value.setHex(T.glint);
   const pu=postMat.uniforms;pu.con.value=T.con;pu.sat.value=T.sat;pu.vig.value=T.vig;
-  lightPts.visible=T.lights>0;lightPts.material.color.setScalar(T.lights);navPts.visible=T.lights>0;}
+  lightPts.visible=T.lights>0;lightPts.material.color.setScalar(T.lights);navPts.visible=T.lights>0;
+  bakeTerrainShadow(sunDir,{noon:0,golden:0,sunset:0,dusk:.6,night:.3}[k]||0);}
 
 /* ---------- save data ---------- */
 const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}};
@@ -990,7 +1026,7 @@ function touchdown(low){
   if(!st&&slopeAt(ac.pos.x,ac.pos.z)>.2)return crash('rough');
   if(!ac.td){const fh=new V3(_f.x,0,_f.z).normalize();
     const dirSign=st?Math.sign(fh.x*st.fx+fh.z*st.fz)||1:1;const l=st?toLocal(st,ac.pos.x,ac.pos.z):null;
-    ac.td={strip:st?st.id:null,sink,s:l?l.s:0,t:l?l.t:0,dirSign,bounced:false,view:camMode,done:false,check:checklistState(),tod};}
+    ac.td={strip:st?st.id:null,sink,kt:ac.ias*KT,bankDeg:Math.abs(bank)/DEG,s:l?l.s:0,t:l?l.t:0,dirSign,bounced:false,view:camMode,done:false,check:checklistState(),tod};}
   if(sink>2.3&&!ac.td.bounced){ac.td.bounced=true;ac.vel.y=sink*.35;ac.pos.y-=low-.05;ac.w.x*=.3;snd.thump(.8);
     toast('Bounced! Hold the nose up gently and let it settle.',3);return;}
   snd.thump(clamp(sink/2.5,.25,1));
@@ -1040,9 +1076,10 @@ const REASONS={
   rough:['Too rough here','That ground was too steep or bumpy to land or roll on.'],
 };
 function crash(why,v){
-  if(mode!=='fly')return;mode='crashed';crashT=0;snd.thump(1.2);snd.crash();
+  if(mode!=='fly')return;axes();const cn={kt:ac.ias*KT,fpm:Math.max(0,-ac.vel.y*196.85),bank:Math.abs(Math.atan2(-_r.y,_u.y))/DEG,pitch:Math.asin(clamp(_f.y,-1,1))/DEG};mode='crashed';crashT=0;snd.thump(1.2);snd.crash();
   smokeBurst.forEach((m,i)=>{m.visible=true;m.position.copy(ac.pos).add(new V3((hash2(i,1,1)-.5)*6,hash2(i,2,1)*3,(hash2(i,3,1)-.5)*6));m.scale.setScalar(.5);m.userData.v=1+hash2(i,4,1)*2;});
-  setTimeout(()=>{const [t,b]=REASONS[why];const extra=why==='hard'?`<p>You came down at <b>${Math.round(v*196.85)} ft/min</b>. Aim for under 300.</p>`:'';
+  setTimeout(()=>{const [t,b]=REASONS[why];const bad=(x,ok)=>ok?x:`<b style="color:#c2453a">${x}</b>`;
+    const extra=`<div class="rows"><span class="k">SPEED</span><span>${bad(Math.round(cn.kt)+' kt',cn.kt>=45&&cn.kt<=62)}</span><span class="s">AIM 50–55</span><span class="k">DESCENT</span><span>${bad(Math.round(cn.fpm)+' ft/min',cn.fpm<500)}</span><span class="s">UNDER 300</span><span class="k">BANK</span><span>${bad(Math.round(cn.bank)+'°',cn.bank<10)}</span><span class="s">UNDER 10°</span><span class="k">NOSE</span><span>${bad((cn.pitch>=0?'up ':'down ')+Math.abs(Math.round(cn.pitch))+'°',cn.pitch>=0&&cn.pitch<12)}</span><span class="s">UP 2–8°</span></div>`;
     showCard(`<div class="who"><img src="${portrait('gus')}" alt=""><div><b>${t}</b><span>GUS PATCHES IT UP · THE MAIL IS STILL IN THE BAG</span></div></div><p>${b}</p>${extra}`,[
       ['Try that approach again',()=>spawnApproach(dest),true],['Back to '+stripById(ac.lastField).name,()=>spawnField(stripById(ac.lastField))]]);},900);
 }
@@ -1101,7 +1138,7 @@ function finishLanding(){
     :homeDone?[['Hand in the day',endDay,true]]
     :[['Take off from here',()=>spawnField(s),true],['Practice this landing',()=>spawnApproach(s,td.dirSign)],['Keep taxiing',()=>{hideModal();mode='fly';}]];
   showCard(`<h2>${stopped?'Landed at':'Rolled off'} ${s.name}</h2><div class="sub">${isTrip?'TRIP FROM '+stripById(fromId).name.toUpperCase()+' · ':''}${stars(total)}</div>
-    <div class="rows"><span class="k">TOUCHDOWN</span><span>${Math.round(fpm)} ft/min · ${softTxt}</span><span class="s">${stars(soft)}</span>
+    <div class="rows"><span class="k">TOUCHDOWN</span><span>${Math.round(fpm)} ft/min at ${Math.round(td.kt)} kt · ${softTxt}</span><span class="s">${stars(soft)}</span>
     <span class="k">CENTERLINE</span><span>${off<.2?'Right down the middle':off<.5?'A little off center':'Way off center'}</span><span class="s">${stars(cen)}</span>
     <span class="k">AIM POINT</span><span>${zoneTxt}</span><span class="s">${stars(zone)}</span>${ckRow}</div>
     ${!stopped?'<p>You ran off the end. Touch down nearer the markers and hold BRAKE.</p>':''}
@@ -1242,16 +1279,17 @@ const snd={ctx:null,
     this.lp=c.createBiquadFilter();this.lp.type='lowpass';this.lp.frequency.value=500;this.eg=c.createGain();this.eg.gain.value=0;
     const g2=c.createGain();g2.gain.value=.4;this.o1.connect(this.lp);this.o2.connect(g2);g2.connect(this.lp);this.lp.connect(this.eg);this.eg.connect(this.master);this.o1.start();this.o2.start();
     const buf=c.createBuffer(1,c.sampleRate*2,c.sampleRate),d=buf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;this.buf=buf;
-    this.noise=c.createBufferSource();this.noise.buffer=buf;this.noise.loop=true;this.bp=c.createBiquadFilter();this.bp.type='bandpass';this.bp.frequency.value=700;this.bp.Q.value=.6;
+    this.noise=c.createBufferSource();this.noise.buffer=buf;this.noise.loop=true;this.bp=c.createBiquadFilter();this.bp.type='lowpass';this.bp.frequency.value=380;this.bp.Q.value=.3;
     this.wg=c.createGain();this.wg.gain.value=0;this.noise.connect(this.bp);this.bp.connect(this.wg);this.wg.connect(this.master);this.noise.start();
     this.ho=c.createOscillator();this.ho.type='square';this.ho.frequency.value=540;this.hg=c.createGain();this.hg.gain.value=0;this.ho.connect(this.hg);this.hg.connect(this.master);this.ho.start();},
   update(rpm,ias,stall,run,rough){if(!this.ctx)return;const t=this.ctx.currentTime,wob=rough>0?1+Math.sin(t*23)*.08*rough+Math.sin(t*7.3)*.06*rough:1,f=(38+rpm*70)*wob;
     this.o1.frequency.setTargetAtTime(f,t,.05);this.o2.frequency.setTargetAtTime(f*.5,t,.05);this.lp.frequency.setTargetAtTime(280+rpm*900,t,.1);
     const cut=rough>0&&Math.sin(t*11)>.6?1-.4*rough:1;
-    this.eg.gain.setTargetAtTime(run?(.1+rpm*.12)*cut:0,t,.04);this.wg.gain.setTargetAtTime(run?Math.min(.22,ias*ias/9000):0,t,.2);
+    this.eg.gain.setTargetAtTime(run?(.07+rpm*.08)*cut:0,t,.04);this.bp.frequency.setTargetAtTime(220+Math.min(ias,60)*4,t,.3);this.wg.gain.setTargetAtTime(run?Math.min(.045,ias*ias/60000):0,t,.4);
     this.hg.gain.setTargetAtTime(stall&&run&&((t*4)%1<.6)?.05:0,t,.01);},
   burst(v,lp,dur){if(!this.ctx)return;const c=this.ctx,s=c.createBufferSource();s.buffer=this.buf;const f=c.createBiquadFilter();f.type='lowpass';f.frequency.value=lp;const g=c.createGain(),t=c.currentTime;
     g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+dur);s.connect(f);f.connect(g);g.connect(this.master);s.start(t,Math.random());s.stop(t+dur+.05);},
+  beep(f){if(!this.ctx)return;const c=this.ctx,o=c.createOscillator(),g=c.createGain(),t=c.currentTime;o.type='triangle';o.frequency.value=f;g.gain.setValueAtTime(.08,t);g.gain.exponentialRampToValueAtTime(.001,t+.18);o.connect(g);g.connect(this.master);o.start(t);o.stop(t+.2);},
   thump(v=1){this.burst(.6*v,260,.25);},crash(){this.burst(.5,900,1.2);},click(){this.burst(.25,3000,.03);},
   setOn(v){if(this.master)this.master.gain.value=v?.5:0;if(this.ctx&&this.ctx.state==='suspended')this.ctx.resume();}};
 
@@ -1299,10 +1337,11 @@ const BEA=[
   {t:'The two thumbs',h:`<p>Left thumb is the throttle. Right thumb is the stick: touch anywhere on the right side and drag.</p><ul><li><b>Drag down</b> to raise the nose. <b>Drag up</b> to lower it.</li><li><b>Drag sideways</b> to bank. Banking is how you turn.</li><li>The rudder looks after itself while Steady Wings is on.</li></ul><p>Small moves. The plane does what you ask, just a moment later than you'd like.</p>`},
   {t:'Pitch and power',h:`<p>Here's the secret most new pilots fight: <b>the stick sets your speed, the throttle sets climb or descent.</b></p><ul><li>Nose up, slower. Nose down, faster.</li><li>Want to climb without slowing down? Add power.</li><li>Want to come down without speeding up? Take power off.</li></ul><p>Let go of the stick and the plane holds the speed you left it at. That's Auto-trim, doing what a real pilot does with the trim wheel.</p>`},
   {t:'Flaps',h:`<p>Flaps are hinged panels on the back of the wing. Lowering them makes the wing curvier: more lift, and also more drag.</p><table><tr><td>FLAPS 0</td><td><b>Cruise.</b> Clean wing, least drag. Climbing out and flying around.</td></tr><tr><td>FLAPS 1</td><td><b>Takeoff and approach.</b> A bit more lift, so you can fly a few knots slower. Good for short strips and the start of an approach.</td></tr><tr><td>FLAPS 2</td><td><b>Landing.</b> Most lift and most drag. You can come down steeply without speeding up, and touch down slow.</td></tr></table><p>Don't fly fast with flaps out: above 85 knots (the top of the white arc on the speed gauge) they're working too hard. With flaps down you need more power to hold your height.</p>`},
-  {t:'The six gauges',h:`<table><tr><td>SPEED</td><td>Airspeed in knots. White arc: flap range. Green: normal. Yellow: careful, smooth air only.</td></tr><tr><td>ATTITUDE</td><td>Blue is sky, brown is ground. The orange wings are you. Shows bank and nose up or down, even when you can't see outside.</td></tr><tr><td>ALTITUDE</td><td>Height in feet above the sea. The long needle is hundreds, the short one thousands.</td></tr><tr><td>TURN</td><td>The little plane tilts as you turn. The ball should sit in the middle: if it slides out, you're slipping sideways.</td></tr><tr><td>HEADING</td><td>Your compass direction. The cyan mark is the way to your next stop.</td></tr><tr><td>CLIMB</td><td>Feet per minute up or down. On approach, about 400 down is right.</td></tr></table><p>Trick: glance, don't stare. Speed, attitude, back to the window.</p>`},
+  {t:'The six gauges',h:`<table><tr><td>SPEED</td><td>Airspeed in knots. White arc: flap range. Green: normal. Yellow: careful, smooth air only.</td></tr><tr><td>ATTITUDE</td><td>Blue is sky, brown is ground. The orange wings are you. Shows bank and nose up or down, even when you can't see outside.</td></tr><tr><td>ALTITUDE</td><td>Height in feet above the sea. The long needle is hundreds, the short one thousands. (The readout at the top of the screen is height above the ground, which matters more for landing.)</td></tr><tr><td>TURN</td><td>The little plane tilts as you turn. The ball should sit in the middle: if it slides out, you're slipping sideways.</td></tr><tr><td>HEADING</td><td>Your compass direction. The cyan mark is the way to your next stop.</td></tr><tr><td>CLIMB</td><td>Feet per minute up or down. On approach, about 400 down is right.</td></tr></table><p>Trick: glance, don't stare. Speed, attitude, back to the window.</p>`},
   {t:'Taking off',h:`<ul><li>Flaps 0 on a long runway, 1 on a short one.</li><li>Full power. Keep straight with small sideways stick.</li><li>At about 45 knots, drag the stick gently down. The nose lifts and the plane flies itself off.</li><li>Climb at 55 to 65 knots. Let go and it holds that.</li><li>Flaps up once you're well above the trees.</li></ul>`},
   {t:'Turning',h:`<p>Bank to turn. The steeper the bank, the faster the turn, but the wing spends some of its lift turning instead of holding you up.</p><ul><li>In a turn, hold the stick a little down (back) to keep the nose up and stay level.</li><li>Gentle turns are about 20 degrees of bank. Thirty is brisk.</li><li>Let go of the stick and Steady Wings rolls you level.</li></ul>`},
   {t:'The approach',h:`<p>A good landing is made two kilometers out.</p><ul><li>On the chart, the runway you're headed for has a <b>dashed line</b> coming out of each end. Fly to that line, then turn to follow it toward the runway.</li><li>About 2 km out and a few hundred feet up: <b>flaps 1</b>, power back, <b>55 knots</b>.</li><li>Watch the <b>four lights</b> beside the runway. Two white and two red: perfect. More white: too high, take off power. More red: too low, add power.</li><li>Closer in: flaps 2, and keep the runway centered in the windshield.</li><li>Do your before-landing checklist.</li></ul>`},
+  {t:'Landing numbers',h:`<p>Pin these on your knee. The speed and height readouts turn <b style="color:#3e7334">green</b>, <b style="color:#b8862a">amber</b> or <b style="color:#c2453a">red</b> on approach to tell you how you're doing.</p><table><tr><td>2 KM OUT</td><td>About <b>500 ft up</b>, lined up on the dashed line, flaps 1, <b>55 knots</b>.</td></tr><tr><td>ON FINAL</td><td><b>50 to 60 knots.</b> Coming down about <b>400 ft/min</b>. Two white and two red lights.</td></tr><tr><td>OVER THE END</td><td>Flaps 2, power to idle, <b>about 50 knots</b>, 30 to 50 ft up.</td></tr><tr><td>FLARE</td><td>At <b>10 to 20 ft</b>, ease the nose up a little. The descent should slow to <b>under 300 ft/min</b>.</td></tr><tr><td>TOUCHDOWN</td><td>Wings level (<b>under 10°</b> of bank), nose slightly up, about <b>45 to 50 knots</b>.</td></tr></table><p>The height readout is <b>feet above the ground under you</b>, not above the sea. Trees are about 30 to 45 ft tall; a house is about 20. Near the runway you'll hear little beeps at 100, 50, 30, 20 and 10 ft.</p><p>Over 800 ft/min at touchdown and Gus gets a phone call.</p>`},
   {t:'Landing and stopping',h:`<ul><li>Aim at the white markers about a quarter of the way down the runway.</li><li>Just above the runway, <b>ease the stick down (back)</b> to raise the nose a little. This is the flare: it turns a drop into a settle.</li><li>Power to idle as the wheels touch.</li><li>Hold <b>BRAKE</b>. It builds up the longer you hold: tap it for a little, hold it for a lot.</li></ul><p>Under 180 ft/min is soft. Under 90 is butter.</p>`},
   {t:'Stalls',h:`<p>A wing can only meet the air so steeply. Push past that and it stalls: it stops lifting, and the nose drops.</p><ul><li>The horn and the red STALL sign mean you're close.</li><li><b>Fix it: lower the nose.</b> Speed comes back, the wing works again. Then add power.</li><li>Slow, steep and turning is where stalls happen. On approach, watch the speed.</li></ul><p>Stall Guard stops you pulling into one. Turn it off in Settings when you want to feel it.</p>`},
   {t:'Before-landing checklist',h:`<p>I did this every single landing for forty years. Four things:</p><table><tr><td>CARB HEAT</td><td>ON. Low power on approach is when carb ice forms.</td></tr><tr><td>MIXTURE</td><td>RICH, so full power is there if you need to go around.</td></tr><tr><td>FLAPS</td><td>1 or 2.</td></tr><tr><td>LANDING LIGHT</td><td>ON at sunset, blue hour and night.</td></tr></table><p>The checklist box shows up on approach. Land with all of it done and Mabel adds a bonus stamp.</p>`},
@@ -1366,7 +1405,7 @@ function showHowTo(){mode='card';
   showCard(`<h2>How to fly</h2><div class="sub">TWO THUMBS</div>
     <div class="rows"><span class="k">LEFT</span><span><b>Throttle (PWR).</b> Slide up for more power. Beside it: the chart (tap for a big one), three switches, flaps and brake.</span><span></span>
     <span class="k">RIGHT</span><span><b>Stick.</b> Touch anywhere on the right and drag. Drag down to raise the nose, up to lower it, sideways to bank and turn.</span><span></span>
-    <span class="k">TOP</span><span><b>VIEW</b> switches chase, cockpit and gauges. The cyan arrow points to your next stop.</span><span></span></div>
+    <span class="k">TOP</span><span>Speed on the left, <b>height above the ground</b> on the right. On approach they turn green when you're on the numbers. <b>VIEW</b> switches chase, cockpit and gauges.</span><span></span></div>
     <p>To take off: full power, roll down the runway, and at about 45 knots drag the stick down gently. Everything else is in Bea's logbook.</p>`,[['Got it',()=>{hideModal();mode='fly';if(mail.active&&!log.met.bea)setTimeout(meetBea,300);},true]]);}
 function toTitle(){mode='title';spawnQuiet=true;spawnField(STRIPS[0]);spawnQuiet=false;mode='title';$('flightUI').hidden=true;$('title').hidden=false;setView('chase');}
 $('tFly').addEventListener('click',()=>{$('title').hidden=true;if(mail.active)spawnField(STRIPS[0]);else offerDay(()=>spawnField(STRIPS[0]));});
@@ -1408,13 +1447,19 @@ function gameChecks(dt){
 }
 
 /* ---------- HUD ---------- */
-let hudT=0,hudWasDrawn=true;
+let hudT=0,hudWasDrawn=true,lastCall=999,callT=0;
+function callout(n){const c=$('callout');c.textContent=n;c.hidden=false;callT=1.1;snd.beep(n<=20?880:660);}
 function drawHUD(dt){
   axes();const kt=ac.ias*KT,ft=(ac.pos.y-AC.gearH)*FT,fpm=ac.vel.y*196.85,hdg=(Math.atan2(_f.x,-_f.z)/DEG+360)%360;
   const brg=dest?(Math.atan2(dest.x-ac.pos.x,-(dest.z-ac.pos.z))/DEG+360)%360:0;
   hudT-=dt;if(hudT<=0){hudT=.1;
-    $('spd').innerHTML=`${Math.round(kt)}<small>KT</small>`;$('spd').classList.toggle('warn',ac.stallWarn);
-    $('alt').innerHTML=`${Math.round(ft/10)*10}<small>FT</small><span id="vsi">${Math.abs(fpm)<50?'· 0':(fpm>0?'▲ ':'▼ ')+Math.round(Math.abs(fpm)/10)*10}</span>`;
+    const agl=Math.max(0,(ac.pos.y-AC.gearH-surfH(ac.pos.x,ac.pos.z))*FT),gl=dest?glide(dest):null,final=!ac.ground&&gl&&gl.active&&gl.along<3500;
+    const sinkF=-fpm,spdC=ac.stallWarn?'warn':!final?'':kt>=50&&kt<=62?'ok':(kt>=45&&kt<=75)?'caution':'warn';
+    const vC=!final?'':agl<30?(sinkF<300?'ok':sinkF<500?'caution':'bad'):(sinkF>=200&&sinkF<=600?'ok':sinkF<=800&&sinkF>=0?'caution':sinkF<0?'caution':'bad');
+    const sp=$('spd');sp.innerHTML=`${Math.round(kt)}<small>KT${final?' · AIM 55':''}</small>`;sp.className='pill '+spdC;
+    $('alt').innerHTML=`${agl<100?Math.round(agl):Math.round(agl/10)*10}<small>FT UP</small><span id="vsi" class="${vC}">${Math.abs(fpm)<50?'· 0':(fpm>0?'▲ ':'▼ ')+Math.round(Math.abs(fpm)/10)*10}${final?' <small>AIM ▼400</small>':''}</span>`;
+    if(final||(!ac.ground&&stripAt(ac.pos.x,ac.pos.z,60))){for(const c of [100,50,30,20,10]){if(agl<c&&lastCall>c){lastCall=c;callout(c);break;}}}
+    if(agl>160||ac.ground)lastCall=999;
     if(dest){const d=Math.hypot(dest.x-ac.pos.x,dest.z-ac.pos.z);$('destTxt').textContent=`${dest.name} ${d<1000?Math.round(d/10)*10+' m':(d/1000).toFixed(1)+' km'}`;$('arr').style.transform=`rotate(${brg-hdg}deg)`;}}
   $('stallBan').hidden=!(ac.stallWarn&&mode==='fly');
   if(mode==='fly')drawMiniMap(dt);
@@ -1439,11 +1484,14 @@ function drawExtras(panel){
     const bx=Math.round(w*.88),by=Math.round(h*.56),hs=Math.round(Math.min(w*.09,h*.22));glideBox(bx,by,hs);pb.text('GLIDE',bx,by+hs+4,C.dim,1,true);
     const tx=bx-hs,ty=Math.round(h*.18);pb.text('PWR',tx,ty-7,C.dim);pb.rect(tx,ty,hs*2,4,C.bezel);pb.rect(tx,ty,Math.round(hs*2*ac.throttle),4,C.orange);
     pb.text('FLAPS '+ac.flaps,tx,ty+8,C.dim);if(ac.stallWarn)pb.text('STALL',tx,ty+16,C.red);}
-  else if(glideCock){const g=glideCock;glideBox(g.x,g.y,g.r);if(ac.stallWarn)pb.text('STALL',g.x,g.y-g.r-9,C.red,1,true);}
+  else if(glideCock){const g=glideCock;glideBox(g.x,g.y,g.r);
+    const T=tachCock;if(T){gaugeBase(T);const rA=v=>(-135+clamp(v,0,3000)/3000*270)*DEG;band(T,rA(2100),rA(2550),C.green);ticks(T,rA(0),rA(3000),6,2,C.tick);
+      const rpm=600+ac.rpm*1950;needle(T,rA(rpm),T.r-3,C.needle);if(T.r>15)pb.text('RPM',T.x,T.y+Math.round(T.r*.35),C.dim,1,true);}
+    if(ac.stallWarn)pb.text('STALL',(gaugeLayout[1].x+glideCock.x)>>1,gaugeLayout[0].y-gaugeLayout[0].r-12,C.red,2,true);}
 }
 
 /* ---------- camera & visuals ---------- */
-const camPos=new V3(),_c1=new V3(),_c2=new V3(),_c3=new V3(),tiltQ=new Q().setFromAxisAngle(new V3(1,0,0),-10*DEG);
+const camPos=new V3(),_c1=new V3(),_c2=new V3(),_c3=new V3(),tiltQ=new Q().setFromAxisAngle(new V3(1,0,0),-12*DEG);
 function updateCam(dt,t){
   axes();
   if(mode==='title'){const a=t*.1,p=ac.pos;camera.position.set(p.x+Math.cos(a)*24,p.y+4.5,p.z+Math.sin(a)*24);camera.up.set(0,1,0);camera.lookAt(p.x,p.y+.5,p.z);return;}
@@ -1461,8 +1509,15 @@ function updateCam(dt,t){
     if((ac.stall&&!ac.ground)||ac.rough>.3){camera.position.x+=(hash2((t*40)|0,3,3)-.5)*.04;}
   }
 }
+const _sc=new V3(),_lr=new V3(),_lu=new V3(),_wy=new V3(0,1,0);
+function snapShadow(c){_lr.crossVectors(_wy,sunDir);if(_lr.lengthSq()<1e-5)_lr.set(1,0,0);_lr.normalize();_lu.crossVectors(sunDir,_lr).normalize();
+  const tx=2*SHADOW_HALF/sunL.shadow.mapSize.x,a=c.dot(_lr),b=c.dot(_lu);c.addScaledVector(_lr,Math.round(a/tx)*tx-a).addScaledVector(_lu,Math.round(b/tx)*tx-b);}
+function sunBlocked(p){const hl=Math.hypot(sunDir.x,sunDir.z);if(sunDir.y<=0||hl<1e-3)return false;const ux=sunDir.x/hl,uz=sunDir.z/hl,tan=sunDir.y/hl;
+  for(let k=1;k<110;k++){const d=k*30,ray=p.y+d*tan;if(ray>720)return false;if(groundH(p.x+ux*d,p.z+uz*d)>ray)return true;}return false;}
+let litT=0,planeTarget=1;
 function updateVisuals(dt,t){
   plane.position.copy(ac.pos);plane.quaternion.copy(ac.q);
+  litT-=dt;if(litT<=0){litT=.15;planeTarget=sunBlocked(ac.pos)?0:1;}planeLit.value=lerp(planeLit.value,planeTarget,1-Math.exp(-dt*6));
   const outside=camMode==='chase'||(mode!=='fly'&&mode!=='paused');
   const U=plane.userData;U.bodyM.visible=outside;U.blades.visible=outside;
   const running=mode!=='crashed';ac.rpm=lerp(ac.rpm,running?.22+ac.throttle*ac.pf*.78+Math.min(ac.ias/60,.3):0,1-Math.exp(-dt*3));
@@ -1473,7 +1528,7 @@ function updateVisuals(dt,t){
   spot.intensity=ac.light&&mode!=='title'?(TOD[tod].lights>0?2.4:.6):0;
   updPAPI();
   sunL.castShadow=settings.shadows;const fo=mode==='title'?ac.pos:camera.position;
-  sunL.target.position.set(Math.round(fo.x/4)*4,0,Math.round(fo.z/4)*4);sunL.position.copy(sunL.target.position).addScaledVector(sunDir,2500);
+  axes();_sc.set(fo.x+_f.x*110,surfH(fo.x,fo.z),fo.z+_f.z*110);snapShadow(_sc);sunL.target.position.copy(_sc);sunL.position.copy(_sc).addScaledVector(sunDir,1500);
   if(mode==='crashed'){crashT+=dt;smokeBurst.forEach(m=>{m.position.y+=dt*m.userData.v*1.5;m.scale.setScalar(Math.min(.5+crashT*m.userData.v*1.5,6));});}
   snd.update(ac.rpm,ac.ias,ac.stallWarn,mode==='fly',ac.rough);
 }
@@ -1488,6 +1543,7 @@ function loop(now){
     if(mode==='fly')gameChecks(dt);runTips(dt);}
   else acc=0;
   if(toastT>0){toastT-=dt;if(toastT<=0)$('toast').hidden=true;}
+  if(callT>0){callT-=dt;if(callT<=0)$('callout').hidden=true;}
   updateVisuals(dt,t);updateCam(dt,t);sky.position.copy(camera.position);
   renderer.setRenderTarget(rt);renderer.render(scene,camera);renderer.setRenderTarget(null);renderer.render(postScene,postCam);
   drawHUD(dt);
