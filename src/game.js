@@ -54,10 +54,10 @@ function portrait(id){if(PORT[id])return PORT[id];const sp=CHARS[id].sp;const c=
   ell(16,33,13,9,sp.shirt);P(shade(sp.shirt,-.18),3,31,26,1);
   if(sp.plaid)for(let i=5;i<28;i+=4){P(shade(sp.shirt,-.3),i,25,1,7);P(shade(sp.shirt,-.3),4,28,24,1);}
   P(shade(sp.skin,-.15),14,21,5,4);
-  if(sp.style==='long'){ell(16,17,9,10,sp.hair);}
+  if(sp.style==='long'){ell(16,10,9,7,sp.hair);P(sp.hair,7,10,3,13);P(sp.hair,22,10,3,13);P(shade(sp.hair,-.15),7,22,3,1);P(shade(sp.hair,-.15),22,22,3,1);}
   if(sp.style==='bun')ell(16,5,3,3,sp.hair);
   ell(16,14,7,8,sp.skin);P(sp.skin,8,13,1,3);P(sp.skin,24,13,1,3);P(shade(sp.skin,-.12),9,18,14,1);
-  if(sp.style==='short'||sp.style==='long'||sp.style==='bun'){for(let i=-7;i<=7;i++){const hh=5-Math.round(Math.abs(i)/2.4);P(sp.hair,16+i,6,1,hh);}if(sp.style==='long'){P(sp.hair,8,9,2,14);P(sp.hair,22,9,2,14);}P(sp.hair,8,9,1,4);P(sp.hair,24,9,1,4);}
+  if(sp.style==='short'||sp.style==='long'||sp.style==='bun'){for(let i=-7;i<=7;i++){const hh=5-Math.round(Math.abs(i)/2.4);P(sp.hair,16+i,6,1,hh);}P(sp.hair,8,9,1,4);P(sp.hair,24,9,1,4);}
   if(sp.style==='curly'){for(let k=0;k<11;k++){const a=Math.PI*(k/10);ell(16+Math.round(Math.cos(a)*7),9-Math.round(Math.sin(a)*3),2,2,sp.hair);}}
   P('#2a2230',12,14,2,2);P('#2a2230',18,14,2,2);P('#ffffff',12,14,1,1);P('#ffffff',18,14,1,1);
   P(shade(sp.hair,-.15),11,12,3,1);P(shade(sp.hair,-.15),18,12,3,1);
@@ -545,9 +545,24 @@ function bea(i){if(mode==='fly')mode='paused';const p=BEA[i];
   showCard(`<div class="page"><div class="sub">BEA'S LOGBOOK · PAGE ${i+1} OF ${BEA.length}</div><h2>${p.t}</h2>${p.h}</div>`,[
     ['All pages',()=>bea(-1)],...(i>0?[['Previous',()=>bea(i-1)]]:[]),...(i<BEA.length-1?[['Next page',()=>bea(i+1),true]]:[['Done',back,true]])]);}
 
+/* ---------- handwritten pixel lettering ---------- */
+// A real script font drawn small on a canvas and scaled up with square pixels. Swap SCRIPT to try another hand.
+const SCRIPT={family:'Dancing Script',weight:700};const PXC={};let scriptReady=false;
+function pixelText(txt,px,col,shadow){const k=[txt,px,col,shadow].join('|');if(PXC[k])return PXC[k];
+  const c=document.createElement('canvas'),x=c.getContext('2d'),font=`${SCRIPT.weight} ${px}px "${SCRIPT.family}"`;x.font=font;
+  c.width=Math.ceil(x.measureText(txt).width+px*.7+3);c.height=Math.ceil(px*1.55);x.font=font;x.textBaseline='middle';const y=c.height/2,x0=Math.round(px*.2);
+  if(shadow){x.fillStyle=shadow;x.fillText(txt,x0+1,y+1);}x.fillStyle=col;x.fillText(txt,x0,y);
+  const d=x.getImageData(0,0,c.width,c.height);for(let i=3;i<d.data.length;i+=4)d.data[i]=d.data[i]>105?255:0;x.putImageData(d,0,0);
+  return PXC[k]={url:c.toDataURL(),w:c.width,h:c.height};}
+function scriptify(root){if(!scriptReady)return;
+  root.querySelectorAll('#title h1').forEach(el=>{if(el.dataset.px)return;const big=el.tagName==='H1',txt=el.textContent.trim();if(!txt)return;
+    const r=big?pixelText(txt,26,'#f5e8cf','#241c2e'):pixelText(txt,el.tagName==='H2'?17:15,'#241c2e',null),sc=big?3:2;
+    el.dataset.px=1;el.setAttribute('aria-label',txt);el.innerHTML=`<img class="px-img" src="${r.url}" alt="${txt.replace(/"/g,'&quot;')}" width="${r.w*sc}" height="${r.h*sc}" style="width:${r.w*sc}px">`;});}
+document.fonts&&document.fonts.load(`${SCRIPT.weight} 26px "${SCRIPT.family}"`).then(f=>{if(f&&f.length){scriptReady=true;scriptify(document);}}).catch(()=>{});
+
 /* ---------- menus ---------- */
 function showCard(html,buttons){$('cardBody').innerHTML=html+'<div class="btns"></div>';$('cardBody').classList.remove('wide');const b=$('cardBody').querySelector('.btns:last-child');
-  (buttons||[]).forEach(([l,fn,p])=>{const el=document.createElement('button');el.textContent=l;if(p)el.className='primary';el.addEventListener('click',fn);b.appendChild(el);});$('modal').hidden=false;$('cardBody').scrollTop=0;}
+  (buttons||[]).forEach(([l,fn,p])=>{const el=document.createElement('button');el.textContent=l;if(p)el.className='primary';el.addEventListener('click',fn);b.appendChild(el);});$('modal').hidden=false;$('cardBody').scrollTop=0;scriptify($('cardBody'));}
 function hideModal(){$('modal').hidden=true;}
 function back(){hideModal();if(mode==='title')$('title').hidden=false;else if(mode==='paused'||mode==='card')openMenu();}
 function openMenu(){if(mode==='fly')mode='paused';showCard(`<h2>Paused</h2><div class="sub">${dest?'HEADING FOR '+dest.name.toUpperCase():''}${mail.active?' · '+mail.bag.length+' IN THE BAG':''} · ${log.stamps} STAMPS</div>`,[
