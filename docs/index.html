@@ -72,7 +72,7 @@ button:focus-visible{outline:2px solid #fff;outline-offset:2px}
 #check{position:fixed;left:calc(var(--sl) + 200px);top:calc(var(--st) + 50px);background:var(--glass);border:2px solid var(--line);padding:6px 9px;font-family:var(--mono);font-size:14px;line-height:1.6;pointer-events:none}
 #check b{display:block;font-size:9px;opacity:.75;letter-spacing:.06em}
 #check .ok{color:#8fe08a}
-#bag{position:fixed;right:var(--sr);top:calc(var(--st) + 50px);background:var(--glass);border:2px solid var(--line);padding:5px 8px;font-family:var(--mono);font-size:14px;pointer-events:none}
+#bag{position:fixed;right:var(--sr);top:calc(var(--st) + 50px);background:var(--glass);border:2px solid var(--line);padding:5px 8px;font-family:var(--mono);font-size:14px;pointer-events:auto;cursor:pointer;color:var(--paper);border-radius:0}
 #stick{position:fixed;left:42%;right:0;top:calc(var(--st) + 50px);bottom:0;touch-action:none}
 #ring{position:absolute;width:132px;height:132px;margin:-66px 0 0 -66px;border:2px dashed #f5e8cf99;border-radius:50%;pointer-events:none}
 #ring.idle{opacity:.55}
@@ -148,7 +148,7 @@ h3{font-family:var(--mono);font-size:15px;letter-spacing:.08em;color:var(--ink2)
     <div id="sw"><button id="swCarb">CARB<br>HEAT</button><button id="swMix">MIX<br>RICH</button><button id="swLight">LAND<br>LIGHT</button></div></div>
   <div id="lbtn"><button id="flaps">FLAPS 0</button><button id="brake">BRAKE</button></div>
   <div id="check" hidden></div>
-  <div id="bag" hidden></div>
+  <button id="bag" hidden></button>
   <div id="stick"><div id="ring" class="idle"><div id="knob"></div><div id="ringHint">STICK · DRAG ANYWHERE</div></div></div>
 </div>
 <div id="toast" hidden></div>
@@ -249,10 +249,12 @@ const gradTex=new THREE.DataTexture(new Uint8Array([78,78,78,255, 145,145,145,25
 gradTex.minFilter=gradTex.magFilter=THREE.NearestFilter; gradTex.needsUpdate=true;
 /* baked sun shadow (mountains, hills) applied inside the sun's lighting for every toon material, so ground, runways, trees and houses agree */
 const NVg=201,bakeData=new Uint8Array(NVg*NVg*4);const bakeTex=new THREE.DataTexture(bakeData,NVg,NVg,THREE.RGBAFormat);bakeTex.minFilter=bakeTex.magFilter=THREE.LinearFilter;bakeTex.needsUpdate=true;
-const BAKE_LIGHT=THREE.ShaderChunk.lights_fragment_begin.replace('getDirectionalDirectLightIrradiance( directionalLight, geometry, directLight );','getDirectionalDirectLightIrradiance( directionalLight, geometry, directLight );\n\t\tdirectLight.color *= 1.0 - texture2D( bakeTex, vBakeUV ).r;');
+const SH_FADE='float shFade(float s,vec4 c){vec3 p=c.xyz/c.w;vec2 e=min(p.xy,1.0-p.xy);return mix(1.0,s,smoothstep(0.0,0.22,min(e.x,e.y)));}\n';
+const fadeShadow=src=>src.replace(/getShadow\( directionalShadowMap\[ i \][^;]*?vDirectionalShadowCoord\[ i \] \)/g,m=>'shFade('+m+', vDirectionalShadowCoord[ i ])');
+const BAKE_LIGHT=fadeShadow(THREE.ShaderChunk.lights_fragment_begin).replace('getDirectionalDirectLightIrradiance( directionalLight, geometry, directLight );','getDirectionalDirectLightIrradiance( directionalLight, geometry, directLight );\n\t\tdirectLight.color *= 1.0 - texture2D( bakeTex, vBakeUV ).r;');
 function bakeify(m){m.onBeforeCompile=sh=>{sh.uniforms.bakeTex={value:bakeTex};
   sh.vertexShader='varying vec2 vBakeUV;\n'+sh.vertexShader.replace('#include <project_vertex>','#include <project_vertex>\nvec4 bwp=vec4(transformed,1.0);\n#ifdef USE_INSTANCING\nbwp=instanceMatrix*bwp;\n#endif\nbwp=modelMatrix*bwp;\nvBakeUV=(bwp.xz+4000.0)/8000.0*(200.0/201.0)+(0.5/201.0);');
-  sh.fragmentShader='uniform sampler2D bakeTex;varying vec2 vBakeUV;\n'+sh.fragmentShader.replace('#include <lights_fragment_begin>',BAKE_LIGHT);};return m;}
+  sh.fragmentShader='uniform sampler2D bakeTex;varying vec2 vBakeUV;\n'+SH_FADE+sh.fragmentShader.replace('#include <lights_fragment_begin>',BAKE_LIGHT);};return m;}
 const planeLit={value:1};
 function litify(m){m.onBeforeCompile=sh=>{sh.uniforms.uLit=planeLit;sh.fragmentShader='uniform float uLit;\n'+sh.fragmentShader.replace('#include <lights_fragment_begin>',THREE.ShaderChunk.lights_fragment_begin.replace('getDirectionalDirectLightIrradiance( directionalLight, geometry, directLight );','getDirectionalDirectLightIrradiance( directionalLight, geometry, directLight );\n\t\tdirectLight.color *= uLit;'));};return m;}
 const toon=(o={},bake=true)=>{const m=new THREE.MeshToonMaterial(Object.assign({vertexColors:true,gradientMap:gradTex,flatShading:true},o));return bake?bakeify(m):m;};
@@ -273,7 +275,7 @@ const TOD={
 const hemi=new THREE.HemisphereLight(0xffffff,0x888888,.6); scene.add(hemi);
 const sunL=new THREE.DirectionalLight(0xffffff,1); scene.add(sunL); scene.add(sunL.target);
 scene.fog=new THREE.Fog(0xffffff,700,5600);
-sunL.castShadow=true;sunL.shadow.mapSize.set(2048,2048);const SHADOW_HALF=230;{const sc=sunL.shadow.camera;sc.left=-SHADOW_HALF;sc.right=SHADOW_HALF;sc.top=SHADOW_HALF;sc.bottom=-SHADOW_HALF;sc.near=10;sc.far=4000;}sunL.shadow.bias=-0.0004;sunL.shadow.normalBias=.35;
+sunL.castShadow=true;sunL.shadow.mapSize.set(3072,3072);const SHADOW_HALF=400;{const sc=sunL.shadow.camera;sc.left=-SHADOW_HALF;sc.right=SHADOW_HALF;sc.top=SHADOW_HALF;sc.bottom=-SHADOW_HALF;sc.near=10;sc.far=4000;}sunL.shadow.bias=-0.0004;sunL.shadow.normalBias=.35;
 const sunDir=new V3();
 
 /* sky dome */
@@ -818,7 +820,7 @@ function setTOD(k){tod=k;const T=TOD[k];
 
 /* ---------- save data ---------- */
 const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}};
-const settings=Object.assign({steady:true,stallGuard:true,autoTrim:true,tips:true,invert:false,sound:true,shadows:true,tilt:false,pixels:'classic',light:'golden'},store.get('tac-settings',{}));
+const settings=Object.assign({steady:true,stallGuard:true,autoTrim:true,tips:true,invert:false,sound:true,engVol:1,shadows:true,tilt:false,pixels:'classic',light:'golden'},store.get('tac-settings',{}));
 if(!TOD[settings.light])settings.light='golden';
 const log=Object.assign({fields:{},sights:{},goals:{},trips:0,flights:0,tips:{},howto:false,stamps:0,met:{},mail:{day:1,bag:[],active:false}},store.get('tac-log',{}));
 if(!log.mail)log.mail={day:1,bag:[],active:false};if(!log.met)log.met={};if(log.stamps==null)log.stamps=0;
@@ -926,7 +928,16 @@ const mail=log.mail;
 const bagFor=stripId=>mail.bag.filter(it=>CHARS[it.to].home===stripId);
 function mailDest(){if(!mail.active)return null;const it=mail.bag[0];if(it)return stripById(CHARS[it.to].home);return STRIPS[0];}
 function refreshBag(){const b=$('bag');if(!mail.active){b.hidden=true;return;}
-  b.hidden=false;b.textContent=mail.bag.length?`MAIL BAG · ${mail.bag.length} ITEM${mail.bag.length>1?'S':''}`:'BAG EMPTY · HEAD HOME';}
+  const n=mail.bag.length,nx=mailDest();b.hidden=false;b.textContent=n?`✉ ${n} · NEXT ${nx.name.toUpperCase()} ›`:'✉ BAG EMPTY · HOME ›';}
+function mailRoute(){const stops=[];for(const it of mail.bag){const h=CHARS[it.to].home;let st=stops.find(x=>x.id===h);if(!st){st={id:h,items:[]};stops.push(st);}st.items.push(it);}return stops;}
+function mailCard(){const wasFly=mode==='fly';if(wasFly)mode='paused';
+  const stops=mailRoute(),day=DAYS[mail.day-1];let html='';
+  stops.forEach((st,i)=>{const S=stripById(st.id),km=(Math.hypot(S.x-ac.pos.x,S.z-ac.pos.z)/1000).toFixed(1);
+    html+=`<h3>${i===0?'NEXT · ':'STOP '+(i+1)+' · '}${S.name.toUpperCase()} · ${km} KM</h3><div class="list">`+st.items.map(it=>`<div class="item ${i===0?'':''}"><span style="display:flex;gap:10px;align-items:center"><img src="${portrait(it.to)}" alt="" style="width:36px;height:36px;image-rendering:pixelated"><span><b>${it.item}</b><span class="d">For ${CHARS[it.to].name}${it.from?' · from '+CHARS[it.from].name:''}</span></span></span></div>`).join('')+'</div>';});
+  const H=STRIPS[0],hk=(Math.hypot(H.x-ac.pos.x,H.z-ac.pos.z)/1000).toFixed(1);
+  html+=`<h3>${stops.length?'THEN':'NEXT'} · ${H.name.toUpperCase()} · ${hk} KM</h3><div class="list"><div class="item"><span><b>Back to Mabel</b><span class="d">Bring in any outgoing mail and close the day.</span></span></div></div>`;
+  showCard(`<h2>Mail bag</h2><div class="sub">DAY ${mail.day} · ${mail.bag.length} ITEM${mail.bag.length===1?'':'S'} · THE CYAN MARKER IS YOUR NEXT STOP</div>${html}`,
+    wasFly?[['Resume',()=>{hideModal();mode='fly';},true],["Bea's chart",()=>bigMap()],['Menu',()=>openMenu()]]:[['Back',back,true]]);}
 function stamp(n=1){log.stamps+=n;saveL();}
 
 /* ---------- extra world bits ---------- */
@@ -968,6 +979,56 @@ function updGates(){
     if(!gatePassed[i]&&gateAlong>GATE_D[i]&&along<=GATE_D[i]){gatePassed[i]=true;const dy=ac.pos.y-p.y;const inside=Math.abs(lat)<34&&Math.abs(dy)<26;
       snd.beep(inside?990:440);toast(inside?`Gate ${i+1} ✓ ${i<2?'on the path':'nice. Flaps 2, power back.'}`:`Missed gate ${i+1}. ${Math.abs(dy)>=26?(dy>0?'A little high.':'A little low.'):'Off to the side.'} Line up for the next.`,2);}});
   gateAlong=along;}
+
+/* tailwind rings: a chain of gold hoops on the way to the next stop. Fly through one for a gust that
+   carries you along faster and holds your height, ending before the approach gates. */
+const BOOST_V=55,BOOST_T=12,RING_R=12,RING_HIT=30;
+const ringGrp=new THREE.Group();scene.add(ringGrp);const ringPool=[];
+{const mat=new THREE.MeshBasicMaterial({color:0xffd36b,fog:false}),inner=new THREE.MeshBasicMaterial({color:0xfff6d8,fog:false});
+  const tg=new THREE.TorusGeometry(RING_R,1.5,6,20),tg2=new THREE.TorusGeometry(RING_R-3.2,.5,4,20);
+  for(let i=0;i<8;i++){const g=new THREE.Group();g.add(new THREE.Mesh(tg,mat),new THREE.Mesh(tg2,inner));
+    for(let k=0;k<3;k++){const ch=new THREE.Mesh(new THREE.BoxGeometry(1.2,4,1.2),inner);ch.position.set(0,0,-6-k*7);ch.rotation.z=Math.PI/4;ch.userData.k=k;g.add(ch);}
+    g.visible=false;ringGrp.add(g);ringPool.push(g);}}
+let route=[],routeFor=null,routeDir=0,routeT=0,ringPrev=new V3();
+const glideAlt=(s,d)=>s.elev+AC.gearH+Math.tan(4*DEG)*d;
+function clearAt(x,z){let m=0;for(const [dx,dz] of [[0,0],[120,0],[-120,0],[0,120],[0,-120],[85,85],[-85,-85],[85,-85],[-85,85]])m=Math.max(m,surfH(x+dx,z+dz));return m+95;}
+function buildRoute(){route=[];routeFor=dest;routeDir=gateDir;if(!dest)return;
+  const E=gatePos(dest,gateDir,3300),C=gatePos(dest,gateDir,2600),P=ac.pos,dx=E.x-P.x,dz=E.z-P.z,L=Math.hypot(dx,dz);
+  if(Math.hypot(C.x-P.x,C.z-P.z)<1500)return;
+  const pts=[];for(let d=550;d<L-350;d+=850)pts.push([P.x+dx*d/L,P.z+dz*d/L,null]);
+  if(L>500)pts.push([E.x,E.z,E.y]);pts.push([C.x,C.z,C.y]);
+  let prev=new V3(P.x,P.y,P.z);
+  for(const [x,z,gy] of pts){const fr=Math.hypot(x-P.x,z-P.z)/Math.max(L,1),seg=Math.hypot(x-prev.x,z-prev.z),gr=(route.length?.06:.04)*seg,y=Math.max(clearAt(x,z),clamp(gy!=null?gy+25:lerp(P.y,E.y+25,Math.min(fr,1)),prev.y-gr,prev.y+gr));const v=new V3(x,y,z);
+    route.push({p:v,dir:v.clone().sub(prev).setY(0).normalize(),passed:false});prev=v;}
+  for(let i=route.length-1;i>0;i--){const a=route[i-1].p,b=route[i].p,g=.085*Math.hypot(b.x-a.x,b.z-a.z);if(a.y<b.y-g)a.y=b.y-g;}
+  route=route.slice(0,ringPool.length);}
+function updRings(dt,t){
+  const air=!ac.ground&&(mode==='fly'||mode==='paused');
+  if(!air||!dest){ringGrp.visible=false;if(ac.ground){route=[];routeFor=null;}ringPrev.copy(ac.pos);return;}
+  const agl=ac.pos.y-AC.gearH-surfH(ac.pos.x,ac.pos.z);
+  routeT-=dt;if(routeT<=0){routeT=1.5;const nxt=route.find(r=>!r.passed),toC=Math.hypot(ac.pos.x-gatePos(dest,gateDir,2600).x,ac.pos.z-gatePos(dest,gateDir,2600).z);
+    if(routeFor!==dest||routeDir!==gateDir||(agl>35&&toC>1700&&(!nxt||nxt.p.distanceTo(ac.pos)>1500)))if(agl>35||routeFor!==dest)buildRoute();}
+  ringGrp.visible=true;
+  route.forEach((r,i)=>{const g=ringPool[i];g.visible=!r.passed;if(r.passed)return;g.position.copy(r.p);g.rotation.set(0,Math.atan2(-r.dir.x,-r.dir.z),0);
+    const dist=r.p.distanceTo(camera.position);g.scale.setScalar(clamp(dist/380,1,5));g.children[0].rotation.z=t*.8;
+    g.children.forEach(c=>{if(c.userData.k!=null)c.position.z=-((t*14+c.userData.k*7)%21)-4;});
+    // hit test: closest approach of this frame's motion segment to the ring centre
+    const seg=_p.copy(ac.pos).sub(ringPrev),l2=seg.lengthSq(),tt=l2>0?clamp(_c1.copy(r.p).sub(ringPrev).dot(seg)/l2,0,1):0;
+    const cp=_c2.copy(ringPrev).addScaledVector(seg,tt);
+    if(cp.distanceTo(r.p)<RING_HIT){for(let j=0;j<=i;j++)route[j].passed=true;ac.boostT=BOOST_T;snd.beep(1320);setTimeout(()=>snd.beep(1760),90);
+      const left=route.filter(q=>!q.passed).length;toast(left?`Tailwind! ${left} more ring${left>1?'s':''} to the gates.`:'Last tailwind. Ease off and look for gate 1.',2);tip('tailwind','Gold rings are tailwinds. Fly through one and the wind carries you along fast and level for a few seconds. They stop before the landing gates.',.1);}
+    for(let j=0;j<i;j++)if(!route[j].passed&&route[j].p.distanceTo(ac.pos)>route[i].p.distanceTo(ac.pos)+600&&cp.distanceTo(r.p)<RING_HIT)route[j].passed=true;});
+  ringPrev.copy(ac.pos);}
+function stepBoost(dt){
+  if(ac.boostT>0){ac.boostT-=dt;const agl=ac.pos.y-AC.gearH-surfH(ac.pos.x,ac.pos.z);
+    const C=dest&&gatePos(dest,gateDir,2350);if(agl<30||ac.ground||(C&&!route.some(r=>!r.passed)&&Math.hypot(C.x-ac.pos.x,C.z-ac.pos.z)<250))ac.boostT=0;}
+  ac.bst=lerp(ac.bst||0,ac.boostT>0?1:0,1-Math.exp(-dt*(ac.boostT>0?2.5:1.1)));
+  if(ac.bst<.005||ac.ground)return;
+  axes();const hl=Math.hypot(_f.x,_f.z);if(hl<.2)return;
+  ac.pos.x+=_f.x/hl*BOOST_V*ac.bst*dt;ac.pos.z+=_f.z/hl*BOOST_V*ac.bst*dt;
+  const nx=route.find(r=>!r.passed);let vyT=0;
+  if(nx){const hd=Math.hypot(nx.p.x-ac.pos.x,nx.p.z-ac.pos.z),gs=Math.max(hl*ac.ias+BOOST_V*ac.bst,10);vyT=clamp((nx.p.y-ac.pos.y)/Math.max(hd/gs,2),-9,9);}
+  ac.vel.y+=(vyT-ac.vel.y)*Math.min(1,dt*5*ac.bst);}
 
 const beacon=new THREE.Mesh(new THREE.CylinderGeometry(5,5,700,10,1,true).translate(0,350,0),new THREE.MeshBasicMaterial({color:0x8ff0e8,transparent:true,opacity:.12,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide,fog:false}));
 scene.add(beacon);
@@ -1120,7 +1181,7 @@ function crash(why,v){
     showCard(`<div class="who"><img src="${portrait('gus')}" alt=""><div><b>${t}</b><span>GUS PATCHES IT UP · THE MAIL IS STILL IN THE BAG</span></div></div><p>${b}</p>${extra}`,[
       ['Try that approach again',()=>spawnApproach(dest),true],['Back to '+stripById(ac.lastField).name,()=>spawnField(stripById(ac.lastField))]]);},900);
 }
-function resetAc(){ac.w.set(0,0,0);ac.td=null;ac.brake=0;ac.brakeHeld=false;ac.trimHold=0;ac.ice=0;smokeBurst.forEach(m=>m.visible=false);snapCam=true;}
+function resetAc(){ac.boostT=0;ac.bst=0;route=[];routeFor=null;ac.w.set(0,0,0);ac.td=null;ac.brake=0;ac.brakeHeld=false;ac.trimHold=0;ac.ice=0;smokeBurst.forEach(m=>m.visible=false);snapCam=true;}
 function intoWindDir(s){return (s.fx*WIND.x+s.fz*WIND.z)<0?1:-1;}
 function spawnField(s,dirSign){
   dirSign=dirSign||intoWindDir(s);resetAc();
@@ -1287,6 +1348,7 @@ function setView(v){camMode=v;$('view').textContent=VNAME[v];snapCam=true;camera
   if(v==='cockpit')tip('cockpit','Cockpit view. Left: speed, attitude, turn, heading. Right: altitude, climb, and the GLIDE box for lining up.');}
 $('view').addEventListener('click',()=>setView(VIEWS[(VIEWS.indexOf(camMode)+1)%3]));
 $('pause').addEventListener('click',()=>{if(mode==='fly')openMenu();});
+$('bag').addEventListener('click',()=>{if(mode==='fly'&&mail.active)mailCard();});
 $('center').addEventListener('click',()=>{recenterTilt();toast('Tilt centered. Hold the phone like this to fly level.',2);});
 $('dest').addEventListener('click',()=>{const i=STRIPS.indexOf(dest);dest=STRIPS[(i+1)%STRIPS.length];toast('Heading for '+dest.name,1.6);});
 $('mapc').addEventListener('click',()=>{if(mode==='fly'){mode='paused';bigMap();}});
@@ -1312,17 +1374,21 @@ function readInput(dt){
 const snd={ctx:null,
   init(){if(this.ctx)return;try{const AC_=window.AudioContext||window.webkitAudioContext;this.ctx=new AC_();}catch(e){return;}
     const c=this.ctx;this.master=c.createGain();this.master.gain.value=settings.sound?.5:0;this.master.connect(c.destination);
-    this.o1=c.createOscillator();this.o1.type='sawtooth';this.o2=c.createOscillator();this.o2.type='square';
+    this.o1=c.createOscillator();this.o1.type='triangle';this.o2=c.createOscillator();this.o2.type='sawtooth';this.dr=0;this.dv=0;
     this.lp=c.createBiquadFilter();this.lp.type='lowpass';this.lp.frequency.value=500;this.eg=c.createGain();this.eg.gain.value=0;
-    const g2=c.createGain();g2.gain.value=.4;this.o1.connect(this.lp);this.o2.connect(g2);g2.connect(this.lp);this.lp.connect(this.eg);this.eg.connect(this.master);this.o1.start();this.o2.start();
+    const g2=c.createGain();g2.gain.value=.3;this.o1.connect(this.lp);this.o2.connect(g2);g2.connect(this.lp);this.am=c.createGain();this.am.gain.value=.8;this.lp.connect(this.am);this.am.connect(this.eg);this.eg.connect(this.master);
+    this.lfo=c.createOscillator();this.lfo.type='sine';this.lfo.frequency.value=9;this.lfoG=c.createGain();this.lfoG.gain.value=.2;this.lfo.connect(this.lfoG);this.lfoG.connect(this.am.gain);this.lfo.start();this.o1.start();this.o2.start();
     const buf=c.createBuffer(1,c.sampleRate*2,c.sampleRate),d=buf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;this.buf=buf;
     this.noise=c.createBufferSource();this.noise.buffer=buf;this.noise.loop=true;this.bp=c.createBiquadFilter();this.bp.type='lowpass';this.bp.frequency.value=380;this.bp.Q.value=.3;
     this.wg=c.createGain();this.wg.gain.value=0;this.noise.connect(this.bp);this.bp.connect(this.wg);this.wg.connect(this.master);this.noise.start();
     this.ho=c.createOscillator();this.ho.type='square';this.ho.frequency.value=540;this.hg=c.createGain();this.hg.gain.value=0;this.ho.connect(this.hg);this.hg.connect(this.master);this.ho.start();},
-  update(rpm,ias,stall,run,rough){if(!this.ctx)return;const t=this.ctx.currentTime,wob=rough>0?1+Math.sin(t*23)*.08*rough+Math.sin(t*7.3)*.06*rough:1,f=(38+rpm*70)*wob;
-    this.o1.frequency.setTargetAtTime(f,t,.05);this.o2.frequency.setTargetAtTime(f*.5,t,.05);this.lp.frequency.setTargetAtTime(280+rpm*900,t,.1);
+  update(rpm,ias,stall,run,rough){if(!this.ctx)return;const t=this.ctx.currentTime;
+    this.dv+=(Math.random()-.5)*.02-this.dr*.02;this.dv*=.9;this.dr+=this.dv;const irr=1+this.dr*.6+Math.sin(t*1.7)*.012+Math.sin(t*.43)*.018;
+    const wob=(rough>0?1+Math.sin(t*23)*.08*rough+Math.sin(t*7.3)*.06*rough:1)*irr,f=(36+rpm*62)*wob;
+    this.lfo.frequency.setTargetAtTime(f*.25*(1+this.dr),t,.08);this.lfoG.gain.setTargetAtTime(.14+Math.abs(Math.sin(t*.9))*.12,t,.2);
+    this.o1.frequency.setTargetAtTime(f,t,.05);this.o2.frequency.setTargetAtTime(f*.5,t,.05);this.lp.frequency.setTargetAtTime(180+rpm*420,t,.1);
     const cut=rough>0&&Math.sin(t*11)>.6?1-.4*rough:1;
-    this.eg.gain.setTargetAtTime(run?(.07+rpm*.08)*cut:0,t,.04);this.bp.frequency.setTargetAtTime(220+Math.min(ias,60)*4,t,.3);this.wg.gain.setTargetAtTime(run?Math.min(.045,ias*ias/60000):0,t,.4);
+    this.eg.gain.setTargetAtTime(run?(.018+rpm*.022)*cut*settings.engVol:0,t,.04);this.bp.frequency.setTargetAtTime(220+Math.min(ias,60)*4,t,.3);this.wg.gain.setTargetAtTime(run?Math.min(.045,ias*ias/60000):0,t,.4);
     this.hg.gain.setTargetAtTime(stall&&run&&((t*4)%1<.6)?.05:0,t,.01);},
   burst(v,lp,dur){if(!this.ctx)return;const c=this.ctx,s=c.createBufferSource();s.buffer=this.buf;const f=c.createBiquadFilter();f.type='lowpass';f.frequency.value=lp;const g=c.createGain(),t=c.currentTime;
     g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+dur);s.connect(f);f.connect(g);g.connect(this.master);s.start(t,Math.random());s.stop(t+dur+.05);},
@@ -1350,6 +1416,7 @@ function drawMiniMap(dt){mapT-=dt;if(mapT>0)return;mapT=.08;const W=96,x=mctx;x.
   const near=dest?Math.hypot(dest.x-ac.pos.x,dest.z-ac.pos.z):1e9,R=near<2600?1500:2800,k=(W/2)/R,cy=W/2+14;
   x.fillStyle='#1d2a44';x.fillRect(0,0,W,W);x.save();x.translate(W/2,cy);x.rotate(-hdg);x.scale(k,k);x.translate(-ac.pos.x,-ac.pos.z);
   x.drawImage(mapBase,-MAPW/2,-MAPW/2,MAPW,MAPW);drawStripsOn(x,k,dest);
+  if(!ac.ground){x.strokeStyle='#ffd36b';x.lineWidth=1.6/k;for(const r of route)if(!r.passed){x.beginPath();x.arc(r.p.x,r.p.z,4/k,0,TAU);x.stroke();}}
   if(dest){x.fillStyle='#8ff0e8';x.beginPath();x.arc(dest.x,dest.z,3.5/k,0,TAU);x.fill();}
   x.restore();
   x.fillStyle='#fff8ec';x.strokeStyle='#241c2e';x.lineWidth=1;x.beginPath();x.moveTo(W/2,cy-6);x.lineTo(W/2-4,cy+4);x.lineTo(W/2,cy+2);x.lineTo(W/2+4,cy+4);x.closePath();x.fill();x.stroke();
@@ -1420,7 +1487,7 @@ function showCard(html,buttons){$('cardBody').innerHTML=html+'<div class="btns">
 function hideModal(){$('modal').hidden=true;}
 function back(){hideModal();if(mode==='title')$('title').hidden=false;else if(mode==='paused'||mode==='card')openMenu();}
 function openMenu(){if(mode==='fly')mode='paused';showCard(`<h2>Paused</h2><div class="sub">${dest?'HEADING FOR '+dest.name.toUpperCase():''}${mail.active?' · '+mail.bag.length+' IN THE BAG':''} · ${log.stamps} STAMPS</div>`,[
-  ['Resume',()=>{hideModal();mode='fly';},true],["Bea's chart",()=>bigMap()],["Bea's logbook",()=>bea(-1)],['Practice a landing',()=>picker('practice')],['Start at a field',()=>picker('start')],['Your logbook',()=>logbook()],['Settings',()=>settingsCard()],['Title screen',()=>{hideModal();toTitle();}]]);}
+  ['Resume',()=>{hideModal();mode='fly';},true],...(mail.active?[['Mail bag',()=>mailCard()]]:[]),["Bea's chart",()=>bigMap()],["Bea's logbook",()=>bea(-1)],['Practice a landing',()=>picker('practice')],['Start at a field',()=>picker('start')],['Your logbook',()=>logbook()],['Settings',()=>settingsCard()],['Title screen',()=>{hideModal();toTitle();}]]);}
 function picker(kind){
   const items=STRIPS.map(s=>{const F=log.fields[s.id];return `<button class="item" data-id="${s.id}"><span><b>${s.name}</b><span class="d">${DESC[s.id]}</span></span><span class="r">${F&&F.best?stars(F.best):'NOT YET'}</span></button>`;}).join('');
   showCard(`<h2>${kind==='practice'?'Practice a landing':'Start at a field'}</h2><div class="sub">${kind==='practice'?'START 1.5 KM OUT, LINED UP, ON THE GLIDE PATH':'START ON THE RUNWAY, ENGINE AT IDLE'}</div><div class="list">${items}</div>`,[['Back',back]]);
@@ -1438,11 +1505,13 @@ const SET=[['tilt','Tilt to steer','Turn the phone like a steering wheel to bank
 function settingsCard(){
   const rows=SET.map(([k,n,d])=>`<div class="tog"><div><b>${n}</b><span>${d}</span></div><button data-k="${k}" class="${settings[k]?'on':''}">${settings[k]?'ON':'OFF'}</button></div>`).join('');
   const px=['chunky','classic','fine'].map(k=>`<button data-px="${k}" class="${settings.pixels===k?'primary':''}">${k.toUpperCase()}</button>`).join('');
+  const ev=[['OFF',0],['HUSH',.5],['SOFT',1],['FULL',2]].map(([n,v])=>`<button data-ev="${v}" class="${settings.engVol==v?'primary':''}">${n}</button>`).join('');
   const lt=Object.keys(TOD).map(k=>`<button data-lt="${k}" class="${settings.light===k?'primary':''}">${TOD[k].name.toUpperCase()}</button>`).join('');
-  showCard(`<h2>Settings</h2><div class="sub">ASSISTS · TURN THEM OFF ONE AT A TIME AS YOU IMPROVE</div>${rows}<h3>TIME OF DAY</h3><div class="btns">${lt}</div><h3>PIXELS</h3><div class="btns">${px}</div>`,[['Back',back,true]]);
+  showCard(`<h2>Settings</h2><div class="sub">ASSISTS · TURN THEM OFF ONE AT A TIME AS YOU IMPROVE</div>${rows}<h3>ENGINE VOLUME</h3><div class="btns">${ev}</div><h3>TIME OF DAY</h3><div class="btns">${lt}</div><h3>PIXELS</h3><div class="btns">${px}</div>`,[['Back',back,true]]);
   const cb=$('cardBody');
   cb.querySelectorAll('[data-k]').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.k;if(k==='tilt'){if(!settings.tilt){settings.tilt=true;saveS();enableTilt().then(()=>{updTiltUI();settingsCard();});}else{settings.tilt=false;saveS();disableTilt();updTiltUI();settingsCard();}return;}settings[k]=!settings[k];saveS();if(k==='sound')snd.setOn(settings.sound);settingsCard();}));
   cb.querySelectorAll('[data-px]').forEach(b=>b.addEventListener('click',()=>{settings.pixels=b.dataset.px;pixMode=settings.pixels;saveS();resize();settingsCard();}));
+  cb.querySelectorAll('[data-ev]').forEach(b=>b.addEventListener('click',()=>{settings.engVol=+b.dataset.ev;saveS();settingsCard();}));
   cb.querySelectorAll('[data-lt]').forEach(b=>b.addEventListener('click',()=>{settings.light=b.dataset.lt;saveS();setTOD(settings.light);settingsCard();}));}
 function showHowTo(){mode='card';
   showCard(`<h2>How to fly</h2><div class="sub">TWO THUMBS</div>
@@ -1594,11 +1663,12 @@ function updateVisuals(dt,t){
   blob.visible=!settings.shadows&&mode!=='crashed';blob.position.set(ac.pos.x,gh+.3,ac.pos.z);blob.rotation.y=Math.atan2(-_f.x,-_f.z);blob.scale.set(4.8,1,3.4);blob.material.opacity=.32*clamp(1-agl/70,0,1);
   if(dest){beacon.visible=mode==='fly'||mode==='paused';beacon.position.set(dest.x,dest.elev,dest.z);const d=Math.hypot(dest.x-ac.pos.x,dest.z-ac.pos.z);beacon.material.opacity=.13*smooth(500,1600,d);}
   spot.intensity=ac.light&&mode!=='title'?(TOD[tod].lights>0?2.4:.6):0;
-  updPAPI();updGates();
+  updPAPI();updGates();updRings(dt,t);
+  {const fb=(camMode==='chase'?58:70)+(ac.bst||0)*9;if(Math.abs(camera.fov-fb)>.05){camera.fov=fb;camera.updateProjectionMatrix();}}
   sunL.castShadow=settings.shadows;const fo=mode==='title'?ac.pos:camera.position;
-  axes();_sc.set(fo.x+_f.x*110,surfH(fo.x,fo.z),fo.z+_f.z*110);snapShadow(_sc);sunL.target.position.copy(_sc);sunL.position.copy(_sc).addScaledVector(sunDir,1500);
+  axes();_sc.set(fo.x+_f.x*SHADOW_HALF*.5,surfH(fo.x,fo.z),fo.z+_f.z*SHADOW_HALF*.5);snapShadow(_sc);sunL.target.position.copy(_sc);sunL.position.copy(_sc).addScaledVector(sunDir,1500);
   if(mode==='crashed'){crashT+=dt;smokeBurst.forEach(m=>{m.position.y+=dt*m.userData.v*1.5;m.scale.setScalar(Math.min(.5+crashT*m.userData.v*1.5,6));});}
-  snd.update(ac.rpm,ac.ias,ac.stallWarn,mode==='fly',ac.rough);
+  snd.update(ac.rpm,ac.ias+(ac.bst||0)*22,ac.stallWarn,mode==='fly',ac.rough);
 }
 
 /* ---------- main loop ---------- */
@@ -1607,7 +1677,7 @@ function loop(now){
   const dt=Math.min(.05,(now-last)/1000);last=now;const t=now/1000;
   skyMat.uniforms.uTime.value=t;waterMat.uniforms.uTime.value=t;for(const a of anims)a(t);
   cloudGroup.position.set((t*2.2)%400,0,-(t*.8)%400);
-  if(mode==='fly'){readInput(dt);acc+=dt;const H_=1/120;let n=0;while(acc>=H_&&n<10){ac.ground?stepGround(H_):stepAir(H_);simT+=H_;acc-=H_;n++;if(mode!=='fly')break;}if(n>=10)acc=0;
+  if(mode==='fly'){readInput(dt);acc+=dt;const H_=1/120;let n=0;while(acc>=H_&&n<10){if(ac.ground)stepGround(H_);else{stepAir(H_);stepBoost(H_);}simT+=H_;acc-=H_;n++;if(mode!=='fly')break;}if(n>=10)acc=0;
     if(mode==='fly')gameChecks(dt);runTips(dt);}
   else acc=0;
   if(toastT>0){toastT-=dt;if(toastT<=0)$('toast').hidden=true;}

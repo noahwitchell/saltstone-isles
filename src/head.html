@@ -59,7 +59,7 @@ button:focus-visible{outline:2px solid #fff;outline-offset:2px}
 #check{position:fixed;left:calc(var(--sl) + 200px);top:calc(var(--st) + 50px);background:var(--glass);border:2px solid var(--line);padding:6px 9px;font-family:var(--mono);font-size:14px;line-height:1.6;pointer-events:none}
 #check b{display:block;font-size:9px;opacity:.75;letter-spacing:.06em}
 #check .ok{color:#8fe08a}
-#bag{position:fixed;right:var(--sr);top:calc(var(--st) + 50px);background:var(--glass);border:2px solid var(--line);padding:5px 8px;font-family:var(--mono);font-size:14px;pointer-events:none}
+#bag{position:fixed;right:var(--sr);top:calc(var(--st) + 50px);background:var(--glass);border:2px solid var(--line);padding:5px 8px;font-family:var(--mono);font-size:14px;pointer-events:auto;cursor:pointer;color:var(--paper);border-radius:0}
 #stick{position:fixed;left:42%;right:0;top:calc(var(--st) + 50px);bottom:0;touch-action:none}
 #ring{position:absolute;width:132px;height:132px;margin:-66px 0 0 -66px;border:2px dashed #f5e8cf99;border-radius:50%;pointer-events:none}
 #ring.idle{opacity:.55}
@@ -133,7 +133,7 @@ h3{font-family:var(--mono);font-size:15px;letter-spacing:.08em;color:var(--ink2)
     <div id="sw"><button id="swCarb">CARB<br>HEAT</button><button id="swMix">MIX<br>RICH</button><button id="swLight">LAND<br>LIGHT</button></div></div>
   <div id="lbtn"><button id="flaps">FLAPS 0</button><button id="brake">BRAKE</button></div>
   <div id="check" hidden></div>
-  <div id="bag" hidden></div>
+  <button id="bag" hidden></button>
   <div id="stick"><div id="ring" class="idle"><div id="knob"></div><div id="ringHint">STICK · DRAG ANYWHERE</div></div></div>
 </div>
 <div id="toast" hidden></div>

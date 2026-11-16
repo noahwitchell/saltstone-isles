@@ -75,10 +75,12 @@ const gradTex=new THREE.DataTexture(new Uint8Array([78,78,78,255, 145,145,145,25
 gradTex.minFilter=gradTex.magFilter=THREE.NearestFilter; gradTex.needsUpdate=true;
 /* baked sun shadow (mountains, hills) applied inside the sun's lighting for every toon material, so ground, runways, trees and houses agree */
 const NVg=201,bakeData=new Uint8Array(NVg*NVg*4);const bakeTex=new THREE.DataTexture(bakeData,NVg,NVg,THREE.RGBAFormat);bakeTex.minFilter=bakeTex.magFilter=THREE.LinearFilter;bakeTex.needsUpdate=true;
-const BAKE_LIGHT=THREE.ShaderChunk.lights_fragment_begin.replace('getDirectionalDirectLightIrradiance( directionalLight, geometry, directLight );','getDirectionalDirectLightIrradiance( directionalLight, geometry, directLight );\n\t\tdirectLight.color *= 1.0 - texture2D( bakeTex, vBakeUV ).r;');
+const SH_FADE='float shFade(float s,vec4 c){vec3 p=c.xyz/c.w;vec2 e=min(p.xy,1.0-p.xy);return mix(1.0,s,smoothstep(0.0,0.22,min(e.x,e.y)));}\n';
+const fadeShadow=src=>src.replace(/getShadow\( directionalShadowMap\[ i \][^;]*?vDirectionalShadowCoord\[ i \] \)/g,m=>'shFade('+m+', vDirectionalShadowCoord[ i ])');
+const BAKE_LIGHT=fadeShadow(THREE.ShaderChunk.lights_fragment_begin).replace('getDirectionalDirectLightIrradiance( directionalLight, geometry, directLight );','getDirectionalDirectLightIrradiance( directionalLight, geometry, directLight );\n\t\tdirectLight.color *= 1.0 - texture2D( bakeTex, vBakeUV ).r;');
 function bakeify(m){m.onBeforeCompile=sh=>{sh.uniforms.bakeTex={value:bakeTex};
   sh.vertexShader='varying vec2 vBakeUV;\n'+sh.vertexShader.replace('#include <project_vertex>','#include <project_vertex>\nvec4 bwp=vec4(transformed,1.0);\n#ifdef USE_INSTANCING\nbwp=instanceMatrix*bwp;\n#endif\nbwp=modelMatrix*bwp;\nvBakeUV=(bwp.xz+4000.0)/8000.0*(200.0/201.0)+(0.5/201.0);');
-  sh.fragmentShader='uniform sampler2D bakeTex;varying vec2 vBakeUV;\n'+sh.fragmentShader.replace('#include <lights_fragment_begin>',BAKE_LIGHT);};return m;}
+  sh.fragmentShader='uniform sampler2D bakeTex;varying vec2 vBakeUV;\n'+SH_FADE+sh.fragmentShader.replace('#include <lights_fragment_begin>',BAKE_LIGHT);};return m;}
 const planeLit={value:1};
 function litify(m){m.onBeforeCompile=sh=>{sh.uniforms.uLit=planeLit;sh.fragmentShader='uniform float uLit;\n'+sh.fragmentShader.replace('#include <lights_fragment_begin>',THREE.ShaderChunk.lights_fragment_begin.replace('getDirectionalDirectLightIrradiance( directionalLight, geometry, directLight );','getDirectionalDirectLightIrradiance( directionalLight, geometry, directLight );\n\t\tdirectLight.color *= uLit;'));};return m;}
 const toon=(o={},bake=true)=>{const m=new THREE.MeshToonMaterial(Object.assign({vertexColors:true,gradientMap:gradTex,flatShading:true},o));return bake?bakeify(m):m;};
@@ -99,7 +101,7 @@ const TOD={
 const hemi=new THREE.HemisphereLight(0xffffff,0x888888,.6); scene.add(hemi);
 const sunL=new THREE.DirectionalLight(0xffffff,1); scene.add(sunL); scene.add(sunL.target);
 scene.fog=new THREE.Fog(0xffffff,700,5600);
-sunL.castShadow=true;sunL.shadow.mapSize.set(2048,2048);const SHADOW_HALF=230;{const sc=sunL.shadow.camera;sc.left=-SHADOW_HALF;sc.right=SHADOW_HALF;sc.top=SHADOW_HALF;sc.bottom=-SHADOW_HALF;sc.near=10;sc.far=4000;}sunL.shadow.bias=-0.0004;sunL.shadow.normalBias=.35;
+sunL.castShadow=true;sunL.shadow.mapSize.set(3072,3072);const SHADOW_HALF=400;{const sc=sunL.shadow.camera;sc.left=-SHADOW_HALF;sc.right=SHADOW_HALF;sc.top=SHADOW_HALF;sc.bottom=-SHADOW_HALF;sc.near=10;sc.far=4000;}sunL.shadow.bias=-0.0004;sunL.shadow.normalBias=.35;
 const sunDir=new V3();
 
 /* sky dome */
