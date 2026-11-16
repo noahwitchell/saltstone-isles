@@ -11,11 +11,11 @@ function setTOD(k){tod=k;const T=TOD[k];
   const w=waterMat.uniforms;w.fogColor.value.setHex(T.hor);w.fogNear.value=T.fogN;w.fogFar.value=T.fogF;w.cDeep.value.setHex(T.deep);w.cMid.value.setHex(T.mid);w.cShal.value.setHex(T.shal);w.cGlint.value.setHex(T.glint);
   const pu=postMat.uniforms;pu.con.value=T.con;pu.sat.value=T.sat;pu.vig.value=T.vig;
   lightPts.visible=T.lights>0;lightPts.material.color.setScalar(T.lights);navPts.visible=T.lights>0;
-  bakeTerrainShadow(sunDir,{noon:0,golden:0,sunset:0,dusk:.6,night:.3}[k]||0);}
+  bakeTerrainShadow(sunDir,{noon:0,golden:0,sunset:0,dusk:.6,night:.3}[k]||0);fogK=-1;}
 
 /* ---------- save data ---------- */
 const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}};
-const settings=Object.assign({steady:true,stallGuard:true,autoTrim:true,tips:true,invert:false,sound:true,engVol:1,fps:false,shadows:true,tilt:false,pixels:'classic',light:'golden'},store.get('tac-settings',{}));
+const settings=Object.assign({steady:true,stallGuard:true,autoTrim:true,tips:true,invert:false,sound:true,engVol:1,music:.5,fps:false,shadows:true,tilt:false,pixels:'classic',light:'golden'},store.get('tac-settings',{}));
 if(!TOD[settings.light])settings.light='golden';
 const log=Object.assign({fields:{},sights:{},goals:{},trips:0,flights:0,tips:{},howto:false,stamps:0,met:{},mail:{day:1,bag:[],active:false}},store.get('tac-log',{}));
 if(!log.mail)log.mail={day:1,bag:[],active:false};if(!log.met)log.met={};if(log.stamps==null)log.stamps=0;
@@ -23,8 +23,13 @@ const saveS=()=>store.set('tac-settings',settings), saveL=()=>store.set('tac-log
 const GOALS=[
   {id:'firstflight',name:'First flight',hint:'Take off from any field.'},
   {id:'land_harbor',name:'Land at Harbor Field',hint:'Come to a full stop on the paved runway.'},
-  {id:'land_light',name:'Land at Lighthouse Point',hint:'The grass strip on the western headland.'},
-  {id:'land_ridge',name:'Land at Ridge Strip',hint:'The short dirt strip up on the mountain.'},
+  {id:'land_light',name:'Land at Gull Point',hint:'The grass strip on the clifftop island west of Ferrow.'},
+  {id:'land_ridge',name:'Land at Ridge Strip',hint:'The short dirt strip up on Tallpine mountain.'},
+  {id:'land_marram',name:'Land at Marram Beach',hint:'The hard-sand strip on the atoll far to the southeast.'},
+  {id:'land_kettle',name:'Land at Crater Shelf',hint:'The cinder strip on the volcano, far to the northeast.'},
+  {id:'land_farhold',name:'Land at Farhold',hint:'The lit runway on the foggy island far to the northwest.'},
+  {id:'hopper',name:'Island hopper',hint:'Land at all six fields.'},
+  {id:'tailwind',name:'Riding the wind',hint:'Use all three tailwinds on one trip.'},
   {id:'trip',name:'Make a trip',hint:'Take off from one field and land at another.'},
   {id:'butter',name:'Butter landing',hint:'Touch down on a runway at under 90 ft/min.'},
   {id:'checklist',name:'By the book',hint:'Land with the whole before-landing checklist done.'},
@@ -32,19 +37,27 @@ const GOALS=[
   {id:'summit',name:'Over the top',hint:'Fly over the summit of the mountain.'},
   {id:'night',name:'Night mail',hint:'Land on a runway at night.'},
   {id:'instrument',name:'From the seat',hint:'Land on a runway in Cockpit view.'},
-  {id:'week',name:'A full week',hint:'Finish all six days of mail.'},
+  {id:'week',name:'A full week',hint:'Finish the first six days of mail.'},
+  {id:'week2',name:'The whole chain',hint:'Finish the second week, out to the far islands.'},
 ];
-const DESC={harbor:'Long paved runway by the village. The friendly one.',light:'Grass strip on the cliffs of the western headland.',ridge:'Short dirt strip on a mountain saddle. Slow down early.'};
+const DESC={harbor:'Ferrow. Long paved runway by the village. The friendly one.',light:'Gull Point. Grass strip on the clifftop, sea at both ends.',ridge:'Tallpine. Short dirt strip on a mountain saddle. Slow down early.',
+  marram:'Marram Cay. Hard sand on a low atoll. Flat, but watch the palms.',kettle:'Kettle Rock. Cinder shelf below the crater. Bumpy air off the slopes.',farhold:'Farhold. Long lit runway, nearly always in fog. Trust the lights.'};
 
 /* ---------- characters & portraits ---------- */
 const CHARS={
   mabel:{name:'Mabel Ostrander',role:'POSTMASTER · HARBOR FIELD',home:'harbor',sp:{bg:'#f2c6a0',skin:'#e8b896',hair:'#cfc8c0',style:'bun',glasses:true,shirt:'#3f8f8a'}},
   bea:{name:'Bea Hollis',role:'RETIRED MAIL PILOT · HARBOR FIELD',home:'harbor',sp:{bg:'#9cc3e6',skin:'#d9a07a',hair:'#f1ece4',style:'short',hat:'aviator',hatc:'#7a4a2a',shirt:'#e9dcc4',scarf:'#c2453a'}},
   gus:{name:'Gus Amari',role:'MECHANIC · HARBOR FIELD',home:'harbor',sp:{bg:'#e9d27a',skin:'#8d5a3b',hair:'#221c1c',style:'short',beard:'#221c1c',hat:'cap',hatc:'#e2703f',shirt:'#3a5a8c'}},
-  tomas:{name:'Tomas Reyes',role:'LIGHTHOUSE KEEPER · LIGHTHOUSE POINT',home:'light',sp:{bg:'#c8d8e8',skin:'#c98c5e',hair:'#3a3434',style:'short',mustache:'#4a4040',hat:'beanie',hatc:'#2c3a5a',shirt:'#2c3a5a'}},
-  nell:{name:'Nell Talley',role:'SHEPHERD · LIGHTHOUSE POINT',home:'light',sp:{bg:'#cfe3b0',skin:'#f0c7a4',hair:'#c0582e',style:'long',shirt:'#5b7f3a',freckles:true}},
-  ada:{name:'Ada Pennick',role:'FOREST RANGER · RIDGE STRIP',home:'ridge',sp:{bg:'#b8d4a8',skin:'#6e4a33',hair:'#1c1616',style:'curly',hat:'ranger',hatc:'#a89060',shirt:'#6b7a3a'}},
-  hank:{name:'Hank Oduya',role:'LOGGING CREW · RIDGE STRIP',home:'ridge',sp:{bg:'#e8c0a8',skin:'#e2a982',hair:'#6a4a30',style:'short',beard:'#6a4a30',hat:'beanie',hatc:'#c2453a',shirt:'#b8443a',plaid:true}},
+  tomas:{name:'Tomas Reyes',role:'LIGHTHOUSE KEEPER · GULL POINT',home:'light',sp:{bg:'#c8d8e8',skin:'#c98c5e',hair:'#3a3434',style:'short',mustache:'#4a4040',hat:'beanie',hatc:'#2c3a5a',shirt:'#2c3a5a'}},
+  nell:{name:'Nell Talley',role:'SHEPHERD · GULL POINT',home:'light',sp:{bg:'#cfe3b0',skin:'#f0c7a4',hair:'#c0582e',style:'long',shirt:'#5b7f3a',freckles:true}},
+  ada:{name:'Ada Pennick',role:'FOREST RANGER · TALLPINE',home:'ridge',sp:{bg:'#b8d4a8',skin:'#6e4a33',hair:'#1c1616',style:'curly',hat:'ranger',hatc:'#a89060',shirt:'#6b7a3a'}},
+  hank:{name:'Hank Oduya',role:'LOGGING CREW · TALLPINE',home:'ridge',sp:{bg:'#e8c0a8',skin:'#e2a982',hair:'#6a4a30',style:'short',beard:'#6a4a30',hat:'beanie',hatc:'#c2453a',shirt:'#b8443a',plaid:true}},
+  ollie:{name:'Ollie Brand',role:'AGE 11 · STRIP CREW · MARRAM CAY',home:'marram',sp:{bg:'#ffd9a0',skin:'#c98c5e',hair:'#2a2020',style:'curly',hat:'cap',hatc:'#ff7a2e',shirt:'#3f8fc0',freckles:true}},
+  rosa:{name:'Rosa Kahale',role:'BEACH BAR · MARRAM CAY',home:'marram',sp:{bg:'#f4c0c8',skin:'#a8704a',hair:'#1c1414',style:'long',shirt:'#e8a33a'}},
+  ines:{name:'Dr. Ines Varga',role:'VOLCANOLOGIST · KETTLE ROCK',home:'kettle',sp:{bg:'#d8c8e8',skin:'#f0c7a4',hair:'#8a8480',style:'bun',glasses:true,shirt:'#c2553f'}},
+  otto:{name:'Otto Lind',role:'OBSERVATORY COOK · KETTLE ROCK',home:'kettle',sp:{bg:'#c8e0d8',skin:'#e8b896',hair:'#e8d8a0',style:'short',beard:'#e8d8a0',hat:'beanie',hatc:'#3a5a8c',shirt:'#eae2cf'}},
+  fen:{name:'Fen Morrow',role:'FIELD KEEPER · FARHOLD',home:'farhold',sp:{bg:'#c0c8d0',skin:'#d9a07a',hair:'#5a4a40',style:'short',mustache:'#5a4a40',hat:'cap',hatc:'#4a4e5c',shirt:'#5b6e86',scarf:'#d8d2c8'}},
+  ivy:{name:'Ivy Calder',role:'THE HOUSE WITH THE LAMP · FARHOLD',home:'farhold',sp:{bg:'#f0e0b0',skin:'#e2a982',hair:'#f1ece4',style:'long',shirt:'#6a5a8c',scarf:'#d2493c'}},
 };
 function shade(hex,a){const n=parseInt(hex.slice(1),16);let r=n>>16,g=(n>>8)&255,b=n&255;const f=v=>clamp(Math.round(a<0?v*(1+a):v+(255-v)*a),0,255);return '#'+[f(r),f(g),f(b)].map(v=>v.toString(16).padStart(2,'0')).join('');}
 const PORT={};
@@ -109,6 +122,40 @@ const DAYS=[
           {to:'nell',item:'Tide table',line:"Tides! The sheep keep wandering onto the beach. Now at least I'll know when to panic."}],
    out:{},
    outro:"That's the week. Bea says there are islands past the horizon that haven't seen a mail plane in years. Get some sleep."},
+  {intro:"Week two. Bea's old charts show three more islands. First, Marram Cay, way out southeast. Follow the tailwinds, and land on the hard sand.",
+   items:[{to:'ollie',item:'Real pilot\'s tide chart',line:"A real one! With the little numbers! I'm putting it on my wall. Next to the drawing of your plane."},
+          {to:'rosa',item:'Box of paper umbrellas',line:"Umbrellas for the drinks. The tourists don't come, but the umbrellas make me happy anyway."}],
+   out:{ollie:[{to:'bea',item:'Drawing of your plane',line:"Ollie drew my old girl? He got the stripe right. Pin it up in the hangar, would you?"}]},
+   outro:"Marram Cay. I haven't stamped that name in twenty years."},
+  {intro:"Kettle Rock today, the volcano to the northeast. Dr. Varga's parcel is marked 'handle gently, it listens'.",
+   items:[{to:'ines',item:'Seismometer parts',line:"My new ears. Now I can hear the mountain think. It's been thinking a lot."},
+          {to:'otto',item:'Sack of coffee beans',line:"Coffee! We ran out four days ago. Ines has been drinking tea. It was terrible for everyone."},
+          {to:'tomas',item:'Letter from Lucía',line:"She's back on the island for the summer. She wants to learn how the light works before the clock takes over."}],
+   out:{ines:[{to:'mabel',item:'Readings for the mainland',line:"Volcano readings, bound for the university. Dr. Varga writes very small."}]},
+   outro:"Two new islands in two days. Bea's started calling you 'the kid' when she thinks I can't hear."},
+  {intro:"Farhold. It's out past Gull Point to the northwest, and it's usually in fog. Fen Morrow keeps the lights on. Go slow and trust them.",
+   items:[{to:'fen',item:'Spare runway bulbs',line:"Bulbs! Half my approach lights were dark. Now the rabbit can run all the way out again."},
+          {to:'ada',item:'Owl leg bands',line:"Bands! Tiny brass ones. The owls won't like it, but the society will."}],
+   out:{fen:[{to:'bea',item:'Letter, no return address',line:"Another one. Same hand as the others. ...I'll read it later. Thank you, dear."}]},
+   outro:"That letter for Bea. It's the fourth this year with no name on it. She went very quiet."},
+  {intro:"A busy bag. Ollie's ordered something from a catalog, and I'm afraid it has propellers.",
+   items:[{to:'ollie',item:'Model plane kit',line:"It's got a real rubber band motor! I'm painting it cream and red. Like yours. Obviously."},
+          {to:'otto',item:'Telescope eyepiece',line:"For the big telescope. Tonight we look at Saturn. You should stay. It's better than the coffee."},
+          {to:'nell',item:'New ram bell',line:"For Barnaby. He's the one who sits on the runway. Now I'll hear him before you hit him."}],
+   out:{ollie:[{to:'gus',item:'List of engine questions',line:"Forty-two questions. Numbered. Tell the boy I'll answer one per delivery."}],otto:[{to:'ines',item:'Thermos of soup',line:"Otto sent soup down the hill? He worries. Tell him the mountain is fine. Mostly."}]},
+   outro:"Gus has started a folder for Ollie's questions. He pretends to grumble."},
+  {intro:"Dr. Varga needs a new probe, and Fen says someone on Farhold would like to meet you.",
+   items:[{to:'ines',item:'Thermometer probe',line:"This one goes right into the vent. The old one melted. Don't tell the university."},
+          {to:'ivy',item:'Seed packets',line:"Sweet peas. Bea always said they wouldn't grow in fog. We'll see."},
+          {to:'hank',item:'New axe handle',line:"Hickory. Proper. The crew's been using a broom."}],
+   out:{ivy:[{to:'bea',item:'Letter, signed Ivy',line:"Ivy. Forty years, and she signs it this time. ...Do you know, I promised her I'd fly back for her in the spring of '86. Then the engine went, and the spring went, and so did the years."}]},
+   outro:"Bea asked to borrow my good pen tonight. I didn't ask why."},
+  {intro:"Last day of the chain. Bea's written a letter to Farhold herself, and she's sealed it twice.",
+   items:[{to:'rosa',item:'New tide book',line:"Fresh tides for the season! You'll get your lemonade now, pilot. The sand's dry all week."},
+          {to:'ines',item:'Postcard from the university',line:"They read my readings. They're sending a whole team in spring. The mountain will love the attention."},
+          {to:'ivy',item:'Bea\'s letter',line:"She's coming. On the Thursday boat, she says, because she's too old to land in fog. Forty years late. That's alright. The sweet peas are up."}],
+   out:{},
+   outro:"That's every island on the chain with its mail again. Bea's off to Farhold on Thursday. She asked who'd fly the post while she's gone. I told her we already have a pilot."},
 ];
 const MEET={
   mabel:"I'm Mabel. I run the post office, which means I run this island. Your mail goes out from here every morning.",
@@ -118,6 +165,12 @@ const MEET={
   nell:"Nell. Mind the sheep on the strip, they think it's theirs.",
   ada:"Ada Pennick, ranger. I'm counting owls on this mountain. Very slowly.",
   hank:"Hank. Ridge crew. Anything that comes up this mountain by plane, we're grateful for.",
+  ollie:"I'm Ollie! I run the strip. Well, I wave the flag. Is it true you can do a loop? Don't do a loop.",
+  rosa:"Rosa. I keep the bar and the tide book. If the sand's wet, go around. If it's dry, lemonade's on me.",
+  ines:"Ines Varga. I listen to the volcano. It's been chatty lately, so I'm glad the post finally comes up here.",
+  otto:"Otto. I cook for the observatory, which is mostly coffee. You'll stay for a cup, ja?",
+  fen:"Fen Morrow. I keep the lights on this field so pilots can find it. You're the first one in a long while.",
+  ivy:"So you're the one carrying my letters. I'm Ivy. Bea and I learned to fly together, a very long time ago.",
 };
 const mail=log.mail;
 const bagFor=stripId=>mail.bag.filter(it=>CHARS[it.to].home===stripId);
@@ -175,55 +228,33 @@ function updGates(){
       snd.beep(inside?990:440);toast(inside?`Gate ${i+1} ✓ ${i<2?'on the path':'nice. Flaps 2, power back.'}`:`Missed gate ${i+1}. ${Math.abs(dy)>=26?(dy>0?'A little high.':'A little low.'):'Off to the side.'} Line up for the next.`,2);}});
   gateAlong=along;}
 
-/* tailwind rings: a chain of gold hoops on the way to the next stop. Fly through one for a gust that
-   carries you along faster and holds your height, ending before the approach gates. */
-const BOOST_V=55,BOOST_T=12,RING_R=12,RING_HIT=30;
-const ringGrp=new THREE.Group();scene.add(ringGrp);const ringPool=[];
-{const mat=new THREE.MeshBasicMaterial({color:0xffd36b,fog:false}),inner=new THREE.MeshBasicMaterial({color:0xfff6d8,fog:false});
-  const tg=new THREE.TorusGeometry(RING_R,1.5,6,20),tg2=new THREE.TorusGeometry(RING_R-3.2,.5,4,20);
-  for(let i=0;i<8;i++){const g=new THREE.Group();g.add(new THREE.Mesh(tg,mat),new THREE.Mesh(tg2,inner));
-    for(let k=0;k<3;k++){const ch=new THREE.Mesh(new THREE.BoxGeometry(1.2,4,1.2),inner);ch.position.set(0,0,-6-k*7);ch.rotation.z=Math.PI/4;ch.userData.k=k;g.add(ch);}
-    g.visible=false;ringGrp.add(g);ringPool.push(g);}}
-let route=[],routeFor=null,routeDir=0,routeT=0,ringPrev=new V3();
+/* tailwind button: three charges, each a 12 s gust that carries you along fast and holds your height.
+   Once all three are spent the wind needs a minute to pick up again. Not available close to your next field. */
+const BOOST_V=55,BOOST_T=12,WIND_N=3,WIND_CD=60;
+let windCharges=WIND_N,windCD=0,windUiT=0;
 const glideAlt=(s,d)=>s.elev+AC.gearH+Math.tan(4*DEG)*d;
-function clearAt(x,z){let m=0;for(const [dx,dz] of [[0,0],[120,0],[-120,0],[0,120],[0,-120],[85,85],[-85,-85],[85,-85],[-85,85]])m=Math.max(m,surfH(x+dx,z+dz));return m+95;}
-function buildRoute(){route=[];routeFor=dest;routeDir=gateDir;if(!dest)return;
-  const E=gatePos(dest,gateDir,3300),C=gatePos(dest,gateDir,2600),P=ac.pos,dx=E.x-P.x,dz=E.z-P.z,L=Math.hypot(dx,dz);
-  if(Math.hypot(C.x-P.x,C.z-P.z)<1500)return;
-  const pts=[];for(let d=550;d<L-350;d+=850)pts.push([P.x+dx*d/L,P.z+dz*d/L,null]);
-  if(L>500)pts.push([E.x,E.z,E.y]);pts.push([C.x,C.z,C.y]);
-  let prev=new V3(P.x,P.y,P.z);
-  for(const [x,z,gy] of pts){const fr=Math.hypot(x-P.x,z-P.z)/Math.max(L,1),seg=Math.hypot(x-prev.x,z-prev.z),gr=(route.length?.06:.04)*seg,y=Math.max(clearAt(x,z),clamp(gy!=null?gy+25:lerp(P.y,E.y+25,Math.min(fr,1)),prev.y-gr,prev.y+gr));const v=new V3(x,y,z);
-    route.push({p:v,dir:v.clone().sub(prev).setY(0).normalize(),passed:false});prev=v;}
-  for(let i=route.length-1;i>0;i--){const a=route[i-1].p,b=route[i].p,g=.085*Math.hypot(b.x-a.x,b.z-a.z);if(a.y<b.y-g)a.y=b.y-g;}
-  route=route.slice(0,ringPool.length);}
-function updRings(dt,t){
-  const air=!ac.ground&&(mode==='fly'||mode==='paused');
-  if(!air||!dest){ringGrp.visible=false;if(ac.ground){route=[];routeFor=null;}ringPrev.copy(ac.pos);return;}
-  const agl=ac.pos.y-AC.gearH-surfH(ac.pos.x,ac.pos.z);
-  routeT-=dt;if(routeT<=0){routeT=1.5;const nxt=route.find(r=>!r.passed),toC=Math.hypot(ac.pos.x-gatePos(dest,gateDir,2600).x,ac.pos.z-gatePos(dest,gateDir,2600).z);
-    if(routeFor!==dest||routeDir!==gateDir||(agl>35&&toC>1700&&(!nxt||nxt.p.distanceTo(ac.pos)>1500)))if(agl>35||routeFor!==dest)buildRoute();}
-  ringGrp.visible=true;
-  route.forEach((r,i)=>{const g=ringPool[i];g.visible=!r.passed;if(r.passed)return;g.position.copy(r.p);g.rotation.set(0,Math.atan2(-r.dir.x,-r.dir.z),0);
-    const dist=r.p.distanceTo(camera.position);g.scale.setScalar(clamp(dist/380,1,5));g.children[0].rotation.z=t*.8;
-    g.children.forEach(c=>{if(c.userData.k!=null)c.position.z=-((t*14+c.userData.k*7)%21)-4;});
-    // hit test: closest approach of this frame's motion segment to the ring centre
-    const seg=_p.copy(ac.pos).sub(ringPrev),l2=seg.lengthSq(),tt=l2>0?clamp(_c1.copy(r.p).sub(ringPrev).dot(seg)/l2,0,1):0;
-    const cp=_c2.copy(ringPrev).addScaledVector(seg,tt);
-    if(cp.distanceTo(r.p)<RING_HIT){for(let j=0;j<=i;j++)route[j].passed=true;ac.boostT=BOOST_T;snd.beep(1320);setTimeout(()=>snd.beep(1760),90);
-      const left=route.filter(q=>!q.passed).length;toast(left?`Tailwind! ${left} more ring${left>1?'s':''} to the gates.`:'Last tailwind. Ease off and look for gate 1.',2);tip('tailwind','Gold rings are tailwinds. Fly through one and the wind carries you along fast and level for a few seconds. They stop before the landing gates.',.1);}
-    for(let j=0;j<i;j++)if(!route[j].passed&&route[j].p.distanceTo(ac.pos)>route[i].p.distanceTo(ac.pos)+600&&cp.distanceTo(r.p)<RING_HIT)route[j].passed=true;});
-  ringPrev.copy(ac.pos);}
+function windBlock(){if(ac.ground||mode!=='fly')return 'IN THE AIR';const agl=ac.pos.y-AC.gearH-surfH(ac.pos.x,ac.pos.z);if(agl<40)return 'TOO LOW';
+  if(dest&&Math.hypot(dest.x-ac.pos.x,dest.z-ac.pos.z)<2400)return 'NEAR FIELD';return null;}
+function useWind(){const b=windBlock();
+  if(windCharges<=0){toast(`The wind is resting. Back in ${Math.ceil(windCD)} s.`,1.6);return;}
+  if(b){toast(b==='NEAR FIELD'?'No tailwind this close to the field. Time to set up the approach.':b==='TOO LOW'?'Climb a little first. Tailwinds need some height.':'Tailwinds work once you\'re flying.',1.8);return;}
+  windCharges--;if(!windCharges)windCD=WIND_CD;ac.boostT=BOOST_T;snd.beep(1320);setTimeout(()=>snd.beep(1760),90);
+  toast(windCharges?`Tailwind! ${windCharges} left.`:'Last tailwind for now. The wind picks up again in a minute.',1.6);
+  if(!log.goals.tailwind&&windCharges===0)goal('tailwind');updWindUI();}
+function updWindUI(){const b=$('wind');if(!b)return;const blk=windBlock(),cool=windCharges<=0;
+  b.innerHTML=`TAILWIND <span>${'●'.repeat(windCharges)+'○'.repeat(WIND_N-windCharges)}</span>`;
+  b.classList.toggle('cool',cool);b.classList.toggle('off',!!blk&&!cool);b.classList.toggle('on',ac.boostT>0);
+  b.style.setProperty('--w',cool?Math.round((1-windCD/WIND_CD)*100)+'%':'0%');}
+function updWind(dt){if(windCharges<=0){windCD-=dt;if(windCD<=0){windCharges=WIND_N;windCD=0;if(mode==='fly')toast('The wind is back. Three tailwinds ready.',1.6);}}
+  windUiT-=dt;if(windUiT<=0){windUiT=.25;updWindUI();}}
 function stepBoost(dt){
   if(ac.boostT>0){ac.boostT-=dt;const agl=ac.pos.y-AC.gearH-surfH(ac.pos.x,ac.pos.z);
-    const C=dest&&gatePos(dest,gateDir,2350);if(agl<30||ac.ground||(C&&!route.some(r=>!r.passed)&&Math.hypot(C.x-ac.pos.x,C.z-ac.pos.z)<250))ac.boostT=0;}
+    if(agl<30||ac.ground||(dest&&Math.hypot(dest.x-ac.pos.x,dest.z-ac.pos.z)<2200))ac.boostT=0;}
   ac.bst=lerp(ac.bst||0,ac.boostT>0?1:0,1-Math.exp(-dt*(ac.boostT>0?2.5:1.1)));
   if(ac.bst<.005||ac.ground)return;
   axes();const hl=Math.hypot(_f.x,_f.z);if(hl<.2)return;
   ac.pos.x+=_f.x/hl*BOOST_V*ac.bst*dt;ac.pos.z+=_f.z/hl*BOOST_V*ac.bst*dt;
-  const nx=route.find(r=>!r.passed);let vyT=0;
-  if(nx){const hd=Math.hypot(nx.p.x-ac.pos.x,nx.p.z-ac.pos.z),gs=Math.max(hl*ac.ias+BOOST_V*ac.bst,10);vyT=clamp((nx.p.y-ac.pos.y)/Math.max(hd/gs,2),-9,9);}
-  ac.vel.y+=(vyT-ac.vel.y)*Math.min(1,dt*5*ac.bst);}
+  ac.vel.y+=(0-ac.vel.y)*Math.min(1,dt*3*ac.bst);}
 
 const beacon=new THREE.Mesh(new THREE.CylinderGeometry(5,5,700,10,1,true).translate(0,350,0),new THREE.MeshBasicMaterial({color:0x8ff0e8,transparent:true,opacity:.12,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide,fog:false}));
 scene.add(beacon);
@@ -376,7 +407,7 @@ function crash(why,v){
     showCard(`<div class="who"><img src="${portrait('gus')}" alt=""><div><b>${t}</b><span>GUS PATCHES IT UP · THE MAIL IS STILL IN THE BAG</span></div></div><p>${b}</p>${extra}`,[
       ['Try that approach again',()=>spawnApproach(dest),true],['Back to '+stripById(ac.lastField).name,()=>spawnField(stripById(ac.lastField))]]);},900);
 }
-function resetAc(){ac.boostT=0;ac.bst=0;route=[];routeFor=null;ac.w.set(0,0,0);ac.td=null;ac.brake=0;ac.brakeHeld=false;ac.trimHold=0;ac.ice=0;smokeBurst.forEach(m=>m.visible=false);snapCam=true;}
+function resetAc(){ac.boostT=0;ac.bst=0;ac.w.set(0,0,0);ac.td=null;ac.brake=0;ac.brakeHeld=false;ac.trimHold=0;ac.ice=0;smokeBurst.forEach(m=>m.visible=false);snapCam=true;}
 function intoWindDir(s){return (s.fx*WIND.x+s.fz*WIND.z)<0?1:-1;}
 function spawnField(s,dirSign){
   dirSign=dirSign||intoWindDir(s);resetAc();
@@ -419,7 +450,7 @@ function finishLanding(){
   const fromId=ac.from,isTrip=fromId&&fromId!==s.id&&fromId!=='__approach';
   const ck=td.check,ckOk=ck.carb&&ck.mix&&ck.flaps&&ck.light;
   const news=[];const g=id=>{if(goal(id,true))news.push(GOALS.find(x=>x.id===id).name);};
-  g('land_'+s.id);if(isTrip){log.trips++;g('trip');}if(fpm<90&&!td.bounced)g('butter');if(s.id==='ridge'&&total===3)g('ridge3');if(td.view==='cockpit')g('instrument');
+  g('land_'+s.id);if(STRIPS.every(q=>log.goals['land_'+q.id]))g('hopper');if(isTrip){log.trips++;g('trip');}if(fpm<90&&!td.bounced)g('butter');if(s.id==='ridge'&&total===3)g('ridge3');if(td.view==='cockpit')g('instrument');
   if(ckOk)g('checklist');if(td.tod==='night')g('night');
   if(ckOk&&mail.active)stamp(1);
   ac.lastField=s.id;ac.from=s.id;saveL();
@@ -458,16 +489,16 @@ function deliverAt(s){
 function offerDay(after){
   mode=mode==='fly'?'card':mode;
   const day=DAYS[mail.day-1];
-  if(!day){showCard(`<div class="who"><img src="${portrait('mabel')}" alt=""><div><b>Mabel Ostrander</b><span>POSTMASTER · HARBOR FIELD</span></div></div><p class="say">“No mail today. The new islands are still waiting on their charts. Go and enjoy the sky.”</p>`,[['Go flying',after,true]]);return;}
+  if(!day){showCard(`<div class="who"><img src="${portrait('mabel')}" alt=""><div><b>Mabel Ostrander</b><span>POSTMASTER · HARBOR FIELD</span></div></div><p class="say">“No mail today. Every island on the chain is caught up. Go and enjoy the sky.”</p>`,[['Go flying',after,true]]);return;}
   const meet=!log.met.mabel;if(meet)log.met.mabel=1;saveL();
   const list=day.items.map(it=>`<b>${it.item}</b> for ${CHARS[it.to].name}, ${stripById(CHARS[it.to].home).name}`).join('<br>');
-  showCard(`<div class="who"><img src="${portrait('mabel')}" alt=""><div><b>Mabel Ostrander</b><span>POSTMASTER · DAY ${mail.day} OF ${DAYS.length}</span></div></div>
+  showCard(`<div class="who"><img src="${portrait('mabel')}" alt=""><div><b>Mabel Ostrander</b><span>POSTMASTER · ${mail.day>6?'WEEK 2 · DAY '+(mail.day-6):'DAY '+mail.day} OF 6</span></div></div>
     ${meet?`<p class="say">“${MEET.mabel}”</p>`:''}<p class="say">“${day.intro}”</p><p>${list}</p>`,
     [['Load the bag',()=>{mail.bag=day.items.map(x=>({...x}));mail.active=true;saveL();refreshBag();after();},true],['Just flying today',()=>{mail.active=false;saveL();refreshBag();after();}]]);
 }
 function meetBea(){if(mode!=='fly'||log.met.bea)return;log.met.bea=1;saveL();mode='card';
   showCard(`<div class="who"><img src="${portrait('bea')}" alt=""><div><b>Bea Hollis</b><span>RETIRED MAIL PILOT · HARBOR FIELD</span></div></div><p class="say">“${MEET.bea}”</p><p>Bea's logbook is in the pause menu whenever you want it.</p>`,[['Thanks, Bea',()=>{hideModal();mode='fly';},true],['Open the logbook',()=>bea(-1)]]);}
-function endDay(){const day=DAYS[mail.day-1];mail.active=false;mail.bag=[];mail.day++;stamp(2);if(mail.day>DAYS.length)goal('week',true);saveL();refreshBag();
+function endDay(){const day=DAYS[mail.day-1];mail.active=false;mail.bag=[];mail.day++;stamp(2);if(mail.day>6)goal('week',true);if(mail.day>DAYS.length)goal('week2',true);saveL();refreshBag();
   showCard(`<div class="who"><img src="${portrait('mabel')}" alt=""><div><b>Mabel Ostrander</b><span>END OF DAY · +2 STAMPS</span></div></div><p class="say">“${day?day.outro:'Good flying.'}”</p><div class="got">${log.stamps} STAMPS ON YOUR ROUTE CARD</div>`,
     [[mail.day<=DAYS.length?'Start the next day':'Keep flying',()=>{if(mail.day<=DAYS.length)offerDay(()=>spawnField(STRIPS[0]));else{hideModal();mode='fly';}},true],['Free flight',()=>{hideModal();mode='fly';pickDest('harbor');}]]);}
 function goal(id,quiet){if(log.goals[id])return false;log.goals[id]=Date.now();saveL();if(!quiet){const g=GOALS.find(x=>x.id===id);toast('Logbook: '+g.name,2.5);}return true;}
@@ -575,14 +606,14 @@ const snd={ctx:null,
     const buf=c.createBuffer(1,c.sampleRate*2,c.sampleRate),d=buf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;this.buf=buf;
     this.noise=c.createBufferSource();this.noise.buffer=buf;this.noise.loop=true;this.bp=c.createBiquadFilter();this.bp.type='lowpass';this.bp.frequency.value=380;this.bp.Q.value=.3;
     this.wg=c.createGain();this.wg.gain.value=0;this.noise.connect(this.bp);this.bp.connect(this.wg);this.wg.connect(this.master);this.noise.start();
-    this.ho=c.createOscillator();this.ho.type='square';this.ho.frequency.value=540;this.hg=c.createGain();this.hg.gain.value=0;this.ho.connect(this.hg);this.hg.connect(this.master);this.ho.start();},
+    this.ho=c.createOscillator();this.ho.type='square';this.ho.frequency.value=540;this.hg=c.createGain();this.hg.gain.value=0;this.ho.connect(this.hg);this.hg.connect(this.master);this.ho.start();music.start();},
   update(rpm,ias,stall,run,rough){if(!this.ctx)return;const t=this.ctx.currentTime;
     this.dv+=(Math.random()-.5)*.02-this.dr*.02;this.dv*=.9;this.dr+=this.dv;const irr=1+this.dr*.6+Math.sin(t*1.7)*.012+Math.sin(t*.43)*.018;
     const wob=(rough>0?1+Math.sin(t*23)*.08*rough+Math.sin(t*7.3)*.06*rough:1)*irr,f=(36+rpm*62)*wob;
     this.lfo.frequency.setTargetAtTime(f*.25*(1+this.dr),t,.08);this.lfoG.gain.setTargetAtTime(.14+Math.abs(Math.sin(t*.9))*.12,t,.2);
     this.o1.frequency.setTargetAtTime(f,t,.05);this.o2.frequency.setTargetAtTime(f*.5,t,.05);this.lp.frequency.setTargetAtTime(180+rpm*420,t,.1);
     const cut=rough>0&&Math.sin(t*11)>.6?1-.4*rough:1;
-    this.eg.gain.setTargetAtTime(run?(.018+rpm*.022)*cut*settings.engVol:0,t,.04);this.bp.frequency.setTargetAtTime(220+Math.min(ias,60)*4,t,.3);this.wg.gain.setTargetAtTime(run?Math.min(.045,ias*ias/60000):0,t,.4);
+    this.eg.gain.setTargetAtTime(run?(.03+rpm*.038)*cut*settings.engVol:0,t,.04);this.bp.frequency.setTargetAtTime(220+Math.min(ias,60)*4,t,.3);this.wg.gain.setTargetAtTime(run?Math.min(.045,ias*ias/60000):0,t,.4);
     this.hg.gain.setTargetAtTime(stall&&run&&((t*4)%1<.6)?.05:0,t,.01);},
   burst(v,lp,dur){if(!this.ctx)return;const c=this.ctx,s=c.createBufferSource();s.buffer=this.buf;const f=c.createBiquadFilter();f.type='lowpass';f.frequency.value=lp;const g=c.createGain(),t=c.currentTime;
     g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+dur);s.connect(f);f.connect(g);g.connect(this.master);s.start(t,Math.random());s.stop(t+dur+.05);},
@@ -590,8 +621,47 @@ const snd={ctx:null,
   thump(v=1){this.burst(.6*v,260,.25);},crash(){this.burst(.5,900,1.2);},click(){this.burst(.25,3000,.03);},
   setOn(v){if(this.master)this.master.gain.value=v?.5:0;if(this.ctx&&this.ctx.state==='suspended')this.ctx.resume();}};
 
+/* ---------- lo-fi radio: a small generative band (keys, bass, brushed drums, vinyl hiss), all WebAudio ---------- */
+const music={on:false,
+  start(){const c=snd.ctx;if(!c||this.out)return;
+    this.out=c.createGain();this.out.gain.value=0;const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=2400;lp.Q.value=.4;
+    const comp=c.createDynamicsCompressor();comp.threshold.value=-22;comp.ratio.value=3;this.bus=c.createGain();this.bus.gain.value=1;
+    this.bus.connect(lp);lp.connect(comp);comp.connect(this.out);this.out.connect(snd.master);
+    this.wow=c.createOscillator();this.wow.frequency.value=.55;this.wowG=c.createGain();this.wowG.gain.value=7;this.wow.connect(this.wowG);this.wow.start();
+    // vinyl: soft hiss plus sparse crackle
+    const n=c.sampleRate*3,b=c.createBuffer(1,n,c.sampleRate),d=b.getChannelData(0);for(let i=0;i<n;i++){d[i]=(Math.random()*2-1)*.18;if(Math.random()<.00035)d[i]=(Math.random()<.5?-1:1)*(.5+Math.random()*.5);}
+    const v=c.createBufferSource();v.buffer=b;v.loop=true;const vf=c.createBiquadFilter();vf.type='bandpass';vf.frequency.value=2600;vf.Q.value=.6;const vg=c.createGain();vg.gain.value=.05;v.connect(vf);vf.connect(vg);vg.connect(this.out);v.start();
+    this.noise=snd.buf;this.bpm=72;this.beat=c.currentTime+.3;this.step=0;this.bar=0;this.pickKey();this.pickProg();
+    this.timer=setInterval(()=>this.tick(),70);this.setVol();},
+  setVol(){if(!this.out)return;const v=(settings.music??.5);this.out.gain.setTargetAtTime(v*.55,snd.ctx.currentTime,.4);},
+  pickKey(){this.key=[0,2,3,5,7,8,10][(Math.random()*7)|0]-2;},
+  PROGS:[[[5,'M9'],[4,'m7'],[2,'m9'],[0,'M7']],[[2,'m9'],[7,'13'],[0,'M9'],[9,'m9']],[[9,'m9'],[5,'M7'],[0,'M9'],[7,'6']],[[0,'M9'],[9,'m7'],[2,'m9'],[7,'9sus']],[[4,'m7'],[9,'m7'],[2,'m9'],[7,'13']]],
+  Q:{M7:[0,4,7,11],M9:[0,4,11,14],m7:[0,3,7,10],m9:[0,3,10,14],'13':[0,4,10,21],'6':[0,4,9,14],'9sus':[0,5,10,14]},
+  pickProg(){this.prog=this.PROGS[(Math.random()*this.PROGS.length)|0];},
+  hz(m){return 440*Math.pow(2,(m-69)/12);},
+  tick(){const c=snd.ctx;if(!c||!this.out)return;const on=(settings.music??.5)>0&&settings.sound;
+    const sp=60/this.bpm/4;while(this.beat<c.currentTime+.35){if(on)this.play(this.step,this.beat);
+      this.beat+=sp*(this.step%2?.84:1.16);this.step++;if(this.step>=16){this.step=0;this.bar++;if(this.bar%8===0)this.pickProg();if(this.bar%32===0)this.pickKey();}}},
+  play(st,t){const ch=this.prog[this.bar%4],root=48+this.key+ch[0],iv=this.Q[ch[1]];
+    if(st===0){iv.forEach((x,i)=>this.keys(root+12+x,t+i*.018+Math.random()*.01,60/this.bpm*3.7,.07));this.bass(root-12,t,.9);}
+    if(st===10&&Math.random()<.7)this.bass(root-12+(Math.random()<.5?7:12),t,.4);
+    if(st===8&&Math.random()<.35)iv.slice(1).forEach((x,i)=>this.keys(root+12+x,t+i*.02,60/this.bpm*1.6,.035));
+    if(st===0||st===7&&Math.random()<.5||st===10)this.kick(t);
+    if(st===4||st===12)this.snare(t);
+    if(st%2===0&&Math.random()<.9)this.hat(t,st%4===0?.05:.028);
+    if(st%2===0&&Math.random()<.16){const pent=[0,2,4,7,9,12,14,16];this.lead(60+this.key+pent[(Math.random()*pent.length)|0]+(Math.random()<.3?12:0),t,.5);}},
+  env(g,t,a,peak,dec,sus,len){g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(peak,t+a);g.gain.setTargetAtTime(peak*sus,t+a,dec);g.gain.setTargetAtTime(0,t+len,.12);},
+  keys(m,t,len,v){const c=snd.ctx,o=c.createOscillator(),o2=c.createOscillator(),g=c.createGain(),g2=c.createGain(),f=this.hz(m);o.type='sine';o.frequency.value=f;o2.type='triangle';o2.frequency.value=f*2;g2.gain.value=.12;
+    this.wowG.connect(o.detune);this.wowG.connect(o2.detune);o.connect(g);o2.connect(g2);g2.connect(g);g.connect(this.bus);this.env(g,t,.012,v,.5,.35,len);o.start(t);o2.start(t);o.stop(t+len+.8);o2.stop(t+len+.8);},
+  lead(m,t,len){const c=snd.ctx,o=c.createOscillator(),g=c.createGain();o.type='triangle';o.frequency.value=this.hz(m);this.wowG.connect(o.detune);o.connect(g);g.connect(this.bus);this.env(g,t,.03,.035,.25,.4,len);o.start(t);o.stop(t+len+.8);},
+  bass(m,t,len){const c=snd.ctx,o=c.createOscillator(),g=c.createGain();o.type='sine';o.frequency.value=this.hz(m);o.connect(g);g.connect(this.bus);this.env(g,t,.01,.22,.3,.5,len);o.start(t);o.stop(t+len+.6);},
+  kick(t){const c=snd.ctx,o=c.createOscillator(),g=c.createGain();o.frequency.setValueAtTime(110,t);o.frequency.exponentialRampToValueAtTime(42,t+.12);g.gain.setValueAtTime(.5,t);g.gain.exponentialRampToValueAtTime(.001,t+.32);o.connect(g);g.connect(this.bus);o.start(t);o.stop(t+.35);},
+  snare(t){const c=snd.ctx,s=c.createBufferSource();s.buffer=this.noise;const f=c.createBiquadFilter();f.type='bandpass';f.frequency.value=1700;f.Q.value=.7;const g=c.createGain();g.gain.setValueAtTime(.16,t);g.gain.exponentialRampToValueAtTime(.001,t+.22);
+    s.connect(f);f.connect(g);g.connect(this.bus);s.start(t,Math.random());s.stop(t+.25);},
+  hat(t,v){const c=snd.ctx,s=c.createBufferSource();s.buffer=this.noise;const f=c.createBiquadFilter();f.type='highpass';f.frequency.value=6500;const g=c.createGain();g.gain.setValueAtTime(v*(.6+Math.random()*.5),t);g.gain.exponentialRampToValueAtTime(.001,t+.045);
+    s.connect(f);f.connect(g);g.connect(this.bus);s.start(t,Math.random());s.stop(t+.06);}};
 /* ---------- maps ---------- */
-const MAPW=7600,mapBase=(()=>{const N=256,c=document.createElement('canvas');c.width=c.height=N;const x=c.getContext('2d'),img=x.createImageData(N,N);
+const MAPW=16000,mapBase=(()=>{const N=512,c=document.createElement('canvas');c.width=c.height=N;const x=c.getContext('2d'),img=x.createImageData(N,N);
   for(let j=0;j<N;j++)for(let i=0;i<N;i++){const wx=-MAPW/2+(i+.5)*MAPW/N,wz=-MAPW/2+(j+.5)*MAPW/N,h=groundH(wx,wz);let r,g,b;
     if(h<0){const d=clamp(-h/40,0,1);r=lerp(70,30,d);g=lerp(150,72,d);b=lerp(170,120,d);}
     else if(h<4){r=226;g=205;b=150;}
@@ -610,7 +680,6 @@ function drawMiniMap(dt){mapT-=dt;if(mapT>0)return;mapT=.08;const W=96,x=mctx;x.
   const near=dest?Math.hypot(dest.x-ac.pos.x,dest.z-ac.pos.z):1e9,R=near<2600?1500:2800,k=(W/2)/R,cy=W/2+14;
   x.fillStyle='#1d2a44';x.fillRect(0,0,W,W);x.save();x.translate(W/2,cy);x.rotate(-hdg);x.scale(k,k);x.translate(-ac.pos.x,-ac.pos.z);
   x.drawImage(mapBase,-MAPW/2,-MAPW/2,MAPW,MAPW);drawStripsOn(x,k,dest);
-  if(!ac.ground){x.strokeStyle='#ffd36b';x.lineWidth=1.6/k;for(const r of route)if(!r.passed){x.beginPath();x.arc(r.p.x,r.p.z,4/k,0,TAU);x.stroke();}}
   if(dest){x.fillStyle='#8ff0e8';x.beginPath();x.arc(dest.x,dest.z,3.5/k,0,TAU);x.fill();}
   x.restore();
   x.fillStyle='#fff8ec';x.strokeStyle='#241c2e';x.lineWidth=1;x.beginPath();x.moveTo(W/2,cy-6);x.lineTo(W/2-4,cy+4);x.lineTo(W/2,cy+2);x.lineTo(W/2+4,cy+4);x.closePath();x.fill();x.stroke();
@@ -619,13 +688,14 @@ function drawMiniMap(dt){mapT-=dt;if(mapT>0)return;mapT=.08;const W=96,x=mctx;x.
 function bigMap(){
   showCard(`<h2>Bea's chart</h2><div class="sub">DASHED LINES SHOW WHERE TO LINE UP FOR ${dest?dest.name.toUpperCase():'EACH RUNWAY'}</div><canvas id="bigmap" width="512" height="384"></canvas>`,[['Back to flying',()=>{hideModal();mode='fly';},true]]);
   $('cardBody').parentElement.querySelector('.card').classList.add('wide');
-  const c=$('bigmap'),x=c.getContext('2d');x.imageSmoothingEnabled=false;const k=512/6400;x.save();x.translate(256,192);x.scale(k,k);
-  x.drawImage(mapBase,-MAPW/2,-MAPW/2,MAPW,MAPW);drawStripsOn(x,k,dest);x.restore();
-  const P=(wx,wz)=>[256+wx*k,192+wz*k];x.font='15px VT323, monospace';x.textBaseline='middle';
+  const c=$('bigmap'),x=c.getContext('2d');x.imageSmoothingEnabled=false;const k=384/12600,CX=-200,CZ=300;x.fillStyle='#1d2a44';x.fillRect(0,0,512,384);x.save();x.translate(256-CX*k,192-CZ*k);x.scale(k,k);
+  x.drawImage(mapBase,-MAPW/2,-MAPW/2,MAPW,MAPW);drawStripsOn(x,k,dest);
+  x.restore();
+  const P=(wx,wz)=>[256+(wx-CX)*k,192+(wz-CZ)*k];x.font='13px VT323, monospace';x.font='15px VT323, monospace';x.textBaseline='middle';
   const label=(t,wx,wz,col,dy=-12)=>{const [a,b]=P(wx,wz);x.textAlign='center';x.fillStyle='#241c2e';x.fillText(t,a+1,b+dy+1);x.fillStyle=col;x.fillText(t,a,b+dy);};
-  for(const s of STRIPS)label(s.name.toUpperCase(),s.x,s.z,s===dest?'#8ff0e8':'#fff8ec',-14);
+  for(const s of STRIPS)label(s.name.toUpperCase(),s.x,s.z,s===dest?'#8ff0e8':'#fff8ec',-11);
   for(const [k_,v] of Object.entries(sights)){if(!log.sights[k_])continue;const [a,b]=P(v.x,v.z);x.fillStyle='#ffb02e';x.fillRect(a-2,b-2,5,5);label(v.name.toUpperCase(),v.x,v.z,'#ffd890',10);}
-  label('FERROW',villageC.x,villageC.z,'#f5e8cf',12);
+  for(const I of Object.values(ISLES))label(I.name.toUpperCase(),I.x,I.z+(I.r?I.r*.55:700),'#ffd890',0);
   const [px,pz]=P(ac.pos.x,ac.pos.z);axes();const hdg=ac.ground?-ac.gYaw:Math.atan2(_f.x,-_f.z);x.save();x.translate(px,pz);x.rotate(hdg);x.fillStyle='#fff8ec';x.strokeStyle='#241c2e';x.lineWidth=1.5;x.beginPath();x.moveTo(0,-9);x.lineTo(-6,6);x.lineTo(0,3);x.lineTo(6,6);x.closePath();x.fill();x.stroke();x.restore();
   x.fillStyle='#ffb02e';x.textAlign='left';x.fillText('N ↑',10,14);
   const wd=70*DEG;x.strokeStyle='#fff8ec';x.lineWidth=2;x.beginPath();x.moveTo(478-Math.sin(wd)*12,30+Math.cos(wd)*12);x.lineTo(478+Math.sin(wd)*12,30-Math.cos(wd)*12);x.stroke();x.fillStyle='#fff8ec';x.textAlign='center';x.fillText('WIND',478,52);}
@@ -695,16 +765,18 @@ function logbook(){
   showCard(`<h2>Your logbook</h2><div class="sub">${log.flights} FLIGHTS · ${log.trips} TRIPS · ${log.stamps} STAMPS · ${done}/${GOALS.length} GOALS</div><h3>PEOPLE</h3><div class="list">${ppl}</div><h3>FIELDS</h3><div class="list">${f}</div><h3>SIGHTS</h3><div class="list">${si}</div><h3>GOALS</h3><div class="list">${go}</div>`,[['Back',back,true]]);}
 const SET=[['tilt','Tilt to steer','Turn the phone like a steering wheel to bank. Tip it toward you to raise the nose, away to lower it. CENTER resets the level point. The touch stick still works.'],['steady','Steady wings','Levels the wings when you let go, and handles the rudder.'],['stallGuard','Stall guard','Stops you pulling the nose up far enough to stall.'],
   ['autoTrim','Auto-trim','Holds your current speed when you let go of the stick.'],['tips','Tips','Short pointers the first time things happen.'],
-  ['invert','Invert pitch','Drag up to raise the nose instead of down.'],['shadows','Shadows','Long shadows from the sun and moon. Turn off if your phone gets warm.'],['sound','Sound','Engine, wind and the stall horn.'],['fps','Frame rate','Shows frames per second and triangles drawn, bottom right. For checking how your phone keeps up.']];
+  ['invert','Invert pitch','Drag up to raise the nose instead of down.'],['shadows','Shadows','Long shadows from the sun and moon. Turn off if your phone gets warm.'],['sound','Sound','Engine, wind, music and the stall horn.'],['fps','Frame rate','Shows frames per second, the slowest frame, triangles and draw calls in a strip at the top of the screen while you fly. For checking how your phone keeps up.']];
 function settingsCard(){
   const rows=SET.map(([k,n,d])=>`<div class="tog"><div><b>${n}</b><span>${d}</span></div><button data-k="${k}" class="${settings[k]?'on':''}">${settings[k]?'ON':'OFF'}</button></div>`).join('');
   const px=['chunky','classic','fine'].map(k=>`<button data-px="${k}" class="${settings.pixels===k?'primary':''}">${k.toUpperCase()}</button>`).join('');
   const ev=[['OFF',0],['HUSH',.5],['SOFT',1],['FULL',2]].map(([n,v])=>`<button data-ev="${v}" class="${settings.engVol==v?'primary':''}">${n}</button>`).join('');
+  const mv=[['OFF',0],['SOFT',.5],['ON',1]].map(([n,v])=>`<button data-mv="${v}" class="${(settings.music??.5)==v?'primary':''}">${n}</button>`).join('');
   const lt=Object.keys(TOD).map(k=>`<button data-lt="${k}" class="${settings.light===k?'primary':''}">${TOD[k].name.toUpperCase()}</button>`).join('');
-  showCard(`<h2>Settings</h2><div class="sub">ASSISTS · TURN THEM OFF ONE AT A TIME AS YOU IMPROVE</div>${rows}<h3>ENGINE VOLUME</h3><div class="btns">${ev}</div><h3>TIME OF DAY</h3><div class="btns">${lt}</div><h3>PIXELS</h3><div class="btns">${px}</div>`,[['Back',back,true]]);
+  showCard(`<h2>Settings</h2><div class="sub">ASSISTS · TURN THEM OFF ONE AT A TIME AS YOU IMPROVE</div>${rows}<h3>ENGINE VOLUME</h3><div class="btns">${ev}</div><h3>LO-FI RADIO</h3><div class="btns">${mv}</div><h3>TIME OF DAY</h3><div class="btns">${lt}</div><h3>PIXELS</h3><div class="btns">${px}</div><div class="sub" style="margin-top:14px">BUILD __BUILD__</div>`,[['Back',back,true]]);
   const cb=$('cardBody');
-  cb.querySelectorAll('[data-k]').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.k;if(k==='tilt'){if(!settings.tilt){settings.tilt=true;saveS();enableTilt().then(()=>{updTiltUI();settingsCard();});}else{settings.tilt=false;saveS();disableTilt();updTiltUI();settingsCard();}return;}settings[k]=!settings[k];saveS();if(k==='sound')snd.setOn(settings.sound);if(k==='fps')$('fps').hidden=!settings.fps;settingsCard();}));
+  cb.querySelectorAll('[data-k]').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.k;if(k==='tilt'){if(!settings.tilt){settings.tilt=true;saveS();enableTilt().then(()=>{updTiltUI();settingsCard();});}else{settings.tilt=false;saveS();disableTilt();updTiltUI();settingsCard();}return;}settings[k]=!settings[k];saveS();if(k==='sound')snd.setOn(settings.sound);if(k==='fps'){$('fps').hidden=!settings.fps;$('fps').textContent='FPS: measuring…';fpsN=fpsT=0;fpsLast=0;}if(k==='sound')music.setVol();settingsCard();}));
   cb.querySelectorAll('[data-px]').forEach(b=>b.addEventListener('click',()=>{settings.pixels=b.dataset.px;pixMode=settings.pixels;saveS();resize();settingsCard();}));
+  cb.querySelectorAll('[data-mv]').forEach(b=>b.addEventListener('click',()=>{settings.music=+b.dataset.mv;saveS();snd.init();music.start();music.setVol();settingsCard();}));
   cb.querySelectorAll('[data-ev]').forEach(b=>b.addEventListener('click',()=>{settings.engVol=+b.dataset.ev;saveS();settingsCard();}));
   cb.querySelectorAll('[data-lt]').forEach(b=>b.addEventListener('click',()=>{settings.light=b.dataset.lt;saveS();setTOD(settings.light);settingsCard();}));}
 function showHowTo(){mode='card';
@@ -738,6 +810,7 @@ function gameChecks(dt){
   if(!ac.ground&&Math.abs(bank)>20*DEG&&ac.vel.y<-1.5)tip('turn','In a turn, hold the stick a little down (back) to keep from sinking.');
   if(airT>45)tip('pitchpower','Good to know: the stick mostly sets your speed. Power decides whether you climb or descend.');
   let showCheck=false;
+  if(!ac.ground&&dest&&airT>8&&Math.hypot(dest.x-ac.pos.x,dest.z-ac.pos.z)>3500)tip('tailwind','Long way to go? Tap TAILWIND under the map for a gust that carries you fast and level for a few seconds. You get three, then the wind rests for a minute.',.5);
   if(dest){const gl=glide(dest);if(!ac.ground&&Math.hypot(dest.x-ac.pos.x,dest.z-ac.pos.z)<5500)tip('gates','See the cyan gates? They show the way in. Start lining up at the first one, 2 km out and about 450 ft up.');
     if(gl.active&&gl.along<3200){showCheck=true;tip('approach','Fly through the three cyan gates. Keep the diamond in the ring at the top of the screen. Flaps down, power back, about 55 knots.');
       if(gl.along<1800)tip('papi','The four lights beside the runway: two white and two red means you\'re on the glide path. All white is too high, all red too low.',3);}
@@ -838,7 +911,14 @@ function snapShadow(c){_lr.crossVectors(_wy,sunDir);if(_lr.lengthSq()<1e-5)_lr.s
   const tx=2*SHADOW_HALF/sunL.shadow.mapSize.x,a=c.dot(_lr),b=c.dot(_lu);c.addScaledVector(_lr,Math.round(a/tx)*tx-a).addScaledVector(_lu,Math.round(b/tx)*tx-b);}
 function sunBlocked(p){const hl=Math.hypot(sunDir.x,sunDir.z);if(sunDir.y<=0||hl<1e-3)return false;const ux=sunDir.x/hl,uz=sunDir.z/hl,tan=sunDir.y/hl;
   for(let k=1;k<110;k++){const d=k*30,ray=p.y+d*tan;if(ray>720)return false;if(groundH(p.x+ux*d,p.z+uz*d)>ray)return true;}return false;}
-let litT=0,planeTarget=1;
+let litT=0,planeTarget=1,fogK=-1;const _fc=new THREE.Color(),_fc2=new THREE.Color();
+function updFog(){const I=ISLES.farhold,p=camera.position,k=smooth(4200,1300,Math.hypot(p.x-I.x,p.z-I.z));if(Math.abs(k-fogK)<.003)return;fogK=k;const T=TOD[tod];
+  _fc.setHex(T.hor);const gy=(_fc.r+_fc.g+_fc.b)/3;_fc2.setRGB(gy,gy,gy*1.04).lerp(_fc,.35);const fc=_fc.clone().lerp(_fc2,k);
+  scene.fog.color.copy(fc);scene.fog.near=lerp(T.fogN,25,k);scene.fog.far=lerp(T.fogF,720,k);
+  const w=waterMat.uniforms;w.fogColor.value.copy(fc);w.fogNear.value=scene.fog.near;w.fogFar.value=scene.fog.far;
+  const u=skyMat.uniforms;[['cZen',T.zen,.75],['cHigh',T.high,.9],['cHor',T.hor,1],['cHaze',T.haze,1],['cSun',T.sunc,.8]].forEach(([n,h,a])=>u[n].value.setHex(h).lerp(fc,k*a));u.uDisc.value=k>.6?2:T.disc;}
+function stepBumps(dt){const I=ISLES.kettle,d=Math.hypot(ac.pos.x-I.x,ac.pos.z-I.z);if(d>2300)return;const agl=ac.pos.y-AC.gearH-surfH(ac.pos.x,ac.pos.z);if(agl<12)return;
+  const k=smooth(2300,900,d)*clamp(agl/40,0,1)*clamp(1.6-(ac.pos.y-200)/500,0,1);ac.vel.y+=(vnoise(simT*.8,1,7)-.5)*6*k*dt+(d<700?1.4*k*dt:0);ac.vel.x+=(vnoise(simT*.6,2,7)-.5)*3*k*dt;}
 function updateVisuals(dt,t){
   plane.position.copy(ac.pos);plane.quaternion.copy(ac.q);
   litT-=dt;if(litT<=0){litT=.15;planeTarget=sunBlocked(ac.pos)?0:1;}planeLit.value=lerp(planeLit.value,planeTarget,1-Math.exp(-dt*6));
@@ -850,7 +930,7 @@ function updateVisuals(dt,t){
   blob.visible=!settings.shadows&&mode!=='crashed';blob.position.set(ac.pos.x,gh+.3,ac.pos.z);blob.rotation.y=Math.atan2(-_f.x,-_f.z);blob.scale.set(4.8,1,3.4);blob.material.opacity=.32*clamp(1-agl/70,0,1);
   if(dest){beacon.visible=mode==='fly'||mode==='paused';beacon.position.set(dest.x,dest.elev,dest.z);const d=Math.hypot(dest.x-ac.pos.x,dest.z-ac.pos.z);beacon.material.opacity=.13*smooth(500,1600,d);}
   spot.intensity=ac.light&&mode!=='title'?(TOD[tod].lights>0?2.4:.6):0;
-  updPAPI();updGates();updRings(dt,t);
+  updPAPI();updGates();updWind(dt);updFog();
   {const fb=(camMode==='chase'?58:70)+(ac.bst||0)*9;if(Math.abs(camera.fov-fb)>.05){camera.fov=fb;camera.updateProjectionMatrix();}}
   sunL.castShadow=settings.shadows;const fo=mode==='title'?ac.pos:camera.position;
   axes();_sc.set(fo.x+_f.x*SHADOW_HALF*.5,surfH(fo.x,fo.z),fo.z+_f.z*SHADOW_HALF*.5);snapShadow(_sc);sunL.target.position.copy(_sc);sunL.position.copy(_sc).addScaledVector(sunDir,1500);
@@ -864,7 +944,7 @@ function loop(now){
   const dt=Math.min(.05,(now-last)/1000);last=now;const t=now/1000;
   skyMat.uniforms.uTime.value=t;waterMat.uniforms.uTime.value=t;for(const a of anims)a(t);
   cloudGroup.position.set((t*2.2)%400,0,-(t*.8)%400);
-  if(mode==='fly'){readInput(dt);acc+=dt;const H_=1/120;let n=0;while(acc>=H_&&n<10){if(ac.ground)stepGround(H_);else{stepAir(H_);stepBoost(H_);}simT+=H_;acc-=H_;n++;if(mode!=='fly')break;}if(n>=10)acc=0;
+  if(mode==='fly'){readInput(dt);acc+=dt;const H_=1/120;let n=0;while(acc>=H_&&n<10){if(ac.ground)stepGround(H_);else{stepAir(H_);stepBoost(H_);stepBumps(H_);}simT+=H_;acc-=H_;n++;if(mode!=='fly')break;}if(n>=10)acc=0;
     if(mode==='fly')gameChecks(dt);runTips(dt);}
   else acc=0;
   if(toastT>0){toastT-=dt;if(toastT<=0)$('toast').hidden=true;}
@@ -877,6 +957,6 @@ function loop(now){
   requestAnimationFrame(loop);
 }
 addEventListener('resize',()=>{resize();setThrottleUI();placeRingIdle();checkRotate();});
-pixMode=settings.pixels;resize();setTOD(settings.light);toTitle();placeRingIdle();checkRotate();refreshBag();
-const ld=$('load');if(ld)ld.hidden=true;$('fps').hidden=!settings.fps;
+$('wind').addEventListener('click',e=>{e.stopPropagation();useWind();});pixMode=settings.pixels;resize();setTOD(settings.light);toTitle();placeRingIdle();checkRotate();refreshBag();
+const ld=$('load');if(ld)ld.hidden=true;$('fps').hidden=!settings.fps;$('fps').textContent='FPS: measuring…';
 requestAnimationFrame(loop);

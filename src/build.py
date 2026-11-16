@@ -3,7 +3,9 @@ os.chdir(os.path.dirname(os.path.abspath(__file__))+'/..')
 head=open('src/head.html').read()
 world=open('src/world.js').read()
 game=open('src/game.js').read()
-out=head+'\n<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>\n<script>\n'+world+'\n</script>\n<script>\n'+game+'\n</script>\n'
+out0=head+'\n<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>\n<script>\n'+world+'\n</script>\n<script>\n'+game+'\n</script>\n'
+import hashlib
+out=out0.replace('__BUILD__',hashlib.sha1(out0.encode()).hexdigest()[:7])
 open('game.html','w').write(out)
 open('_test.html','w').write('<!doctype html><meta charset="utf-8">\n'+out)
 print('built',len(out))
@@ -43,6 +45,7 @@ const CORE=['./','index.html','manifest.webmanifest','icon-192.png','icon-512.pn
 self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(CORE)).then(()=>self.skipWaiting()));});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));});
 self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;
+ if(e.request.mode==='navigate'||e.request.url.endsWith('index.html')){e.respondWith(fetch(e.request).then(r=>{const cp=r.clone();caches.open(CACHE).then(c=>c.put(e.request,cp));return r;}).catch(()=>caches.match(e.request).then(h=>h||caches.match('index.html'))));return;}
  e.respondWith(caches.match(e.request).then(hit=>{const net=fetch(e.request).then(r=>{if(r&&(r.ok||r.type==='opaque')){const cp=r.clone();caches.open(CACHE).then(c=>c.put(e.request,cp));}return r;}).catch(()=>hit);return hit||net;}));});
 ''' % ver)
 print('web app built',ver)

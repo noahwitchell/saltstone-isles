@@ -52,6 +52,12 @@ button:focus-visible{outline:2px solid #fff;outline-offset:2px}
 #sw button{flex:1;font-family:var(--mono);font-size:13px;padding:7px 0;line-height:1.1;background:#3a3344;color:var(--paper);box-shadow:inset -2px -2px 0 #241c2e, 0 2px 0 #0007}
 #sw button.on{background:var(--good);color:#fff;box-shadow:inset -2px -2px 0 #3e7334, 0 2px 0 #0007}
 #sw button.warn{background:var(--warn);color:var(--ink)}
+#wind{font-family:var(--mono);font-size:14px;padding:8px 0;line-height:1.1;color:var(--ink);background:linear-gradient(to right,#ffd36b var(--w,0%),#fff0c4 var(--w,0%));box-shadow:inset -2px -2px 0 #b8902e, 0 2px 0 #0007;pointer-events:auto}
+#wind span{display:block;font-size:12px;letter-spacing:.2em;color:#a0601e}
+#wind.on{background:#ffd36b;color:#241c2e}
+#wind.off{opacity:.55}
+#wind.cool{background:linear-gradient(to right,#c9a85a var(--w,0%),#6a5a48 var(--w,0%));color:var(--paper)}
+#wind.cool span{color:var(--paper)}
 #lbtn{position:fixed;left:calc(var(--sl) + 68px);bottom:var(--sb);display:flex;gap:6px;width:124px}
 #lbtn button{flex:1;font-family:var(--mono);font-size:14px;padding:11px 0;position:relative;overflow:hidden}
 #brake{background:linear-gradient(to top, var(--bad) var(--b,0%), var(--paper) var(--b,0%))}
@@ -59,7 +65,7 @@ button:focus-visible{outline:2px solid #fff;outline-offset:2px}
 #check{position:fixed;left:calc(var(--sl) + 200px);top:calc(var(--st) + 50px);background:var(--glass);border:2px solid var(--line);padding:6px 9px;font-family:var(--mono);font-size:14px;line-height:1.6;pointer-events:none}
 #check b{display:block;font-size:9px;opacity:.75;letter-spacing:.06em}
 #check .ok{color:#8fe08a}
-#fps{position:fixed;left:50%;transform:translateX(-50%);top:calc(var(--st) + 46px);white-space:nowrap;background:var(--glass);color:var(--paper);font-family:var(--mono);font-size:13px;padding:3px 6px;pointer-events:none;z-index:5}
+#fps{position:fixed;left:50%;transform:translateX(-50%);top:calc(var(--st) + 46px);white-space:nowrap;background:var(--glass);color:var(--paper);font-family:var(--mono);font-size:13px;padding:3px 6px;pointer-events:none;z-index:1}
 #bag{position:fixed;right:var(--sr);top:calc(var(--st) + 50px);background:var(--glass);border:2px solid var(--line);padding:5px 8px;font-family:var(--mono);font-size:14px;pointer-events:auto;cursor:pointer;color:var(--paper);border-radius:0}
 #stick{position:fixed;left:42%;right:0;top:calc(var(--st) + 50px);bottom:0;touch-action:none}
 #ring{position:absolute;width:132px;height:132px;margin:-66px 0 0 -66px;border:2px dashed #f5e8cf99;border-radius:50%;pointer-events:none}
@@ -131,7 +137,8 @@ h3{font-family:var(--mono);font-size:15px;letter-spacing:.08em;color:var(--ink2)
   <div id="callout" hidden></div>
   <div id="thr" aria-label="Throttle"><div id="thrFill"></div><div id="thrKnob"></div><span>PWR</span><span id="thrPct">0%</span></div>
   <div id="lcol"><canvas id="mapc" width="96" height="96" aria-label="Map. Tap for the full chart."></canvas>
-    <div id="sw"><button id="swCarb">CARB<br>HEAT</button><button id="swMix">MIX<br>RICH</button><button id="swLight">LAND<br>LIGHT</button></div></div>
+    <div id="sw"><button id="swCarb">CARB<br>HEAT</button><button id="swMix">MIX<br>RICH</button><button id="swLight">LAND<br>LIGHT</button></div>
+    <button id="wind" aria-label="Tailwind boost">TAILWIND</button></div>
   <div id="lbtn"><button id="flaps">FLAPS 0</button><button id="brake">BRAKE</button></div>
   <div id="check" hidden></div>
   <button id="bag" hidden></button>
