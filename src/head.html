@@ -53,6 +53,9 @@ button:focus-visible{outline:2px solid #fff;outline-offset:2px}
 #sw button.on{background:var(--good);color:#fff;box-shadow:inset -2px -2px 0 #3e7334, 0 2px 0 #0007}
 #sw button.warn{background:var(--warn);color:var(--ink)}
 #wind{font-family:var(--mono);font-size:14px;padding:8px 0;line-height:1.1;color:var(--ink);background:linear-gradient(to right,#ffd36b var(--w,0%),#fff0c4 var(--w,0%));box-shadow:inset -2px -2px 0 #b8902e, 0 2px 0 #0007;pointer-events:auto}
+#score{font-family:var(--mono);font-size:16px;text-align:center;background:var(--glass);border:2px solid var(--line);color:#ffd36b;padding:3px 0;pointer-events:none}
+#score.pop{animation:pop .5s}@keyframes pop{30%{transform:scale(1.12);color:#fff}}
+#errand{font-family:var(--mono);font-size:12px;line-height:1.15;background:rgba(36,28,46,.74);border:2px solid #b8902e;color:#ffd890;padding:3px 5px;pointer-events:none}
 #wind span{display:block;font-size:12px;letter-spacing:.2em;color:#a0601e}
 #wind.on{background:#ffd36b;color:#241c2e}
 #wind.off{opacity:.55}
@@ -138,7 +141,7 @@ h3{font-family:var(--mono);font-size:15px;letter-spacing:.08em;color:var(--ink2)
   <div id="thr" aria-label="Throttle"><div id="thrFill"></div><div id="thrKnob"></div><span>PWR</span><span id="thrPct">0%</span></div>
   <div id="lcol"><canvas id="mapc" width="96" height="96" aria-label="Map. Tap for the full chart."></canvas>
     <div id="sw"><button id="swCarb">CARB<br>HEAT</button><button id="swMix">MIX<br>RICH</button><button id="swLight">LAND<br>LIGHT</button></div>
-    <button id="wind" aria-label="Tailwind boost">TAILWIND</button></div>
+    <button id="wind" aria-label="Tailwind boost">TAILWIND</button><div id="score" aria-label="Score">★ 0</div><div id="errand" hidden></div></div>
   <div id="lbtn"><button id="flaps">FLAPS 0</button><button id="brake">BRAKE</button></div>
   <div id="check" hidden></div>
   <button id="bag" hidden></button>

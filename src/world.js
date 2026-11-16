@@ -13,7 +13,7 @@ function fbm(x,z,o=4,s=1){let t=0,a=.5,f=1,n=0;for(let i=0;i<o;i++){t+=a*vnoise(
 let rs=12345; const rnd=()=>{rs=(Math.imul(rs,1664525)+1013904223)>>>0;return rs/4294967296;};
 
 /* ---------------- terrain ---------------- */
-const SIZE=16000, CELLS=400, CELL=SIZE/CELLS, HALF=SIZE/2, NV=CELLS+1;
+const SIZE=22000, CELLS=550, CELL=SIZE/CELLS, HALF=SIZE/2, NV=CELLS+1;
 /* the Saltwhistle chain: Ferrow (home) with Gull Point and Tallpine across narrow channels, then three outer islands */
 const ISLES={
   ferrow:{name:'Ferrow',x:-1050,z:560},
@@ -24,7 +24,7 @@ const ISLES={
   farhold:{name:'Farhold',x:-6000,z:-4500,r:1700},
 };
 function isleAt(x,z){
-  for(const k of ['marram','kettle','farhold']){const I=ISLES[k];if((x-I.x)**2+(z-I.z)**2<(I.r+700)**2)return k;}
+  for(const k of OUTER){const I=ISLES[k];if((x-I.x)**2+(z-I.z)**2<(I.r+700)**2)return k;}
   const m=homeMasks(x,z);return m.gull>m.ferrow&&m.gull>m.tall?'gull':m.tall>m.ferrow?'tall':'ferrow';}
 const ell=(x,z,cx,cz,rx,rz,rot)=>{const c=Math.cos(rot),s=Math.sin(rot),dx=x-cx,dz=z-cz,u=(dx*c+dz*s)/rx,v=(-dx*s+dz*c)/rz;return 1-u*u-v*v;};
 function homeMasks(x,z){const n=fbm(x*.0009,z*.0009,4,3)*.32,n2=fbm(x*.0021,z*.0021,3,5)*.12;
@@ -64,9 +64,11 @@ function farholdH(x,z){const I=ISLES.farhold,ca=Math.cos(.45),sa=Math.sin(.45),l
   if(m<0) return Math.max(-48,m*150);const t=smooth(0,.38,m);
   const hill=190*Math.exp(-(((x-I.x+420)**2+(z-I.z+420)**2)/(2*380*380)));
   return t*16+(fbm(x*.0019,z*.0019,4,103)*.5+.5)*60*t+hill*t;}
+/*@ISLES@*/
+const OUTER_H={marram:marramH,kettle:kettleH,farhold:farholdH};
 function naturalH(x,z){
   let h=homeH(x,z);
-  for(const [k,f] of [['marram',marramH],['kettle',kettleH],['farhold',farholdH]]){const I=ISLES[k];if((x-I.x)**2+(z-I.z)**2<(I.r+800)**2)h=Math.max(h,f(x,z));}
+  for(const k of OUTER){const I=ISLES[k];if((x-I.x)**2+(z-I.z)**2<(I.r+800)**2)h=Math.max(h,OUTER_H[k]?OUTER_H[k](x,z):I.h(x,z));}
   return h;
 }
 const STRIPS=[
@@ -76,6 +78,7 @@ const STRIPS=[
   {id:'marram',name:'Marram Beach',isle:'marram',x:3800,z:4350,hdg:90,len:400,wid:18,surf:'sand'},
   {id:'kettle',name:'Crater Shelf',isle:'kettle',x:5600,z:-2890,hdg:90,len:380,wid:16,surf:'cinder'},
   {id:'farhold',name:'Farhold Field',isle:'farhold',x:-5800,z:-4330,hdg:60,len:640,wid:22,surf:'paved'},
+  ...archStrips(),
 ];
 for(const s of STRIPS){
   const h=s.hdg*DEG; s.fx=Math.sin(h); s.fz=-Math.cos(h); s.rx=Math.cos(h); s.rz=Math.sin(h);
@@ -204,6 +207,7 @@ function terrainColor(h,ny,x,z){
   } else if(isl==='marram'){
     if(h<-.6) tc.setHex(0xe8d6a8);else if(h<3.9+n1*1.5||n2<.1) tc.setHex(COL.sand).lerp(tc2.setHex(0xf4e4b8),n2*.5+.5);
     else tc.setHex(0x9fb85a).lerp(tc2.setHex(COL.sand),.35);
+  } else if(ARCH_COL[isl]){ARCH_COL[isl](h,sl,n1,n2,x,z);
   } else if(h<-.6) tc.setHex(COL.sandWet);
   else if(h<3.5+n1*2.5&&sl<.32) tc.setHex(COL.sand);
   else if(sl>.42+n2*.06) {tc.setHex(COL.rock); tc.lerp(tc2.setHex(COL.rock2),(Math.sin(h*.09+n1*3)*.5+.5)*.9);}
@@ -247,7 +251,7 @@ function bakeTerrainShadow(dir,amt){
 
 /* ---------------- water ---------------- */
 const hData=new Uint8Array(NV*NV*4);
-for(let k=0;k<NV*NV;k++){const v=clamp((HGT[k]+60)/120,0,1)*255;hData[k*4]=v;hData[k*4+3]=255;}
+for(let k=0;k<NV*NV;k++){const v=Math.round(clamp((HGT[k]+60)/120,0,1)*65535);hData[k*4]=v>>8;hData[k*4+1]=v&255;hData[k*4+3]=255;}
 const hTex=new THREE.DataTexture(hData,NV,NV,THREE.RGBAFormat);hTex.minFilter=hTex.magFilter=THREE.LinearFilter;hTex.needsUpdate=true;
 const waterMat=new THREE.ShaderMaterial({
   uniforms:{hTex:{value:hTex},uTime:{value:0},sunDir:{value:sunDir},fogColor:{value:new THREE.Color()},fogNear:{value:700},fogFar:{value:5600},
@@ -255,16 +259,19 @@ const waterMat=new THREE.ShaderMaterial({
   vertexShader:`varying vec3 vW;varying float vD;void main(){vec4 w=modelMatrix*vec4(position,1.);vW=w.xyz;vec4 mv=viewMatrix*w;vD=-mv.z;gl_Position=projectionMatrix*mv;}`,
   fragmentShader:`uniform sampler2D hTex;uniform float uTime,fogNear,fogFar;uniform vec3 sunDir,fogColor,cDeep,cMid,cShal,cGlint;varying vec3 vW;varying float vD;
   float hs(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
+  float vn(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(hs(i),hs(i+vec2(1,0)),f.x),mix(hs(i+vec2(0,1)),hs(i+vec2(1,1)),f.x),f.y);}
   void main(){
     vec2 uv=(vW.xz+${HALF.toFixed(1)})/${SIZE.toFixed(1)}*${(CELLS/NV).toFixed(6)}+${(0.5/NV).toFixed(6)};
-    float h=texture2D(hTex,uv).r*120.-60.;float dp=-h;
+    vec4 ht=texture2D(hTex,uv);float h=(ht.r*65280.+ht.g*255.)/65535.*120.-60.;
+    float dp=-h+(vn(vW.xz*.03)-.5)*1.1+(vn(vW.xz*.11+7.)-.5)*.35;
     vec3 c=mix(cShal,cMid,smoothstep(1.,8.,dp));c=mix(c,cDeep,smoothstep(9.,38.,dp));
     float w=sin(vW.x*.045+uTime*.55+sin(vW.z*.031))*sin(vW.z*.052-uTime*.37+sin(vW.x*.02));
     c=mix(c,mix(c,vec3(1.),.18),step(.8,w));
-    float fl=1.3+.8*sin(uTime*.8+vW.x*.021+vW.z*.017);
-    float foam=step(dp,fl)*step(-.3,dp);
-    float foam2=step(abs(dp-fl-2.2),.35)*step(.5,hs(floor(vW.xz/4.)));
-    c=mix(c,vec3(.97,.95,.88),max(foam*.9,foam2*.55));
+    float fl=1.1+.45*sin(uTime*.6+vW.x*.011+vW.z*.009);
+    float foam=(1.-smoothstep(fl-.25,fl+.25,dp))*smoothstep(-.4,-.1,dp);
+    float wv=fract(uTime*.09-dp*.16);float band=smoothstep(.08,0.,abs(wv-.5)*(1.+dp*.05));
+    float foam2=band*smoothstep(fl,fl+1.,dp)*(1.-smoothstep(5.,9.,dp))*smoothstep(.45,.7,vn(vW.xz*.05+vec2(uTime*.03,0.)));
+    c=mix(c,vec3(.97,.95,.88),max(foam*.85,foam2*.45));
     vec3 V=normalize(cameraPosition-vW);vec3 R=reflect(-V,vec3(0.,1.,0.));float g=max(dot(R,sunDir),0.);
     float sp=hs(floor(vW.xz/3.)+floor(uTime*2.5));
     c=mix(c,cGlint,step(.985,g)*step(.55,sp)*.9+pow(g,90.)*.6);
@@ -654,6 +661,7 @@ function mark(id,x,z,y,name,desc){sights[id]={x,z,y,name,desc};farmSpots.push({x
    anims.push(t=>{const a=t*.004;g.position.set(-700+Math.cos(a)*2600,360+Math.sin(t*.07)*25,200+Math.sin(a)*1700);g.rotation.y=t*.03;sights.balloon.x=g.position.x;sights.balloon.z=g.position.z;sights.balloon.y=g.position.y-200;});}
   scene.add(shadowy(new THREE.Mesh(merge(it),toon())));for(const [x,y,z,c] of lit)addLight(x,y,z,c);
 })();
+/*@ISLEPROPS@*/
 /* ---------------- trees ---------------- */
 const trees=[];
 (function plant(){
@@ -675,13 +683,14 @@ const trees=[];
     if(farmSpots.some(f=>Math.hypot(f.x-x,f.z-z)<f.r))continue;const o=fn(x,z,h);if(o){trees.push(o);c++;}}};
   isleP('farhold',1700,(x,z,h)=>{if(h<4||nearStrip(x,z,60)||slopeAt(x,z)>.55)return null;if(rnd()>smooth(-.15,.2,fbm(x*.003,z*.003,3,107))*.9+.03)return null;return {x,z,h,pine:rnd()<.8,s:.7+rnd()*.6};});
   isleP('kettle',420,(x,z,h)=>{if(h<7||h>175||nearStrip(x,z,50)||slopeAt(x,z)>.42)return null;return {x,z,h,pine:rnd()<.35,s:.45+rnd()*.5};});
+  for(const [k,n,fn] of ARCH_TREES)isleP(k,n,fn);
   isleP('marram',520,(x,z,h)=>{if(h<1.8||nearStrip(x,z,28))return null;return {x,z,h,palm:true,pine:false,s:.75+rnd()*.5};});
   const crownP=new THREE.ConeGeometry(3.2,9,6).translate(0,6.5,0), crownR=new THREE.IcosahedronGeometry(3.8,0).translate(0,5.6,0), trunk=new THREE.CylinderGeometry(.45,.6,3,5).translate(0,1.5,0);
   const ps=trees.filter(t=>t.pine&&!t.palm), rs_=trees.filter(t=>!t.pine&&!t.palm), pl=trees.filter(t=>t.palm);
   const mat=bakeify(new THREE.MeshToonMaterial({gradientMap:gradTex,flatShading:true}));
   const mk=(geo,list,cols,isTrunk)=>{const m=new THREE.InstancedMesh(geo,mat,list.length);const mm=new THREE.Matrix4(),c=new THREE.Color();
     list.forEach((t,i)=>{mm.compose(new V3(t.x,t.h-.5,t.z),new Q().setFromEuler(new THREE.Euler(0,hash2(i,7,3)*6,0)),new V3(t.s,t.s*(.9+hash2(i,2,2)*.3),t.s));m.setMatrixAt(i,mm);
-      c.setHex(isTrunk?0x6b4f3a:cols[(hash2(i,9,1)*cols.length)|0]);m.setColorAt(i,c);});m.castShadow=!isTrunk;m.receiveShadow=true;scene.add(m);};
+      c.setHex(isTrunk?0x6b4f3a:(t.col||cols[(hash2(i,9,1)*cols.length)|0]));m.setColorAt(i,c);});m.castShadow=!isTrunk;m.receiveShadow=true;scene.add(m);};
   mk(crownP,ps,pine);mk(trunk,ps,null,true);mk(crownR,rs_,round);mk(trunk,rs_,null,true);
   {const it=[{geo:new THREE.CylinderGeometry(.26,.42,10,5).translate(0,5,0),m:M([0,0,0],[0,0,.13]),color:0x8a6a4a}];
     for(let k=0;k<7;k++)it.push({geo:BOX(1.2,.18,5.6).translate(0,0,2.5),m:M([-1.3,9.8,0],[.42+(k%2)*.18,k/7*TAU,0]),color:k%2?0x4f8a3a:0x5f9a40});
@@ -705,7 +714,7 @@ const trees=[];
 /* ---------------- clouds ---------------- */
 const cloudGroup=new THREE.Group();scene.add(cloudGroup);
 (function clouds(){const it=[];
-  for(let c=0;c<40;c++){const cx=(rnd()-.5)*16000,cz=(rnd()-.5)*14000,cy=620+rnd()*380;const n=5+(rnd()*5|0);
+  for(let c=0;c<64;c++){const cx=(rnd()-.5)*21000,cz=(rnd()-.5)*19000,cy=620+rnd()*380;const n=5+(rnd()*5|0);
     for(let k=0;k<n;k++){const s=40+rnd()*60;const y=cy+(rnd()-.3)*20;
       it.push({geo:new THREE.IcosahedronGeometry(1,1),m:M([cx+(rnd()-.5)*220,y,cz+(rnd()-.5)*120],[0,rnd()*3,0],[s,s*.55,s*.9]),color:y>cy?0xfff8f0:0xeae2f2});}}
   cloudGroup.add(new THREE.Mesh(merge(it),toon({},false)));

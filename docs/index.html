@@ -66,6 +66,9 @@ button:focus-visible{outline:2px solid #fff;outline-offset:2px}
 #sw button.on{background:var(--good);color:#fff;box-shadow:inset -2px -2px 0 #3e7334, 0 2px 0 #0007}
 #sw button.warn{background:var(--warn);color:var(--ink)}
 #wind{font-family:var(--mono);font-size:14px;padding:8px 0;line-height:1.1;color:var(--ink);background:linear-gradient(to right,#ffd36b var(--w,0%),#fff0c4 var(--w,0%));box-shadow:inset -2px -2px 0 #b8902e, 0 2px 0 #0007;pointer-events:auto}
+#score{font-family:var(--mono);font-size:16px;text-align:center;background:var(--glass);border:2px solid var(--line);color:#ffd36b;padding:3px 0;pointer-events:none}
+#score.pop{animation:pop .5s}@keyframes pop{30%{transform:scale(1.12);color:#fff}}
+#errand{font-family:var(--mono);font-size:12px;line-height:1.15;background:rgba(36,28,46,.74);border:2px solid #b8902e;color:#ffd890;padding:3px 5px;pointer-events:none}
 #wind span{display:block;font-size:12px;letter-spacing:.2em;color:#a0601e}
 #wind.on{background:#ffd36b;color:#241c2e}
 #wind.off{opacity:.55}
@@ -153,7 +156,7 @@ h3{font-family:var(--mono);font-size:15px;letter-spacing:.08em;color:var(--ink2)
   <div id="thr" aria-label="Throttle"><div id="thrFill"></div><div id="thrKnob"></div><span>PWR</span><span id="thrPct">0%</span></div>
   <div id="lcol"><canvas id="mapc" width="96" height="96" aria-label="Map. Tap for the full chart."></canvas>
     <div id="sw"><button id="swCarb">CARB<br>HEAT</button><button id="swMix">MIX<br>RICH</button><button id="swLight">LAND<br>LIGHT</button></div>
-    <button id="wind" aria-label="Tailwind boost">TAILWIND</button></div>
+    <button id="wind" aria-label="Tailwind boost">TAILWIND</button><div id="score" aria-label="Score">★ 0</div><div id="errand" hidden></div></div>
   <div id="lbtn"><button id="flaps">FLAPS 0</button><button id="brake">BRAKE</button></div>
   <div id="check" hidden></div>
   <button id="bag" hidden></button>
@@ -196,7 +199,7 @@ function fbm(x,z,o=4,s=1){let t=0,a=.5,f=1,n=0;for(let i=0;i<o;i++){t+=a*vnoise(
 let rs=12345; const rnd=()=>{rs=(Math.imul(rs,1664525)+1013904223)>>>0;return rs/4294967296;};
 
 /* ---------------- terrain ---------------- */
-const SIZE=16000, CELLS=400, CELL=SIZE/CELLS, HALF=SIZE/2, NV=CELLS+1;
+const SIZE=22000, CELLS=550, CELL=SIZE/CELLS, HALF=SIZE/2, NV=CELLS+1;
 /* the Saltwhistle chain: Ferrow (home) with Gull Point and Tallpine across narrow channels, then three outer islands */
 const ISLES={
   ferrow:{name:'Ferrow',x:-1050,z:560},
@@ -207,7 +210,7 @@ const ISLES={
   farhold:{name:'Farhold',x:-6000,z:-4500,r:1700},
 };
 function isleAt(x,z){
-  for(const k of ['marram','kettle','farhold']){const I=ISLES[k];if((x-I.x)**2+(z-I.z)**2<(I.r+700)**2)return k;}
+  for(const k of OUTER){const I=ISLES[k];if((x-I.x)**2+(z-I.z)**2<(I.r+700)**2)return k;}
   const m=homeMasks(x,z);return m.gull>m.ferrow&&m.gull>m.tall?'gull':m.tall>m.ferrow?'tall':'ferrow';}
 const ell=(x,z,cx,cz,rx,rz,rot)=>{const c=Math.cos(rot),s=Math.sin(rot),dx=x-cx,dz=z-cz,u=(dx*c+dz*s)/rx,v=(-dx*s+dz*c)/rz;return 1-u*u-v*v;};
 function homeMasks(x,z){const n=fbm(x*.0009,z*.0009,4,3)*.32,n2=fbm(x*.0021,z*.0021,3,5)*.12;
@@ -247,9 +250,99 @@ function farholdH(x,z){const I=ISLES.farhold,ca=Math.cos(.45),sa=Math.sin(.45),l
   if(m<0) return Math.max(-48,m*150);const t=smooth(0,.38,m);
   const hill=190*Math.exp(-(((x-I.x+420)**2+(z-I.z+420)**2)/(2*380*380)));
   return t*16+(fbm(x*.0019,z*.0019,4,103)*.5+.5)*60*t+hill*t;}
+/* ---------------- the far archipelago: fourteen more islands round the Saltwhistle chain ----------------
+   Each island has a centre, a rough radius (for lookups) and its own height function. Pinnacles and arches are
+   meshes (see isleprops.js); the heightfield only gives the ground they stand on. */
+const ell2=(x,z,I,rx,rz)=>{const c=Math.cos(I.rot||0),s=Math.sin(I.rot||0),dx=x-I.x,dz=z-I.z;return [(dx*c+dz*s)/rx,(-dx*s+dz*c)/rz];};
+const locUV=(I,x,z)=>{const c=Math.cos(I.rot||0),s=Math.sin(I.rot||0),dx=x-I.x,dz=z-I.z;return [dx*c+dz*s,-dx*s+dz*c];};
+const fromUV=(I,u,v)=>{const c=Math.cos(I.rot||0),s=Math.sin(I.rot||0);return {x:I.x+u*c-v*s,z:I.z+u*s+v*c};};
+function iblob(x,z,I,rx,rz,na,seed){const [u,v]=ell2(x,z,I,rx,rz);return 1-u*u-v*v+fbm(x*.0016,z*.0016,4,seed)*na*1.5*1+fbm(x*.0045,z*.0045,3,seed+5)*na*.7+fbm(x*.011,z*.011,2,seed+9)*na*.25;}
+const sea=m=>Math.max(-48,m*150-1);
+const ARCH=[
+  {id:'sisters',name:'Twin Sisters',x:8300,z:1250,r:900,rot:.4,h(x,z){const m=iblob(x,z,this,820,500,.22,201);if(m<0)return sea(m);const t=smooth(0,.3,m);
+     return t*11+(fbm(x*.002,z*.002,4,203)*.5+.5)*26*t;}},
+  {id:'puffin',name:'Puffin Rock',x:6500,z:2650,r:380,rot:.9,h(x,z){const m=iblob(x,z,this,300,200,.18,211);if(m<0)return sea(m*1.6);
+     return smooth(0,.14,m)*40+fbm(x*.01,z*.01,3,213)*7*smooth(0,.3,m);}},
+  {id:'cleft',name:'Cleft Isle',x:8800,z:-6300,r:1250,rot:.25,h(x,z){const m=iblob(x,z,this,1150,780,.16,221);if(m<0)return sea(m);
+     const [u,v]=locUV(this,x,z),top=smooth(0,.1,m)*(150+fbm(x*.0025,z*.0025,4,223)*30)+smooth(.1,.6,m)*25;
+     const c=85*Math.sin(u/310+.4)+30*Math.sin(u/130),w=48+14*Math.sin(u*.011+1),d=Math.abs(v-c);
+     return lerp(-9,top,smooth(w,w+30,d));}},
+  {id:'apple',name:'Applecross',x:-2300,z:6900,r:1300,rot:-.3,h(x,z){const m=iblob(x,z,this,1200,820,.25,231);if(m<0)return sea(m);const t=smooth(0,.35,m);
+     return t*18+(fbm(x*.0015,z*.0015,4,233)*.5+.5)*80*t;}},
+  {id:'salt',name:'The Saltpans',x:-5900,z:2950,r:1100,rot:.7,h(x,z){const m=iblob(x,z,this,1000,680,.2,241);if(m<0)return sea(m*.6);
+     const pan=saltPan(x,z);return smooth(0,.2,m)*3.4+fbm(x*.01,z*.01,2,243)*.5-(pan>=0?.9:0);}},
+  {id:'mirror',name:'Looking-Glass Isle',x:1400,z:8700,r:1000,rot:0,h(x,z){const m=iblob(x,z,this,900,780,.18,251);if(m<0)return sea(m);const t=smooth(0,.3,m);
+     const lr=Math.hypot(x-(this.x-180),z-(this.z+40)),rim=Math.exp(-(((lr-430)/150)**2)),lake=smooth(360,250,lr+fbm(x*.006,z*.006,3,253)*60);
+     return lerp(t*12+rim*70*t+(fbm(x*.003,z*.003,3,255)*.5+.5)*14*t,-3.5,lake);}},
+  {id:'mesa',name:'Starwatch Mesa',x:-9000,z:-700,r:1000,rot:.3,h(x,z){const m=iblob(x,z,this,900,700,.14,261);if(m<-.6)return -48;if(m<0)return sea(m);
+     return smooth(.05,.13,m)*235+smooth(0,.05,m)*22+fbm(x*.004,z*.004,3,263)*6+smooth(.13,.5,m)*8;}},
+  {id:'cascade',name:'Cascade Isle',x:2600,z:-7700,r:1100,rot:-.2,h(x,z){const m=iblob(x,z,this,980,760,.2,271);if(m<0)return sea(m);const t=smooth(0,.3,m);
+     const [u,v]=locUV(this,x,z),hi=smooth(-150,0,u)*smooth(.08,.25,m),gul=Math.exp(-(((v-60-u*.08)/70)**2))*smooth(-120,350,u);
+     return t*20+(fbm(x*.002,z*.002,4,273)*.5+.5)*30*t+hi*(270+fbm(x*.003,z*.003,3,275)*40)-gul*hi*60;}},
+  {id:'lantern',name:'Lantern Key',x:6300,z:7700,r:900,rot:.9,h(x,z){const m=iblob(x,z,this,800,430,.2,281);if(m<0)return sea(m*1.3);const t=smooth(0,.4,m);
+     return t*5+(fbm(x*.003,z*.003,3,283)*.5+.5)*10*t;}},
+  {id:'quarry',name:'Greystone',x:-3800,z:-8300,r:950,rot:.1,h(x,z){const m=iblob(x,z,this,860,700,.2,291);if(m<0)return sea(m);const t=smooth(0,.3,m);
+     const [u,v]=locUV(this,x,z),base=t*24+130*Math.exp(-((u+60)**2+(v-60)**2)/(2*330*330))*t+(fbm(x*.003,z*.003,3,293)*.5+.5)*20*t;
+     const pr=Math.hypot(u-120,v+40)/260;if(pr>1)return base;const step=26+Math.floor(pr*7)*12+smooth(0,.25,(pr*7)%1)*12*0;return Math.min(base,lerp(step,base,smooth(.85,1,pr)));}},
+  {id:'windward',name:'Windward',x:-8300,z:7300,r:1350,rot:-.5,h(x,z){const m=iblob(x,z,this,1300,440,.16,301);if(m<0)return sea(m);const t=smooth(0,.25,m);
+     const [u,v]=locUV(this,x,z);return t*14+150*Math.exp(-(((v+70)/150)**2))*t*smooth(-1250,-700,u)*smooth(1250,700,u)+(fbm(x*.003,z*.003,3,303)*.5+.5)*14*t;}},
+  {id:'bell',name:'Bell Rock',x:-1700,z:-5300,r:260,rot:0,h(x,z){const m=iblob(x,z,this,150,120,.15,311);if(m<0)return sea(m*2.5);return smooth(0,.25,m)*30+fbm(x*.02,z*.02,2,313)*3;}},
+  {id:'tern',name:'Tern Bars',x:9300,z:5300,r:950,rot:.3,h(x,z){let best=-16;for(const [du,dv,rx,rz] of TERN){const o={x:this.x+du,z:this.z+dv,rot:this.rot+du*.0007};const m=iblob(x,z,o,rx,rz,.3,321+du);best=Math.max(best,m*4);}
+     return best<0?Math.max(-48,best*3-1.2):best*.35+.3;}},
+  {id:'heart',name:'Sweetheart Islet',x:-500,z:4300,r:360,rot:0,h(x,z){const u=(x-this.x)/270,v=-(z-this.z)/270+.25,f=(u*u+v*v-1)**3-u*u*v*v*v;
+     const m=-f*1.2+fbm(x*.01,z*.01,2,331)*.12;if(m<0)return Math.max(-48,m*40-1.2);return smooth(0,.15,m)*6+fbm(x*.02,z*.02,2,333)*1.2;}},
+];
+const TERN=[[0,0,260,70],[-420,240,180,50],[380,-300,220,60],[-180,-420,140,40],[520,260,120,36]];
+/* Saltpans: a grid of shallow pans, each a different colour; returns the pan index or -1 on the bunds */
+function saltPan(x,z){const I={x:-5900,z:2950,rot:.7},[u,v]=locUV(I,x,z),gu=u/170,gv=v/130,fu=gu-Math.floor(gu),fv=gv-Math.floor(gv);
+  if(fu<.08||fv<.1||Math.abs(u)>760||Math.abs(v)>420)return -1;return (hash2(Math.floor(gu),Math.floor(gv),241)*6)|0;}
+for(const a of ARCH)ISLES[a.id]=a;
+const OUTER=['marram','kettle','farhold',...ARCH.map(a=>a.id)];
+const ARCH_STRIPS=[
+  {id:'sisters',name:'Sisters Shelf',isle:'sisters',du:-220,dv:-60,hdg:0,len:440,wid:16,surf:'grass'},
+  {id:'cleft',name:'Cleft Top',isle:'cleft',du:-20,dv:-430,hdg:0,len:420,wid:16,surf:'dirt'},
+  {id:'apple',name:'Applecross',isle:'apple',du:160,dv:-120,hdg:.15,len:620,wid:20,surf:'paved'},
+  {id:'salt',name:'Saltpan Flats',isle:'salt',du:-250,dv:380,hdg:0,len:520,wid:20,surf:'sand'},
+  {id:'mirror',name:'Glass Meadow',isle:'mirror',du:520,dv:60,hdg:Math.PI/2,len:400,wid:16,surf:'grass'},
+  {id:'mesa',name:'Starwatch',isle:'mesa',du:-120,dv:60,hdg:0,len:520,wid:18,surf:'paved'},
+  {id:'cascade',name:'Cascade Terrace',isle:'cascade',du:-560,dv:20,hdg:.2+Math.PI/2,len:380,wid:16,surf:'grass'},
+  {id:'lantern',name:'Lantern Key',isle:'lantern',du:-60,dv:-40,hdg:0,len:560,wid:20,surf:'paved'},
+  {id:'quarry',name:'Greystone Pit',isle:'quarry',du:-260,dv:380,hdg:.25,len:400,wid:16,surf:'dirt'},
+  {id:'windward',name:'Windward',isle:'windward',du:-260,dv:220,hdg:0,len:480,wid:18,surf:'grass'},
+];
+/* du/dv are world offsets (metres east/south of the island centre); hdg is a world-space yaw offset in radians that lines the strip up with the island */
+function archStrips(){return ARCH_STRIPS.map(s=>{const I=ISLES[s.isle];let h=(Math.atan2(Math.cos(I.rot+s.hdg),-Math.sin(I.rot+s.hdg))/DEG);h=((h%360)+360)%360;
+  return {id:s.id,name:s.name,isle:s.isle,x:Math.round(I.x+s.du),z:Math.round(I.z+s.dv),hdg:Math.round(h),len:s.len,wid:s.wid,surf:s.surf};});}
+/* island colours */
+const ARCH_COL={
+  sisters(h,sl,n1,n2){if(h<3+n1*1.5&&sl<.3)return tc.setHex(0xd9c8a0);if(sl>.4)return tc.setHex(0x8a8078).lerp(tc2.setHex(0x6e6660),n2*.5+.5);return tc.setHex(0x86a85a).lerp(tc2.setHex(0xb0b46a),n1*.5+.5);},
+  puffin(h,sl,n1,n2){if(h>30&&sl<.5)return tc.setHex(0x9ab86a).lerp(tc2.setHex(0xeae6d8),n2>.2?.5:0);return tc.setHex(0x7e746e).lerp(tc2.setHex(0x9c9088),(Math.sin(h*.3)*.5+.5));},
+  cleft(h,sl,n1,n2){if(h<1)return tc.setHex(0xb89a78);if(sl>.45)return tc.setHex(0xb8704a).lerp(tc2.setHex(0xd8a070),(Math.sin(h*.16+n1*2)*.5+.5));
+     return tc.setHex(0xa8a85a).lerp(tc2.setHex(0xc8b070),n1*.5+.5);},
+  apple(h,sl,n1,n2,x,z){if(h<3+n1*2&&sl<.3)return tc.setHex(COL.sand);if(sl>.42)return tc.setHex(COL.rock);
+     if(orchardAt(x,z))return tc.setHex(0x8cb850).lerp(tc2.setHex(0x9cc45a),n2*.5+.5);
+     const [u,v]=locUV(ISLES.apple,x,z),k=hash2(Math.floor(u/120),Math.floor(v/90),235);return tc.setHex(k<.3?0xd8c46c:k<.55?0xc9d27a:k<.8?0x7fae4f:0xe0b45c);},
+  salt(h,sl,n1,n2,x,z){const p=saltPan(x,z);if(h<.4&&p<0)return tc.setHex(0xd8ccb0);if(p>=0)return tc.setHex([0xf4eee8,0xf0c8c8,0xe8a8b8,0xbfe0dc,0xf6f2ea,0xd8b8d0][p]);return tc.setHex(0xc8b890).lerp(tc2.setHex(0xe0d4b8),n2*.5+.5);},
+  mirror(h,sl,n1,n2){if(h<-.6)return tc.setHex(0x8ab0a0);if(h<2.5&&sl<.3)return tc.setHex(0xd8cc9c);const f=hash2(Math.floor(n1*40),Math.floor(n2*40),257);
+     tc.setHex(0x7eb456).lerp(tc2.setHex(0x98c060),n1*.5+.5);if(n2>.3)tc.lerp(tc2.setHex(f<.33?0xe8d060:f<.66?0xd890b8:0xf0ece0),.55);return tc;},
+  mesa(h,sl,n1,n2){if(h<3&&sl<.3)return tc.setHex(0xd8b890);if(sl>.35)return tc.setHex([0xc07850,0xd8a070,0xa86048,0xe0b888][Math.floor(h/26+n1*.6)&3]);
+     return tc.setHex(0xb8a070).lerp(tc2.setHex(0x9a9a5a),n2*.5+.5);},
+  cascade(h,sl,n1,n2){if(h<3&&sl<.3)return tc.setHex(0x9a9488);if(sl>.48)return tc.setHex(0x5a6458).lerp(tc2.setHex(0x7a8070),n2*.5+.5);
+     return tc.setHex(0x3f7a3a).lerp(tc2.setHex(0x5a9a44),n1*.5+.5);},
+  lantern(h,sl,n1,n2){if(h<2.5+n1)return tc.setHex(0xe0cc98);return tc.setHex(0x6ea84e).lerp(tc2.setHex(0x9ab858),n1*.5+.5);},
+  quarry(h,sl,n1,n2,x,z){const [u,v]=locUV(ISLES.quarry,x,z);if(Math.hypot(u-120,v+40)<250)return tc.setHex((Math.floor(h/12)&1)?0xe0d8cc:0xccc4b8);
+     if(sl>.4)return tc.setHex(0x8c8a86);if(h<3)return tc.setHex(0xc8b898);return tc.setHex(0x8a9a5a).lerp(tc2.setHex(0xa0a070),n1*.5+.5);},
+  windward(h,sl,n1,n2){if(h<3&&sl<.3)return tc.setHex(COL.sand);if(sl>.45)return tc.setHex(COL.rock);return tc.setHex(0x7eab4e).lerp(tc2.setHex(0xa8b860),n1*.5+.5).lerp(tc2.setHex(0x8f9a5a),smooth(60,150,h)*.6);},
+  bell(h,sl){return sl>.4||h<4?tc.setHex(0x7a7270):tc.setHex(0x8a9a6a);},
+  tern(h){return tc.setHex(h<.8?0xd8c49a:0xeedcb0);},
+  heart(h,sl,n1,n2){if(h<1.2)return tc.setHex(0xead8a8);return tc.setHex(0x8cc05a).lerp(tc2.setHex(0xe890a8),n2>.35?.6:0);},
+};
+const orchardAt=(x,z)=>{const I=ISLES.apple;if((x-I.x)**2+(z-I.z)**2>1500*1500)return false;const h=naturalH(x,z);return h>14&&h<90&&fbm(x*.0018,z*.0018,3,237)>.02;};
+
+const OUTER_H={marram:marramH,kettle:kettleH,farhold:farholdH};
 function naturalH(x,z){
   let h=homeH(x,z);
-  for(const [k,f] of [['marram',marramH],['kettle',kettleH],['farhold',farholdH]]){const I=ISLES[k];if((x-I.x)**2+(z-I.z)**2<(I.r+800)**2)h=Math.max(h,f(x,z));}
+  for(const k of OUTER){const I=ISLES[k];if((x-I.x)**2+(z-I.z)**2<(I.r+800)**2)h=Math.max(h,OUTER_H[k]?OUTER_H[k](x,z):I.h(x,z));}
   return h;
 }
 const STRIPS=[
@@ -259,6 +352,7 @@ const STRIPS=[
   {id:'marram',name:'Marram Beach',isle:'marram',x:3800,z:4350,hdg:90,len:400,wid:18,surf:'sand'},
   {id:'kettle',name:'Crater Shelf',isle:'kettle',x:5600,z:-2890,hdg:90,len:380,wid:16,surf:'cinder'},
   {id:'farhold',name:'Farhold Field',isle:'farhold',x:-5800,z:-4330,hdg:60,len:640,wid:22,surf:'paved'},
+  ...archStrips(),
 ];
 for(const s of STRIPS){
   const h=s.hdg*DEG; s.fx=Math.sin(h); s.fz=-Math.cos(h); s.rx=Math.cos(h); s.rz=Math.sin(h);
@@ -387,6 +481,7 @@ function terrainColor(h,ny,x,z){
   } else if(isl==='marram'){
     if(h<-.6) tc.setHex(0xe8d6a8);else if(h<3.9+n1*1.5||n2<.1) tc.setHex(COL.sand).lerp(tc2.setHex(0xf4e4b8),n2*.5+.5);
     else tc.setHex(0x9fb85a).lerp(tc2.setHex(COL.sand),.35);
+  } else if(ARCH_COL[isl]){ARCH_COL[isl](h,sl,n1,n2,x,z);
   } else if(h<-.6) tc.setHex(COL.sandWet);
   else if(h<3.5+n1*2.5&&sl<.32) tc.setHex(COL.sand);
   else if(sl>.42+n2*.06) {tc.setHex(COL.rock); tc.lerp(tc2.setHex(COL.rock2),(Math.sin(h*.09+n1*3)*.5+.5)*.9);}
@@ -430,7 +525,7 @@ function bakeTerrainShadow(dir,amt){
 
 /* ---------------- water ---------------- */
 const hData=new Uint8Array(NV*NV*4);
-for(let k=0;k<NV*NV;k++){const v=clamp((HGT[k]+60)/120,0,1)*255;hData[k*4]=v;hData[k*4+3]=255;}
+for(let k=0;k<NV*NV;k++){const v=Math.round(clamp((HGT[k]+60)/120,0,1)*65535);hData[k*4]=v>>8;hData[k*4+1]=v&255;hData[k*4+3]=255;}
 const hTex=new THREE.DataTexture(hData,NV,NV,THREE.RGBAFormat);hTex.minFilter=hTex.magFilter=THREE.LinearFilter;hTex.needsUpdate=true;
 const waterMat=new THREE.ShaderMaterial({
   uniforms:{hTex:{value:hTex},uTime:{value:0},sunDir:{value:sunDir},fogColor:{value:new THREE.Color()},fogNear:{value:700},fogFar:{value:5600},
@@ -438,16 +533,19 @@ const waterMat=new THREE.ShaderMaterial({
   vertexShader:`varying vec3 vW;varying float vD;void main(){vec4 w=modelMatrix*vec4(position,1.);vW=w.xyz;vec4 mv=viewMatrix*w;vD=-mv.z;gl_Position=projectionMatrix*mv;}`,
   fragmentShader:`uniform sampler2D hTex;uniform float uTime,fogNear,fogFar;uniform vec3 sunDir,fogColor,cDeep,cMid,cShal,cGlint;varying vec3 vW;varying float vD;
   float hs(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
+  float vn(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(hs(i),hs(i+vec2(1,0)),f.x),mix(hs(i+vec2(0,1)),hs(i+vec2(1,1)),f.x),f.y);}
   void main(){
     vec2 uv=(vW.xz+${HALF.toFixed(1)})/${SIZE.toFixed(1)}*${(CELLS/NV).toFixed(6)}+${(0.5/NV).toFixed(6)};
-    float h=texture2D(hTex,uv).r*120.-60.;float dp=-h;
+    vec4 ht=texture2D(hTex,uv);float h=(ht.r*65280.+ht.g*255.)/65535.*120.-60.;
+    float dp=-h+(vn(vW.xz*.03)-.5)*1.1+(vn(vW.xz*.11+7.)-.5)*.35;
     vec3 c=mix(cShal,cMid,smoothstep(1.,8.,dp));c=mix(c,cDeep,smoothstep(9.,38.,dp));
     float w=sin(vW.x*.045+uTime*.55+sin(vW.z*.031))*sin(vW.z*.052-uTime*.37+sin(vW.x*.02));
     c=mix(c,mix(c,vec3(1.),.18),step(.8,w));
-    float fl=1.3+.8*sin(uTime*.8+vW.x*.021+vW.z*.017);
-    float foam=step(dp,fl)*step(-.3,dp);
-    float foam2=step(abs(dp-fl-2.2),.35)*step(.5,hs(floor(vW.xz/4.)));
-    c=mix(c,vec3(.97,.95,.88),max(foam*.9,foam2*.55));
+    float fl=1.1+.45*sin(uTime*.6+vW.x*.011+vW.z*.009);
+    float foam=(1.-smoothstep(fl-.25,fl+.25,dp))*smoothstep(-.4,-.1,dp);
+    float wv=fract(uTime*.09-dp*.16);float band=smoothstep(.08,0.,abs(wv-.5)*(1.+dp*.05));
+    float foam2=band*smoothstep(fl,fl+1.,dp)*(1.-smoothstep(5.,9.,dp))*smoothstep(.45,.7,vn(vW.xz*.05+vec2(uTime*.03,0.)));
+    c=mix(c,vec3(.97,.95,.88),max(foam*.85,foam2*.45));
     vec3 V=normalize(cameraPosition-vW);vec3 R=reflect(-V,vec3(0.,1.,0.));float g=max(dot(R,sunDir),0.);
     float sp=hs(floor(vW.xz/3.)+floor(uTime*2.5));
     c=mix(c,cGlint,step(.985,g)*step(.55,sp)*.9+pow(g,90.)*.6);
@@ -837,6 +935,184 @@ function mark(id,x,z,y,name,desc){sights[id]={x,z,y,name,desc};farmSpots.push({x
    anims.push(t=>{const a=t*.004;g.position.set(-700+Math.cos(a)*2600,360+Math.sin(t*.07)*25,200+Math.sin(a)*1700);g.rotation.y=t*.03;sights.balloon.x=g.position.x;sights.balloon.z=g.position.z;sights.balloon.y=g.position.y-200;});}
   scene.add(shadowy(new THREE.Mesh(merge(it),toon())));for(const [x,y,z,c] of lit)addLight(x,y,z,c);
 })();
+/* ---------------- far archipelago props, fly-through gaps and errand finds ---------------- */
+const SOLIDS=[];   // simple collision shapes for rock spires, arches and bridges: c = tapered cylinder, s = sphere
+const FLYGATES=[]; // natural gaps worth flying through: a vertical window with a normal (nx,nz) and half-width w
+const FINDS={};    // errand items: set id -> [{x,y,z}]
+const solidCyl=(x,z,y0,y1,r0,r1)=>SOLIDS.push({k:'c',x,z,y0,y1,r0,r1});
+const solidSph=(x,y,z,r)=>SOLIDS.push({k:'s',x,y,z,r});
+function propHit(x,y,z,pad=1.2){for(const o of SOLIDS){if(o.k==='c'){if(y<o.y0||y>o.y1)continue;const r=lerp(o.r0,o.r1,(y-o.y0)/(o.y1-o.y0))+pad;if((x-o.x)**2+(z-o.z)**2<r*r)return true;}
+  else if((x-o.x)**2+(y-o.y)**2+(z-o.z)**2<(o.r+pad)**2)return true;}return false;}
+function flyGate(id,name,x,z,y0,y1,yaw,w,desc){FLYGATES.push({id,name,x,z,y0,y1,nx:Math.cos(yaw),nz:Math.sin(yaw),w,desc});}
+const onIsle=(id,ok,score,n=500)=>{const I=ISLES[id];return findSpot(I.x,I.z,I.r,(x,z,h)=>isleAt(x,z)===id&&ok(x,z,h),score,n);};
+const isleYaw=(id,du=0)=>ISLES[id].rot+du;
+/* a weathered rock spire: stacked, slightly wandering drums, with a white seabird cap */
+function spireAt(it,x,z,y0,top,r0,r1,seed){const n=7;let px=x,pz=z;
+  for(let k=0;k<n;k++){const a=k/n,b=(k+1)/n,ya=lerp(y0,top,a),yb=lerp(y0,top,b),ra=lerp(r0,r1,a),rb=lerp(r0,r1,b);
+    it.push({geo:new THREE.CylinderGeometry(rb,ra*1.04,yb-ya+.6,7),m:M([px,(ya+yb)/2,pz],[0,hash2(k,seed,3)*3,0]),color:rockC[(k+seed)%4]});
+    px+=(hash2(k,seed,5)-.5)*r1*.3;pz+=(hash2(k,seed,6)-.5)*r1*.3;}
+  it.push({geo:new THREE.CylinderGeometry(r1*.8,r1,2,7),m:M([px,top+.6,pz]),color:0xf4f0e6});
+  solidCyl(x,z,y0,top+2,r0*.9,r1*.9);}
+(function isleProps(){const it=[],rf=[],lit=[];
+  const dir=(id,u,v)=>{const I=ISLES[id],c=Math.cos(I.rot),s=Math.sin(I.rot);return [u*c-v*s,u*s+v*c];};
+  /* ---- Twin Sisters: two rock spires off the east tip, a 70 m gap between them ---- */
+  {const I=ISLES.sisters,g=fromUV(I,930,40),[lx,lz]=dir('sisters',0,1),[nx,nz]=dir('sisters',1,0);
+   spireAt(it,g.x-lx*66,g.z-lz*66,-12,150,30,10,1);spireAt(it,g.x+lx*66,g.z+lz*66,-12,124,27,9,2);
+   for(const [a,b,s] of [[-1.6,.8,8],[1.8,-.6,6],[-.6,-1.3,5]])it.push({geo:new THREE.DodecahedronGeometry(1,0),m:M([g.x+lx*66*a+nx*30*b,1,g.z+lz*66*a+nz*30*b],[1,2,0],[s*1.4,s,s*1.2]),color:rockC[1]});
+   flyGate('sisters','The Sisters\' Gap',g.x,g.z,-2,108,Math.atan2(nz,nx),26,'Straight between the Twin Sisters.');
+   mark('sisters',g.x,g.z,0,'The Twin Sisters','Two spires of rock, a wingspan or seven apart. Wren has climbed them both.');
+   const S=stripOf('sisters'),h=toWorld(S,-S.len/2+70,S.wid/2+26);hutAt(it,rf,h.x,h.z,-S.hdg*DEG,6,5,3,0xe8d8c0,0x3f8f8a,2);}
+  /* ---- Puffin Rock: a sea arch you can fly under ---- */
+  {const I=ISLES.puffin,c=fromUV(I,0,340),[ux,uz]=dir('puffin',1,0),[vx,vz]=dir('puffin',0,1),half=38,rise=58,th=11;
+   for(const e of [-1,1]){const lx=c.x+ux*e*(half+th*.6),lz=c.z+uz*e*(half+th*.6);it.push({geo:new THREE.CylinderGeometry(th*1.05,th*1.5,rise+12,8),m:M([lx,rise/2-12+6,lz]),color:rockC[2]});solidCyl(lx,lz,-12,rise,th*1.4,th);}
+   for(let k=0;k<=12;k++){const a=k/12*Math.PI,lat=Math.cos(a)*(half+th*.6),y=rise-4+Math.sin(a)*16,s=th*(1.05+.25*Math.sin(a*3));
+     it.push({geo:new THREE.DodecahedronGeometry(1,0),m:M([c.x+ux*lat,y,c.z+uz*lat],[k,k*.7,0],[s*1.1,s*.95,s*1.3]),color:rockC[k%4]});solidSph(c.x+ux*lat,y,c.z+uz*lat,s*.9);}
+   for(let k=0;k<7;k++){const a=k/6*Math.PI,lat=Math.cos(a)*(half+th*.4);it.push({geo:BOX(4,1.4,4),m:M([c.x+ux*lat,rise+10+Math.sin(a)*15,c.z+uz*lat],[0,k,0]),color:0xf4f0e6});}
+   flyGate('arch','Under Puffin Arch',c.x,c.z,-2,rise-14,Math.atan2(vz,vx),24,'Right under the sea arch at Puffin Rock.');
+   const p=onIsle('puffin',(x,z,h)=>h>30,(x,z,h)=>h);if(p){for(let k=0;k<60;k++){const x=p.x+(rnd()-.5)*90,z=p.z+(rnd()-.5)*70,h=groundH(x,z);if(h<25)continue;
+       it.push({geo:BOX(.9,1.3,.9),m:M([x,h+.6,z],[0,rnd()*3,0]),color:k%3?0x2c2833:0xf4f0e6});}
+     mark('puffins',p.x,p.z,p.h,'Puffin Rock','Two thousand puffins and one very patient warden\'s hut.');}}
+  /* ---- Cleft Isle: the canyon, its rope bridge, and the goats ---- */
+  {const I=ISLES.cleft,cl=u=>85*Math.sin(u/310+.4)+30*Math.sin(u/130),[ux,uz]=dir('cleft',1,0);
+   const at=u=>fromUV(I,u,cl(u)),yawAt=u=>{const a=at(u-5),b=at(u+5);return Math.atan2(b.z-a.z,b.x-a.x);};
+   const e0=at(-930),e1=at(930);flyGate('cleft_in','Into the Cleft',e0.x,e0.z,-4,115,yawAt(-930),46,'The west mouth of the canyon on Cleft Isle.');
+   flyGate('cleft_out','Out of the Cleft',e1.x,e1.z,-4,115,yawAt(930),46,'The east mouth of the canyon on Cleft Isle.');
+   const b=at(40),by=Math.min(groundH(fromUV(I,40,cl(40)-75).x,fromUV(I,40,cl(40)-75).z),groundH(fromUV(I,40,cl(40)+75).x,fromUV(I,40,cl(40)+75).z))-2,yw=yawAt(40),px=-Math.sin(yw),pz=Math.cos(yw);
+   for(let k=-34;k<=34;k++){const t=k*2.2,sag=10*(1-(k/34)**2),y=by-sag;it.push({geo:BOX(2.4,.25,3.6),m:M([b.x+px*t,y,b.z+pz*t],[0,-yw,0]),color:k%2?0x8a6a4a:0x7a5a3e});
+     if(k%3===0)solidSph(b.x+px*t,y,b.z+pz*t,2.2);}
+   for(const e of [-1,1])for(const t of [-76,76]){const sx=b.x+px*t+Math.cos(yw)*e*1.6,sz=b.z+pz*t+Math.sin(yw)*e*1.6;it.push({geo:BOX(.5,5,.5),m:M([sx,by+1.5,sz]),color:0x6e5240});}
+   flyGate('bridge','Under the Rope Bridge',b.x,b.z,-4,by-14,yw,40,'Beneath the rope bridge across the Cleft.');
+   mark('bridge',b.x,b.z,by-40,'The Cleft Bridge','Seventy-six planks and a lot of rope. Tam crosses it twice a day with a goat under each arm.');
+   FINDS.goats=[];for(let k=0;k<5;k++){const u=-700+k*330+(rnd()-.5)*80,side=k%2?1:-1;let best=null;for(let d=70;d<200;d+=8){const p=fromUV(I,u,cl(u)+side*d),h=groundH(p.x,p.z);if(slopeAt(p.x,p.z)<.6&&h>60){best={x:p.x,z:p.z,h};break;}}
+     if(!best)continue;const ry=rnd()*6;it.push({geo:BOX(1.2,1.1,2.2),m:M([best.x,best.h+1.3,best.z],[0,ry,0],[1.6,1.6,1.6]),color:0xf4f0e6});it.push({geo:BOX(.8,.9,1),m:M([best.x+Math.sin(ry)*1.8,best.h+2.6,best.z+Math.cos(ry)*1.8],[0,ry,0],[1.6,1.6,1.6]),color:0xe8e0d0});
+     FINDS.goats.push({x:best.x,y:best.h,z:best.z});}
+   const S=stripOf('cleft'),h=toWorld(S,-S.len/2+90,-(S.wid/2+24));hutAt(it,rf,h.x,h.z,-S.hdg*DEG,7,5,3.2,0xd8c4a8,0xb8704a,2);}
+  /* ---- Kettle Rock: dive through the crater (below the rim) ---- */
+  {const k=ISLES.kettle,rim=kettleCone(KET.cr,0),fl=rim-KET.depth;flyGate('crater','Through the Crater',k.x,k.z,fl+12,rim-8,0,KET.cr*.55,'Through Kettle Crater, below the rim.');}
+  /* ---- Gull stacks: squeeze between the two big ones (the stacks get collision too) ---- */
+  {const st=sights.stacks;if(st){const bx=st.x,bz=st.z;for(const [dx,dz,hh,r] of [[0,0,46,9],[34,22,32,7],[-30,30,24,6],[12,-34,18,5]])solidCyl(bx+dx,bz+dz,-6,hh-5,r,r*.7);
+     const L=Math.hypot(34,22);flyGate('stacks','The Stack Squeeze',bx+17,bz+11,-1,24,Math.atan2(34/L,-22/L),7,'Between the two tallest Gull Stacks.');}}
+  /* ---- Applecross: village, cider barn, kites ---- */
+  {const S=stripOf('apple'),yaw=-S.hdg*DEG;
+   for(let k=0;k<11;k++){const u=-230+k*44+(rnd()-.5)*12,t=S.wid/2+60+rnd()*70;const p=toWorld(S,u,t);if(groundH(p.x,p.z)<5)continue;
+     hutAt(it,rf,p.x,p.z,yaw+(rnd()<.5?0:Math.PI/2),7+rnd()*2,6,4,[0xf1e4c8,0xe8c8a8,0xf4ece0][k%3],[0xc2553f,0x8a5a3a,0x5b6e86][k%3],2);}
+   const c=onIsle('apple',(x,z,h)=>h>20&&slopeAt(x,z)<.15&&clearOf(x,z,90),(x,z,h)=>-Math.hypot(x-S.x,z-S.z)*.2+h*.5);
+   if(c){const y=c.h;it.push({geo:BOX(22,9,14),m:M([c.x,y+3.5,c.z],[0,.3,0]),color:0xb8443a});rf.push({geo:new THREE.CylinderGeometry(9,9,23,4,1).rotateZ(Math.PI/2),m:M([c.x,y+9,c.z],[0,.3,0],[1,.55,1]),color:0x6a5040});
+     for(let k=0;k<4;k++)it.push({geo:new THREE.CylinderGeometry(1.8,1.8,2.6,8).rotateZ(Math.PI/2),m:M([c.x+Math.cos(.3)*(-14),y+1.3,c.z-Math.sin(.3)*(-14)+(k-1.5)*3.2],[0,.3,0]),color:0x8a6a4a});
+     lit.push([c.x,y+5,c.z,0xffc25a]);mark('cider',c.x,c.z,y,'The Cider Barn','Red barn, four barrels outside, and a smell you can follow from the air in autumn.');}
+   FINDS.kites=[];const kc=[0xd2493c,0x3f8fc0,0xe8a33a,0x7a4ab8,0x3f8f5a,0xff7a2e];for(let k=0;k<6;k++){const p=onIsle('apple',(x,z,h)=>orchardAt(x,z)&&clearOf(x,z,60),()=>rnd());if(!p)continue;
+     const g=new THREE.Group(),y=p.h+18+rnd()*10;g.add(new THREE.Mesh(merge([{geo:BOX(3.4,4.6,.15),m:M([0,0,0],[0,0,Math.PI/4],[1,1,1]),color:kc[k]},{geo:BOX(.12,7,.12),m:M([0,-5.5,0]),color:0xf4efe2},
+       ...[0,1,2].map(i=>({geo:BOX(.9,.5,.1),m:M([0,-3.5-i*1.8,0],[0,0,.6]),color:kc[(k+2)%6]}))]),toon({},false)));g.position.set(p.x,y,p.z);scene.add(g);
+     const ph=rnd()*6;anims.push(t=>{g.rotation.y=t*.2+ph;g.rotation.z=Math.sin(t*1.3+ph)*.25;g.position.y=y+Math.sin(t*.9+ph)*1.5;});FINDS.kites.push({x:p.x,y,z:p.z});}}
+  /* ---- the Saltpans: salt heaps, a windpump, and a meteorite ---- */
+  {const S=stripOf('salt');for(let k=0;k<14;k++){const p=toWorld(S,-S.len/2+40+k*30,-(S.wid/2+40+(k%2)*14));const h=Math.max(groundH(p.x,p.z),.5);it.push({geo:new THREE.ConeGeometry(6+rnd()*2,5+rnd()*2,7),m:M([p.x,h+2.4,p.z]),color:0xf8f4ee});}
+   const wp=toWorld(S,S.len/2+40,S.wid/2+30),wy=groundH(wp.x,wp.z);for(const [a,b] of [[-1,-1],[1,-1],[-1,1],[1,1]])beam(it,new V3(wp.x+a*2.4,wy,wp.z+b*2.4),new V3(wp.x+a*.5,wy+14,wp.z+b*.5),.2,0x8a8a92);
+   const pump=new THREE.Mesh(merge([...Array(12)].map((_,i)=>({geo:BOX(.5,3.4,.08),m:M([Math.cos(i/12*TAU)*2,Math.sin(i/12*TAU)*2,0],[0,0,i/12*TAU]),color:0xe8e4dc}))),toon({},false));pump.position.set(wp.x,wy+14.5,wp.z);scene.add(pump);anims.push(t=>{pump.rotation.z=t*1.6;});
+   const p=onIsle('salt',(x,z,h)=>h>1.5&&clearOf(x,z,120)&&saltPan(x,z)<0,(x,z,h)=>Math.hypot(x-S.x,z-S.z));
+   if(p){for(let k=0;k<14;k++){const a=k/14*TAU;it.push({geo:new THREE.DodecahedronGeometry(1,0),m:M([p.x+Math.cos(a)*11,p.h,p.z+Math.sin(a)*11],[k,k,0],[2.2,1.4,2]),color:0x6a5a50});}
+     it.push({geo:new THREE.DodecahedronGeometry(2.6,0),m:M([p.x,p.h+1,p.z],[.4,.2,0]),color:0x2c2833});mark('meteor',p.x,p.z,p.h,'The Fallen Star','A black stone in a ring of scorched earth. It came down the night Desmond was born.');}}
+  /* ---- Looking-Glass Isle: the lake, the painter's cottage, a rowboat ---- */
+  {const I=ISLES.mirror,lx=I.x-180,lz=I.z+40;const ph=scanTo(lx,lz,1,0,h=>h>1.2,500,6);if(ph)hutAt(it,rf,ph.x+16,ph.z,0,7,6,3.6,0xf4ece0,0x6a8ab8,2);
+   const boat=new THREE.Mesh(merge([{geo:BOX(1.6,.7,4.2),m:M([0,.25,0]),color:0xd2493c},{geo:BOX(1.7,.25,4.3),m:M([0,-.1,0]),color:0xf4efe4}]),toon());scene.add(boat);
+   anims.push(t=>{const a=t*.02;boat.position.set(lx+Math.cos(a)*110,Math.sin(t*1.1)*.08,lz+Math.sin(a)*90);boat.rotation.y=-a;});
+   sights.lake={x:lx,z:lz,y:0,name:'Looking-Glass Lake',desc:'So still you can see the clouds in it. Lio has painted it four hundred times.'};farmSpots.push({x:lx,z:lz,r:380});}
+  /* ---- Sweetheart Islet ---- */
+  {const I=ISLES.heart;mark('heart',I.x,I.z,4,'Sweetheart Islet','A little island shaped like a heart. You can only tell from up here.');}
+  /* ---- Starwatch Mesa: the radio dish and two small domes ---- */
+  {const S=stripOf('mesa');const p=onIsle('mesa',(x,z,h)=>h>250&&slopeAt(x,z)<.12&&clearOf(x,z,90),(x,z,h)=>-Math.abs(Math.hypot(x-S.x,z-S.z)-320));
+   if(p){const y=p.h,g=new THREE.Group();g.add(new THREE.Mesh(merge([{geo:new THREE.SphereGeometry(26,16,6,0,TAU,0,.75),m:M([0,0,0],[Math.PI,0,0]),color:0xeeeae4},{geo:new THREE.CylinderGeometry(.5,.5,20,5),m:M([0,8,0]),color:0x9a9aa2},
+       {geo:BOX(2.6,2.6,2.6),m:M([0,18,0]),color:0x8a8a92}]),toon({side:THREE.DoubleSide},false)));g.position.set(p.x,y+26,p.z);
+     it.push({geo:new THREE.CylinderGeometry(3,5,22,8),m:M([p.x,y+10,p.z]),color:0xd8d4cc});it.push({geo:BOX(18,6,18),m:M([p.x,y+2,p.z]),color:0xc8c4bc});scene.add(g);
+     anims.push(t=>{g.rotation.set(-.5+Math.sin(t*.02)*.15,t*.03,0,'YXZ');});solidCyl(p.x,p.z,y-2,y+24,6,4);solidSph(p.x,y+28,p.z,22);
+     for(const [dx,dz] of [[40,10],[34,-28]]){const hy=groundH(p.x+dx,p.z+dz);it.push({geo:new THREE.CylinderGeometry(5,5.4,6,10),m:M([p.x+dx,hy+2,p.z+dz]),color:0xeeeae2});it.push({geo:new THREE.SphereGeometry(5.2,10,5,0,TAU,0,Math.PI/2),m:M([p.x+dx,hy+5,p.z+dz]),color:0xc8ccd2});lit.push([p.x+dx,hy+3,p.z+dz,0xffc25a]);}
+     mark('dish',p.x,p.z,y,'The Starwatch Dish','A radio telescope listening for whatever is out there. Odile says it mostly hears the sun.');}}
+  /* ---- Cascade Isle: a waterfall down the cliff, the warden's hut, trail cairns ---- */
+  {const I=ISLES.cascade,gv=u=>60+u*.08;let lip=null,foot=null;
+   for(let u=180;u>-420;u-=6){const p=fromUV(I,u,gv(u)),h=groundH(p.x,p.z),q=fromUV(I,u-12,gv(u-12)),h2=groundH(q.x,q.z);if(!lip&&h-h2>5)lip={u,h};if(lip&&!foot&&h-h2<.6&&u<lip.u-40){foot={u,h};break;}}
+   if(lip&&foot){const P=[],C=[],UV=[],N=24,w=15;for(let k=0;k<=N;k++){const u=lerp(lip.u+6,foot.u,k/N),p=fromUV(I,u,gv(u)),h=Math.max(groundH(p.x,p.z),.3)+2.2+(k===0?1.5:0),[px,pz]=dir('cascade',0,1);
+       P.push(p.x-px*w,h,p.z-pz*w,p.x+px*w,h,p.z+pz*w);UV.push(0,k/N*6,1,k/N*6);}
+     const idx=[];for(let k=0;k<N;k++){const a=k*2;idx.push(a,a+1,a+2,a+1,a+3,a+2);}
+     const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(P,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(UV,2));g.setIndex(idx);
+     const wm=new THREE.ShaderMaterial({uniforms:{uTime:{value:0}},side:THREE.DoubleSide,vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
+       fragmentShader:'uniform float uTime;varying vec2 vUv;void main(){float s=fract(vUv.y*5.-uTime*1.6+sin(vUv.x*23.)*.35+sin(vUv.x*7.+1.)*.2);float e=smoothstep(0.,.25,vUv.x)*smoothstep(1.,.75,vUv.x);vec3 c=mix(vec3(.78,.9,.95),vec3(.98,.99,1.),step(.35,s));gl_FragColor=vec4(c,.95*e);}',transparent:true});
+     scene.add(new THREE.Mesh(g,wm));anims.push(t=>{wm.uniforms.uTime.value=t;});
+     const fp=fromUV(I,foot.u-30,gv(foot.u-30));it.push({geo:new THREE.CylinderGeometry(26,26,.6,14),m:M([fp.x,Math.max(groundH(fp.x,fp.z),0)+.5,fp.z]),color:0x5fb8d0});
+     const N2=10,pm=new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1,0),new THREE.MeshToonMaterial({color:0xf4f8fa,gradientMap:gradTex,flatShading:true}),N2);scene.add(pm);const mm=new THREE.Matrix4(),q=new Q(),bp=fromUV(I,foot.u+8,gv(foot.u+8)),by=foot.h+2;
+     anims.push(t=>{for(let i=0;i<N2;i++){const ph=(t*.25+i/N2)%1,s=(2+ph*6)*(ph>.7?(1-ph)/.3:1);mm.compose(new V3(bp.x+Math.cos(i*2.4)*ph*14,by+ph*14,bp.z+Math.sin(i*2.4)*ph*14),q,new V3(s,s,s));pm.setMatrixAt(i,mm);}pm.instanceMatrix.needsUpdate=true;});
+     const top=fromUV(I,lip.u,gv(lip.u));mark('falls',top.x,top.z,foot.h,'Cascade Falls','Two hundred metres of white water. Kit says the hut shakes when it rains.');}
+   const S=stripOf('cascade'),h=toWorld(S,-S.len/2+80,S.wid/2+26);hutAt(it,rf,h.x,h.z,-S.hdg*DEG,7,6,3.4,0x8a6a4a,0x3f6b3a,2);
+   FINDS.cairns=[];for(let k=0;k<6;k++){const p=onIsle('cascade',(x,z,h)=>h>200&&slopeAt(x,z)<.3&&clearOf(x,z,30),()=>rnd());if(!p)continue;
+     for(let j=0;j<4;j++)it.push({geo:new THREE.DodecahedronGeometry(1,0),m:M([p.x,p.h+j*1.5+.6,p.z],[j,j*2,0],[2.4-j*.45,1,2.2-j*.4]),color:j%2?0x9a968c:0xc8c4bc});
+     it.push({geo:BOX(.2,3,.2),m:M([p.x,p.h+7,p.z]),color:0x6e5240});it.push({geo:BOX(1.8,1,.1),m:M([p.x+.9,p.h+8,p.z]),color:0xff7a2e});FINDS.cairns.push({x:p.x,y:p.h,z:p.z});}}
+  /* ---- Lantern Key: houses on stilts round the shore, strings of lanterns, and lanterns adrift ---- */
+  {const I=ISLES.lantern,lc=[0xff9a3a,0xffd36b,0xd2493c,0xff7a8a];let prev=null;
+   for(let k=0;k<20;k++){const a=k/20*TAU,ux=Math.cos(a),uz=Math.sin(a);const sh=scanTo(I.x,I.z,ux,uz,h=>h<0,1200,6);if(!sh)continue;const x=sh.x+ux*9,z=sh.z+uz*9;if(nearStrip(x,z,40)){prev=null;continue;}
+     const ry=-a+Math.PI/2;for(const [p,q] of [[-2.5,-2],[2.5,-2],[-2.5,2],[2.5,2]])it.push({geo:BOX(.35,6,.35),m:M([x+p*Math.cos(ry)+q*Math.sin(ry),.5,z-p*Math.sin(ry)+q*Math.cos(ry)]),color:0x5a4a3e});
+     it.push({geo:BOX(7,.4,6),m:M([x,3.5,z],[0,ry,0]),color:0x8a6a4a});it.push({geo:BOX(5.6,3.4,4.6),m:M([x,5.4,z],[0,ry,0]),color:[0xf4ece0,0x9ad0d8,0xf0c8a0,0xe8e0f0][k%4]});
+     rf.push({geo:new THREE.ConeGeometry(4.6,2.6,4).rotateY(Math.PI/4),m:M([x,8.4,z],[0,ry,0],[1,1,.85]),color:[0xc2553f,0x3f6f8f,0x8a5a3a][k%3]});lit.push([x+ux*2.4,5.6,z+uz*2.4,0xffc25a]);farmSpots.push({x,z,r:8});
+     if(prev){for(let j=1;j<6;j++){const t=j/6;lit.push([lerp(prev.x,x,t),7.6-Math.sin(t*Math.PI)*1.6,lerp(prev.z,z,t),lc[(j+k)%4]]);}}prev={x,z};}
+   const T=onIsle('lantern',(x,z,h)=>h>4&&clearOf(x,z,60),(x,z,h)=>-Math.hypot(x-I.x,z-I.z));
+   if(T){const y=T.h;for(let j=0;j<5;j++)it.push({geo:new THREE.CylinderGeometry(3.2-j*.4,3.4-j*.4,3.4,8),m:M([T.x,y+1.7+j*3.6,T.z]),color:j%2?0xd2493c:0xf4e4c0});lit.push([T.x,y+17,T.z,0xffb05a]);
+     mark('lanterntower',T.x,T.z,y,'The Lantern Tower','Five paper storeys. Lit every night for the boats, and on festival night for everyone.');}
+   FINDS.lanterns=[];const lm=new THREE.MeshBasicMaterial({color:0xffb050,fog:false});for(let k=0;k<7;k++){const a=k/7*TAU+.3,r=700+rnd()*500,cx=I.x+Math.cos(a)*r,cz=I.z+Math.sin(a)*r,cy=50+rnd()*70;
+     const m=new THREE.Mesh(new THREE.BoxGeometry(2.4,3,2.4),lm);scene.add(m);const o={x:cx,y:cy,z:cz};const ph=rnd()*6;
+     anims.push(t=>{o.x=cx+Math.sin(t*.03+ph)*60;o.z=cz+Math.cos(t*.025+ph)*60;o.y=cy+Math.sin(t*.2+ph)*4;m.position.set(o.x,o.y,o.z);m.rotation.y=t*.3;});FINDS.lanterns.push(o);}}
+  /* ---- Greystone: a crane over the terraced pit, and the stone sheds ---- */
+  {const I=ISLES.quarry,c=fromUV(I,120,-40),rimP=fromUV(I,120,-40+250),ry=groundH(rimP.x,rimP.z);
+   const top=new V3(rimP.x,ry+38,rimP.z);beam(it,new V3(rimP.x,ry,rimP.z),top,1.2,0xe8a33a);beam(it,top,new V3(lerp(rimP.x,c.x,.45),ry+34,lerp(rimP.z,c.z,.45)),.8,0xe8a33a);
+   beam(it,new V3(lerp(rimP.x,c.x,.45),ry+33,lerp(rimP.z,c.z,.45)),new V3(lerp(rimP.x,c.x,.45),ry+8,lerp(rimP.z,c.z,.45)),.1,0x2c2833);
+   for(let k=0;k<3;k++){const p=fromUV(I,120+(k-1)*30,-40+300);hutAt(it,rf,p.x,p.z,I.rot,12,8,5,0xb8b4ac,0x5b6e86,1);}
+   for(let k=0;k<10;k++){const p=fromUV(I,60+k*6,-40+282),h=groundH(p.x,p.z);it.push({geo:BOX(4,2.4,3),m:M([p.x,h+1.2+(k%3)*2.4,p.z],[0,I.rot,0]),color:0xd8d4cc});}
+   mark('pit',c.x,c.z,groundH(c.x,c.z),'Greystone Pit','Stone for every harbour wall in the islands came out of this hole, one terrace at a time.');}
+  /* ---- Windward: a row of old mills along the ridge ---- */
+  {const I=ISLES.windward,[nx,nz]=dir('windward',0,-1),yw=Math.atan2(nx,nz);const mills=[];
+   for(let k=0;k<7;k++){const p=fromUV(I,-690+k*230,-70),h=groundH(p.x,p.z);it.push({geo:new THREE.CylinderGeometry(5,7,28,8),m:M([p.x,h+13,p.z]),color:0xf1ece2});
+     rf.push({geo:new THREE.ConeGeometry(6.2,8,8),m:M([p.x,h+31,p.z]),color:0x5b4a3e});solidCyl(p.x,p.z,h-2,h+34,7.5,6);
+     const s=new THREE.Mesh(merge([0,1,2,3].map(i=>({geo:BOX(2.6,19,.3).translate(0,10.4,0),m:M([0,0,0],[0,0,i*Math.PI/2]),color:0xe8dcc4}))),toon({},false));
+     s.position.set(p.x+nx*7,h+26,p.z+nz*7);s.rotation.y=yw;scene.add(s);mills.push(s);solidSph(p.x+nx*7,h+26,p.z+nz*7,17);}
+   anims.push(t=>{mills.forEach((s,i)=>{s.rotation.z=t*.9+i;});});
+   const c=fromUV(I,0,-70);mark('mills',c.x,c.z,groundH(c.x,c.z),'The Seven Mills','They grind flour for half the islands. Agnes knows each one by its creak.');
+   FINDS.sheep=[];for(let k=0;k<6;k++){const p=onIsle('windward',(x,z,h)=>h>8&&slopeAt(x,z)<.3&&clearOf(x,z,40),()=>rnd());if(!p)continue;const ry=rnd()*6;
+     it.push({geo:BOX(2.2,1.8,3.2),m:M([p.x,p.h+1.4,p.z],[0,ry,0]),color:0xc2453a});it.push({geo:BOX(1,1,1.2),m:M([p.x+Math.sin(ry)*2,p.h+2,p.z+Math.cos(ry)*2],[0,ry,0]),color:0x2c2833});FINDS.sheep.push({x:p.x,y:p.h,z:p.z});}}
+  /* ---- Bell Rock ---- */
+  {const I=ISLES.bell,y=groundH(I.x,I.z);it.push({geo:BOX(5,16,5),m:M([I.x,y+7,I.z]),color:0xe8e2d6});for(const [a,b] of [[-1,-1],[1,-1],[-1,1],[1,1]])it.push({geo:BOX(.8,4,.8),m:M([I.x+a*2.1,y+17,I.z+b*2.1]),color:0xe8e2d6});
+   it.push({geo:new THREE.ConeGeometry(4,4,4).rotateY(Math.PI/4),m:M([I.x,y+21,I.z]),color:0x3f6f8f});it.push({geo:new THREE.CylinderGeometry(.6,1.3,1.6,8),m:M([I.x,y+16.4,I.z]),color:0xd8a040});solidCyl(I.x,I.z,y-2,y+23,4,3);
+   mark('bell',I.x,I.z,y,'Bell Rock','A bell tower on a rock in the fog lane. It rings by itself when the swell is up.');}
+  /* ---- Tern Bars: a wreck and some seals ---- */
+  {const I=ISLES.tern,w=fromUV(I,60,10),y=.6;const W=new THREE.Mesh(merge([{geo:BOX(7,4,26),m:M([0,1,0]),color:0x5a4438},{geo:BOX(7.2,1,26.2),m:M([0,-1,0]),color:0x3a3036},{geo:BOX(4,3,6),m:M([0,4,-4]),color:0x8a7a6a},
+     {geo:new THREE.CylinderGeometry(.35,.4,11,5),m:M([0,8,3],[0,0,.3]),color:0x6e5240}]),toon());W.position.set(w.x,y,w.z);W.rotation.set(.05,.8,.22);scene.add(W);
+   mark('wreck',w.x,w.z,0,'The Wreck of the Merrow','A coaster that ran onto the bars in a storm. The terns moved in the next morning.');
+   for(const [du,dv] of TERN)for(let k=0;k<3;k++){const p=fromUV(I,du+(rnd()-.5)*80,dv+(rnd()-.5)*20),h=groundH(p.x,p.z);if(h<.3)continue;it.push({geo:new THREE.SphereGeometry(1,6,4),m:M([p.x,h+.4,p.z],[0,rnd()*3,0],[1,.6,2]),color:0x8a8890});}}
+  /* ---- Marram: Ollie's dad's lobster-pot buoys, scattered by the storm ---- */
+  {const I=ISLES.marram;FINDS.buoys=[];for(let k=0;k<6;k++){const a=k/6*TAU+.4,r=1100+rnd()*700,x=I.x+Math.cos(a)*r,z=I.z+Math.sin(a)*r;if(groundH(x,z)>-1)continue;
+     const m=new THREE.Mesh(merge([{geo:new THREE.SphereGeometry(1.4,8,6),m:M([0,0,0]),color:0xff7a2e},{geo:BOX(.12,4,.12),m:M([0,2.4,0]),color:0x2c2833},{geo:BOX(1.6,1,.1),m:M([.8,3.8,0]),color:0xff7a2e}]),toon({},false));
+     m.position.set(x,0,z);scene.add(m);const ph=rnd()*6;anims.push(t=>{m.position.y=Math.sin(t*1.3+ph)*.3;m.rotation.z=Math.sin(t+ph)*.15;});FINDS.buoys.push({x,y:0,z});}}
+  /* ---- Tallpine: osprey nests on dead snags ---- */
+  {FINDS.nests=[];for(let k=0;k<6;k++){const p=findSpot(1100,-200,1500,(x,z,h)=>isleAt(x,z)==='tall'&&h>60&&h<380&&slopeAt(x,z)<.35&&clearOf(x,z,40),()=>rnd());if(!p)continue;
+     beam(it,new V3(p.x,p.h-1,p.z),new V3(p.x+.6,p.h+26,p.z+.3),.7,0xb8a890);it.push({geo:new THREE.CylinderGeometry(2.4,1.4,1.4,8),m:M([p.x+.6,p.h+26.6,p.z+.3]),color:0x8a6a4a});
+     it.push({geo:BOX(.9,.9,1.6),m:M([p.x+.6,p.h+27.8,p.z+.3]),color:0xf4f0e6});FINDS.nests.push({x:p.x,y:p.h+20,z:p.z});}}
+  /* a hut and windsock-side shed for each new airstrip */
+  for(const s of ARCH_STRIPS){if(['sisters','cleft','cascade'].includes(s.id))continue;const S=stripOf(s.id),p=toWorld(S,S.len/2-60,-(S.wid/2+22));if(groundH(p.x,p.z)<2)continue;hutAt(it,rf,p.x,p.z,-S.hdg*DEG,6,5,3,0xe8dcc8,0x3f6f8f,1);}
+  scene.add(shadowy(new THREE.Mesh(merge(it),toon())));scene.add(shadowy(new THREE.Mesh(merge(rf),toon())));for(const [x,y,z,c] of lit)addLight(x,y,z,c);
+})();
+/* trees for the new islands: [island, how many, rule] — a rule returns a tree or null */
+const _orch=new Set();
+const ARCH_TREES=[
+  ['sisters',260,(x,z,h)=>h>6&&!nearStrip(x,z,50)&&slopeAt(x,z)<.4&&rnd()<.6?{x,z,h,pine:rnd()<.4,s:.6+rnd()*.5}:null],
+  ['cleft',380,(x,z,h)=>h>80&&!nearStrip(x,z,50)&&slopeAt(x,z)<.35?{x,z,h,pine:rnd()<.7,s:.45+rnd()*.45}:null],
+  ['apple',1300,(x,z,h)=>{if(h<6||nearStrip(x,z,55))return null;
+    if(orchardAt(x,z)){const I=ISLES.apple,[u,v]=locUV(I,x,z),uu=Math.round(u/13),vv=Math.round(v/10),key=uu+','+vv;if(_orch.has(key))return null;_orch.add(key);const p=fromUV(I,uu*13,vv*10);
+      return {x:p.x,z:p.z,h:groundH(p.x,p.z),pine:false,s:.5+rnd()*.12,col:rnd()<.35?0xe8a8b8:rnd()<.5?0x7ba746:0x6a9a42};}
+    return rnd()<.25?{x,z,h,pine:rnd()<.2,s:.7+rnd()*.5}:null;}],
+  ['mirror',480,(x,z,h)=>h>3&&!nearStrip(x,z,50)&&slopeAt(x,z)<.45&&fbm(x*.004,z*.004,2,259)>-.1?{x,z,h,pine:rnd()<.3,s:.6+rnd()*.5,col:rnd()<.25?0xf0b8c8:0}:null],
+  ['mesa',140,(x,z,h)=>h>3&&h<40&&!nearStrip(x,z,40)?{x,z,h,pine:false,s:.4+rnd()*.3}:null],
+  ['cascade',1700,(x,z,h)=>h>8&&!nearStrip(x,z,55)&&slopeAt(x,z)<.55?{x,z,h,pine:rnd()<.75,s:.8+rnd()*.7,col:rnd()<.5?0x2f5534:0x3a6a3a}:null],
+  ['lantern',260,(x,z,h)=>h>1.5&&!nearStrip(x,z,30)?{x,z,h,palm:true,pine:false,s:.7+rnd()*.5}:null],
+  ['quarry',260,(x,z,h)=>{const [u,v]=locUV(ISLES.quarry,x,z);return h>6&&Math.hypot(u-120,v+40)>290&&!nearStrip(x,z,50)&&slopeAt(x,z)<.45?{x,z,h,pine:rnd()<.8,s:.6+rnd()*.5}:null;}],
+  ['windward',140,(x,z,h)=>h>4&&h<50&&!nearStrip(x,z,50)?{x,z,h,pine:false,s:.6+rnd()*.5}:null],
+  ['heart',30,(x,z,h)=>h>1.5?{x,z,h,pine:false,s:.5+rnd()*.3,col:0xf0a8c0}:null],
+];
+
 /* ---------------- trees ---------------- */
 const trees=[];
 (function plant(){
@@ -858,13 +1134,14 @@ const trees=[];
     if(farmSpots.some(f=>Math.hypot(f.x-x,f.z-z)<f.r))continue;const o=fn(x,z,h);if(o){trees.push(o);c++;}}};
   isleP('farhold',1700,(x,z,h)=>{if(h<4||nearStrip(x,z,60)||slopeAt(x,z)>.55)return null;if(rnd()>smooth(-.15,.2,fbm(x*.003,z*.003,3,107))*.9+.03)return null;return {x,z,h,pine:rnd()<.8,s:.7+rnd()*.6};});
   isleP('kettle',420,(x,z,h)=>{if(h<7||h>175||nearStrip(x,z,50)||slopeAt(x,z)>.42)return null;return {x,z,h,pine:rnd()<.35,s:.45+rnd()*.5};});
+  for(const [k,n,fn] of ARCH_TREES)isleP(k,n,fn);
   isleP('marram',520,(x,z,h)=>{if(h<1.8||nearStrip(x,z,28))return null;return {x,z,h,palm:true,pine:false,s:.75+rnd()*.5};});
   const crownP=new THREE.ConeGeometry(3.2,9,6).translate(0,6.5,0), crownR=new THREE.IcosahedronGeometry(3.8,0).translate(0,5.6,0), trunk=new THREE.CylinderGeometry(.45,.6,3,5).translate(0,1.5,0);
   const ps=trees.filter(t=>t.pine&&!t.palm), rs_=trees.filter(t=>!t.pine&&!t.palm), pl=trees.filter(t=>t.palm);
   const mat=bakeify(new THREE.MeshToonMaterial({gradientMap:gradTex,flatShading:true}));
   const mk=(geo,list,cols,isTrunk)=>{const m=new THREE.InstancedMesh(geo,mat,list.length);const mm=new THREE.Matrix4(),c=new THREE.Color();
     list.forEach((t,i)=>{mm.compose(new V3(t.x,t.h-.5,t.z),new Q().setFromEuler(new THREE.Euler(0,hash2(i,7,3)*6,0)),new V3(t.s,t.s*(.9+hash2(i,2,2)*.3),t.s));m.setMatrixAt(i,mm);
-      c.setHex(isTrunk?0x6b4f3a:cols[(hash2(i,9,1)*cols.length)|0]);m.setColorAt(i,c);});m.castShadow=!isTrunk;m.receiveShadow=true;scene.add(m);};
+      c.setHex(isTrunk?0x6b4f3a:(t.col||cols[(hash2(i,9,1)*cols.length)|0]));m.setColorAt(i,c);});m.castShadow=!isTrunk;m.receiveShadow=true;scene.add(m);};
   mk(crownP,ps,pine);mk(trunk,ps,null,true);mk(crownR,rs_,round);mk(trunk,rs_,null,true);
   {const it=[{geo:new THREE.CylinderGeometry(.26,.42,10,5).translate(0,5,0),m:M([0,0,0],[0,0,.13]),color:0x8a6a4a}];
     for(let k=0;k<7;k++)it.push({geo:BOX(1.2,.18,5.6).translate(0,0,2.5),m:M([-1.3,9.8,0],[.42+(k%2)*.18,k/7*TAU,0]),color:k%2?0x4f8a3a:0x5f9a40});
@@ -888,7 +1165,7 @@ const trees=[];
 /* ---------------- clouds ---------------- */
 const cloudGroup=new THREE.Group();scene.add(cloudGroup);
 (function clouds(){const it=[];
-  for(let c=0;c<40;c++){const cx=(rnd()-.5)*16000,cz=(rnd()-.5)*14000,cy=620+rnd()*380;const n=5+(rnd()*5|0);
+  for(let c=0;c<64;c++){const cx=(rnd()-.5)*21000,cz=(rnd()-.5)*19000,cy=620+rnd()*380;const n=5+(rnd()*5|0);
     for(let k=0;k<n;k++){const s=40+rnd()*60;const y=cy+(rnd()-.3)*20;
       it.push({geo:new THREE.IcosahedronGeometry(1,1),m:M([cx+(rnd()-.5)*220,y,cz+(rnd()-.5)*120],[0,rnd()*3,0],[s,s*.55,s*.9]),color:y>cy?0xfff8f0:0xeae2f2});}}
   cloudGroup.add(new THREE.Mesh(merge(it),toon({},false)));
@@ -1079,8 +1356,8 @@ const GOALS=[
   {id:'land_marram',name:'Land at Marram Beach',hint:'The hard-sand strip on the atoll far to the southeast.'},
   {id:'land_kettle',name:'Land at Crater Shelf',hint:'The cinder strip on the volcano, far to the northeast.'},
   {id:'land_farhold',name:'Land at Farhold',hint:'The lit runway on the foggy island far to the northwest.'},
-  {id:'hopper',name:'Island hopper',hint:'Land at all six fields.'},
-  {id:'tailwind',name:'Riding the wind',hint:'Use all three tailwinds on one trip.'},
+  {id:'hopper',name:'Island hopper',hint:'Land at every airfield in the islands.'},
+  {id:'tailwind',name:'Riding the wind',hint:'Stack all three tailwinds into one gale.'},
   {id:'trip',name:'Make a trip',hint:'Take off from one field and land at another.'},
   {id:'butter',name:'Butter landing',hint:'Touch down on a runway at under 90 ft/min.'},
   {id:'checklist',name:'By the book',hint:'Land with the whole before-landing checklist done.'},
@@ -1090,9 +1367,18 @@ const GOALS=[
   {id:'instrument',name:'From the seat',hint:'Land on a runway in Cockpit view.'},
   {id:'week',name:'A full week',hint:'Finish the first six days of mail.'},
   {id:'week2',name:'The whole chain',hint:'Finish the second week, out to the far islands.'},
+  {id:'week3',name:'The archipelago',hint:'Finish the third week of mail, out to Bea\'s new chart.'},
+  {id:'canyon',name:'Canyon run',hint:'Fly the Cleft on Cleft Isle end to end, under the rim.'},
+  {id:'threader',name:'Needle threader',hint:'Fly through every gap, arch and bridge in the islands.'},
+  {id:'errand',name:'Good neighbour',hint:'Finish an errand for an islander.'},
+  {id:'errands',name:'Everybody\'s favourite',hint:'Finish every islander\'s errand.'},
 ];
+const DESC_ARCH={sisters:'Twin Sisters. Grass shelf beside two rock spires. Gusty off the rocks.',cleft:'Cleft Isle. Dirt strip on the plateau, beside a canyon.',apple:'Applecross. Paved, among the orchards. Easy and friendly.',
+  salt:'The Saltpans. Hard white salt, flat as a table. Glare at noon.',mirror:'Looking-Glass Isle. Grass beside the lake rim. Short-ish.',mesa:'Starwatch Mesa. Paved, on top of the mesa. Cliffs at both ends.',
+  cascade:'Cascade Isle. Grass terrace under the cliffs. Mind the trees.',lantern:'Lantern Key. Paved, low and lit. Lovely at night.',quarry:'Greystone. Dirt strip on the quarry hill. Dusty.',windward:'Windward. Grass on the ridge flank. Always a breeze.'};
 const DESC={harbor:'Ferrow. Long paved runway by the village. The friendly one.',light:'Gull Point. Grass strip on the clifftop, sea at both ends.',ridge:'Tallpine. Short dirt strip on a mountain saddle. Slow down early.',
-  marram:'Marram Cay. Hard sand on a low atoll. Flat, but watch the palms.',kettle:'Kettle Rock. Cinder shelf below the crater. Bumpy air off the slopes.',farhold:'Farhold. Long lit runway, nearly always in fog. Trust the lights.'};
+  marram:'Marram Cay. Hard sand on a low atoll. Flat, but watch the palms.',kettle:'Kettle Rock. Cinder shelf below the crater. Bumpy air off the slopes.',farhold:'Farhold. Long lit runway, nearly always in fog. Trust the lights.',...DESC_ARCH};
+for(const st of STRIPS.slice(6))GOALS.splice(GOALS.findIndex(g=>g.id==='hopper'),0,{id:'land_'+st.id,name:'Land at '+st.name,hint:DESC_ARCH[st.id]||st.name});
 
 /* ---------- characters & portraits ---------- */
 const CHARS={
@@ -1109,6 +1395,16 @@ const CHARS={
   otto:{name:'Otto Lind',role:'OBSERVATORY COOK · KETTLE ROCK',home:'kettle',sp:{bg:'#c8e0d8',skin:'#e8b896',hair:'#e8d8a0',style:'short',beard:'#e8d8a0',hat:'beanie',hatc:'#3a5a8c',shirt:'#eae2cf'}},
   fen:{name:'Fen Morrow',role:'FIELD KEEPER · FARHOLD',home:'farhold',sp:{bg:'#c0c8d0',skin:'#d9a07a',hair:'#5a4a40',style:'short',mustache:'#5a4a40',hat:'cap',hatc:'#4a4e5c',shirt:'#5b6e86',scarf:'#d8d2c8'}},
   ivy:{name:'Ivy Calder',role:'THE HOUSE WITH THE LAMP · FARHOLD',home:'farhold',sp:{bg:'#f0e0b0',skin:'#e2a982',hair:'#f1ece4',style:'long',shirt:'#6a5a8c',scarf:'#d2493c'}},
+  wren:{name:'Wren Okafor',role:'CLIMBER · TWIN SISTERS',home:'sisters',sp:{bg:'#c8e0f0',skin:'#6e4a33',hair:'#1c1616',style:'curly',shirt:'#e2703f',hat:'beanie',hatc:'#3f8fc0'}},
+  tam:{name:'Tam Marlow',role:'GOATHERD · CLEFT ISLE',home:'cleft',sp:{bg:'#e8d0b0',skin:'#e2a982',hair:'#8a5a30',style:'short',beard:'#8a5a30',shirt:'#6b7a3a',hat:'cap',hatc:'#8a5a3a'}},
+  hattie:{name:'Hattie Bloom',role:'ORCHARD KEEPER · APPLECROSS',home:'apple',sp:{bg:'#f4d0d8',skin:'#f0c7a4',hair:'#c0582e',style:'bun',shirt:'#d2493c',freckles:true}},
+  desmond:{name:'Desmond Achebe',role:'SALT RAKER · THE SALTPANS',home:'salt',sp:{bg:'#f0ece0',skin:'#5a3a28',hair:'#e8e4dc',style:'short',beard:'#e8e4dc',shirt:'#3f6f8f',hat:'ranger',hatc:'#e8dcc0'}},
+  lio:{name:'Lio Tanaka',role:'PAINTER · LOOKING-GLASS ISLE',home:'mirror',sp:{bg:'#c8e8e0',skin:'#e8c09a',hair:'#1c1616',style:'long',shirt:'#6a8ab8',glasses:true}},
+  odile:{name:'Prof. Odile Marchetti',role:'RADIO ASTRONOMER · STARWATCH MESA',home:'mesa',sp:{bg:'#9cb0d0',skin:'#d9a07a',hair:'#3a3434',style:'bun',shirt:'#e8e4dc',glasses:true,scarf:'#e8a33a'}},
+  kit:{name:'Kit Calloway',role:'HUT WARDEN · CASCADE ISLE',home:'cascade',sp:{bg:'#b8d8b0',skin:'#c98c5e',hair:'#6a4a30',style:'short',shirt:'#3f6b3a',hat:'ranger',hatc:'#6b7a3a'}},
+  lu:{name:'Auntie Lu',role:'LANTERN MAKER · LANTERN KEY',home:'lantern',sp:{bg:'#f8d8a8',skin:'#e8c09a',hair:'#cfc8c0',style:'bun',shirt:'#d2493c',glasses:true}},
+  bram:{name:'Bram Holloway',role:'QUARRYMAN · GREYSTONE',home:'quarry',sp:{bg:'#d0ccc4',skin:'#e2a982',hair:'#3a3434',style:'short',mustache:'#3a3434',shirt:'#8a8a92',hat:'cap',hatc:'#e8a33a'}},
+  agnes:{name:'Agnes Flint',role:'MILLER · WINDWARD',home:'windward',sp:{bg:'#f0e4c0',skin:'#f0c7a4',hair:'#f1ece4',style:'bun',shirt:'#8a5a3a',scarf:'#3f8f8a'}},
 };
 function shade(hex,a){const n=parseInt(hex.slice(1),16);let r=n>>16,g=(n>>8)&255,b=n&255;const f=v=>clamp(Math.round(a<0?v*(1+a):v+(255-v)*a),0,255);return '#'+[f(r),f(g),f(b)].map(v=>v.toString(16).padStart(2,'0')).join('');}
 const PORT={};
@@ -1207,6 +1503,38 @@ const DAYS=[
           {to:'ivy',item:'Bea\'s letter',line:"She's coming. On the Thursday boat, she says, because she's too old to land in fog. Forty years late. That's alright. The sweet peas are up."}],
    out:{},
    outro:"That's every island on the chain with its mail again. Bea's off to Farhold on Thursday. She asked who'd fly the post while she's gone. I told her we already have a pilot."},
+  {intro:"Week three. Bea's back from Farhold, and she brought a new chart: fourteen more islands, and nobody's flown mail to them in thirty years. Start east, at the Twin Sisters and Lantern Key.",
+   items:[{to:'wren',item:'New climbing rope',line:"Sixty metres, bright blue. The tall Sister doesn't stand a chance. ...Probably."},
+          {to:'lu',item:'Box of rice paper',line:"Paper for the festival lanterns! A whole box. I'll make you one with a little plane on it."}],
+   out:{lu:[{to:'bea',item:'A paper lantern',line:"A lantern from Lu? I used to bring her matches. She remembered."}]},
+   outro:"Twin Sisters and Lantern Key, back on the route. Bea pinned the new chart over my desk. She drew Biscuit in the corner."},
+  {intro:"South today. Applecross has orchards to the water, and someone on Looking-Glass Isle has ordered a great deal of blue paint.",
+   items:[{to:'hattie',item:'Grafting knife',line:"Sharp as anything. I'll graft the old Saltwhistle Pippin onto the young trees. Bea's mother planted the first one."},
+          {to:'lio',item:'Tubes of blue paint',line:"Cerulean, cobalt, ultramarine. The lake needs all three. On a good day it needs more."}],
+   out:{hattie:[{to:'mabel',item:'Basket of apples',line:"Apples from Hattie? The post office will smell like autumn for a week."}],lio:[{to:'tomas',item:'Painting of the lighthouse',line:"Lio painted my light from the air? From your plane? Well. It's never looked so brave."}]},
+   outro:"Hattie's apples are on the counter. Take one. Gus has had four."},
+  {intro:"West, to the Saltpans and Windward. Agnes at the mills has been waiting on her chisel since before you were born.",
+   items:[{to:'desmond',item:'New rake teeth',line:"Iron teeth! The old rake has been bald since spring. The salt will come up white again."},
+          {to:'agnes',item:'Millstone chisel',line:"Finally. You dress a millstone or it grinds like gravel. Thirty years I've waited. It was worth it. Almost."}],
+   out:{agnes:[{to:'hattie',item:'Sack of flour',line:"Flour from Agnes! Apple pie it is. You'll have the first slice."}]},
+   outro:"Agnes sent a note: she says the post is very slow these days. Then she drew a smiley face. I've never seen her smile."},
+  {intro:"Starwatch Mesa, out to the far west. Professor Marchetti's parcel is marked 'fragile, from space'. It isn't. It's from the mainland.",
+   items:[{to:'odile',item:'Box of radio valves',line:"New valves! The dish has been half deaf. Tonight we'll hear the whole sky."},
+          {to:'desmond',item:'Letter from his daughter',line:"From Ama. She's coming home for the salt harvest. You've made an old raker very happy."},
+          {to:'ines',item:'Star chart from Odile',line:"A star chart, from the mesa? Odile and I were at university together. She still writes in green ink."}],
+   out:{odile:[{to:'otto',item:'Recording of Saturn',line:"A recording of Saturn. From Odile. It sounds like... a kettle. I love it."}]},
+   outro:"Two observatories writing to each other. Bea says the islands are talking again, and it's your doing."},
+  {intro:"North: Cascade Isle and Greystone. Kit at the hut needs a first-aid kit, and Bram needs his wedges. Don't mix them up.",
+   items:[{to:'kit',item:'First-aid kit',line:"Bandages, iodine, and somebody's put in a chocolate bar. Probably you. Thank you."},
+          {to:'bram',item:'Steel wedges',line:"Proper wedges. Now the stone splits clean. Ferrow's new harbour wall starts tomorrow."}],
+   out:{bram:[{to:'mabel',item:'Stone for the post office step',line:"A new step for the post office? From Bram? I'll stop tripping on the old one. Tell him thank you."}]},
+   outro:"Bram's stone came over on the boat. The new step has a little plane carved in it. And a dog."},
+  {intro:"Last day of Bea's chart. Tam's goats need bells, and Bea has one more letter. She says you'll know who it's for.",
+   items:[{to:'tam',item:'Goat bells',line:"Bells! Now I'll hear them on the ledges. The goats are furious. That's how you know it's working."},
+          {to:'wren',item:'Bea\'s old flying gloves',line:"Bea's gloves? For climbing? She says they've held on to worse. I'll wear them up the tall Sister."},
+          {to:'lu',item:'Bea\'s letter',line:"She wants a lantern for every island on the chart. Twenty lanterns, one festival night, all lit at once. ...Tell her yes."}],
+   out:{},
+   outro:"Every island on Bea's chart has its mail. Lu's lighting twenty lanterns on festival night, one for each island, and Bea wants you to fly over them. So do I."},
 ];
 const MEET={
   mabel:"I'm Mabel. I run the post office, which means I run this island. Your mail goes out from here every morning.",
@@ -1222,6 +1550,16 @@ const MEET={
   otto:"Otto. I cook for the observatory, which is mostly coffee. You'll stay for a cup, ja?",
   fen:"Fen Morrow. I keep the lights on this field so pilots can find it. You're the first one in a long while.",
   ivy:"So you're the one carrying my letters. I'm Ivy. Bea and I learned to fly together, a very long time ago.",
+  wren:"Wren. I climb the Sisters. Not the tall one yet. Next summer. Did you fly between them? Everyone does once.",
+  tam:"Tam. Goats, mostly. The goats think the bridge is theirs and I've stopped arguing.",
+  hattie:"Hattie Bloom. Two hundred apple trees and a cider barn. Take an apple. Take two, they're small this year.",
+  desmond:"Desmond. I rake salt. White pans, pink pans, and the sun does the rest. Don't land in a pan, please.",
+  lio:"I'm Lio. I paint the lake. Every day it's a different lake. Hold still, you're in the light.",
+  odile:"Odile Marchetti. I listen to the sky with a very big ear. Mostly it hums. Sometimes it sings.",
+  kit:"Kit. I keep the hut and the trail on Cascade. If you hear thunder on a clear day, that's the falls.",
+  lu:"Everyone calls me Auntie Lu. I make the lanterns. Come at night and you'll see why.",
+  bram:"Bram. Greystone's mine, and the stone in every harbour wall from here to Ferrow. Mind the dust on the strip.",
+  agnes:"Agnes Flint. Seven mills and I know every creak. The wind never stops on Windward, so neither do I.",
 };
 const mail=log.mail;
 const bagFor=stripId=>mail.bag.filter(it=>CHARS[it.to].home===stripId);
@@ -1279,33 +1617,39 @@ function updGates(){
       snd.beep(inside?990:440);toast(inside?`Gate ${i+1} ✓ ${i<2?'on the path':'nice. Flaps 2, power back.'}`:`Missed gate ${i+1}. ${Math.abs(dy)>=26?(dy>0?'A little high.':'A little low.'):'Off to the side.'} Line up for the next.`,2);}});
   gateAlong=along;}
 
-/* tailwind button: three charges, each a 12 s gust that carries you along fast and holds your height.
-   After 5 s without a tap, one charge comes back, then another every 5 s until all three are ready. */
-const BOOST_V=55,BOOST_T=12,WIND_N=3,WIND_CD=5;
-let windCharges=WIND_N,windCD=0,windUiT=0;
+/* tailwind button: three charges, each a 6 s gust that carries you along fast and holds your height.
+   Tap again while a gust is blowing and they stack: two gusts go faster, three faster still.
+   Charges only refill once every gust has died down: 5 s for a single, longer the bigger the stack you used. */
+const BOOST_V=55,BOOST_T=6,WIND_N=3,WIND_CD=5,STACK=[0,1,1.7,2.25];
+let windCharges=WIND_N,windCD=0,windUiT=0,windWait=WIND_CD,windPeak=0;
 const glideAlt=(s,d)=>s.elev+AC.gearH+Math.tan(4*DEG)*d;
 function windBlock(){if(ac.ground||mode!=='fly')return 'IN THE AIR';const agl=ac.pos.y-AC.gearH-surfH(ac.pos.x,ac.pos.z);if(agl<40)return 'TOO LOW';
   return null;}
 function useWind(){const b=windBlock();
-  if(windCharges<=0){toast(`The wind is gathering. Next one in ${Math.ceil(windCD)} s.`,1.4);return;}
+  if(windCharges<=0){toast(ac.gusts&&ac.gusts.length?'All three are blowing. Ride it out.':`The wind is gathering. Next one in ${Math.ceil(windCD)} s.`,1.4);return;}
   if(b){toast(b==='TOO LOW'?'Climb a little first. Tailwinds need some height.':'Tailwinds work once you\'re flying.',1.8);return;}
-  windCharges--;windCD=WIND_CD;ac.boostT=BOOST_T;snd.beep(1320);setTimeout(()=>snd.beep(1760),90);
-  toast(windCharges?`Tailwind! ${windCharges} left.`:'Last tailwind for now. Leave it 5 seconds and one comes back.',1.6);
-  if(!log.goals.tailwind&&windCharges===0)goal('tailwind');updWindUI();}
-function updWindUI(){const b=$('wind');if(!b)return;const blk=windBlock(),cool=windCharges<=0,fill=windCharges<WIND_N;
-  b.innerHTML=`TAILWIND <span>${'●'.repeat(windCharges)+'○'.repeat(WIND_N-windCharges)}</span>`;
-  b.classList.toggle('cool',cool);b.classList.toggle('off',!!blk&&!cool);b.classList.toggle('on',ac.boostT>0);
-  b.style.setProperty('--w',fill?Math.round((1-windCD/WIND_CD)*100)+'%':'0%');}
-function updWind(dt){if(windCharges<WIND_N){windCD-=dt;if(windCD<=0){windCharges++;windCD=WIND_CD;if(windCharges===WIND_N)windCD=0;}}
+  if(!ac.gusts)ac.gusts=[];ac.gusts.push(BOOST_T);windCharges--;const n=ac.gusts.length;windPeak=Math.max(windPeak,n);
+  windWait=WIND_CD*[0,1,1.6,2.4][windPeak];windCD=windWait;ac.boostT=Math.max(...ac.gusts);
+  snd.beep(1320+n*180);setTimeout(()=>snd.beep(1760+n*220),90);
+  toast(n>1?`Tailwind ×${n}!${n===3?' Full gale.':''}`:windCharges?`Tailwind! ${windCharges} left.`:'Last tailwind for now.',1.4);
+  if(!log.goals.tailwind&&n===3)goal('tailwind');updWindUI();}
+function updWindUI(){const b=$('wind');if(!b)return;const blk=windBlock(),cool=windCharges<=0,n=(ac.gusts||[]).length,fill=windCharges<WIND_N&&!n;
+  b.innerHTML=`TAILWIND${n>1?' ×'+n:''} <span>${'●'.repeat(windCharges)+'○'.repeat(WIND_N-windCharges)}</span>`;
+  b.classList.toggle('cool',cool&&!n);b.classList.toggle('off',!!blk&&!cool);b.classList.toggle('on',n>0);
+  b.style.setProperty('--w',fill?Math.round((1-windCD/windWait)*100)+'%':'0%');}
+function updWind(dt){const blowing=ac.gusts&&ac.gusts.length;
+  if(!blowing&&windCharges<WIND_N){windCD-=dt;if(windCD<=0){windCharges++;windCD=windWait;if(windCharges===WIND_N){windCD=0;windPeak=0;windWait=WIND_CD;}}}
   windUiT-=dt;if(windUiT<=0){windUiT=.1;updWindUI();}}
 function stepBoost(dt){
-  if(ac.boostT>0){ac.boostT-=dt;const agl=ac.pos.y-AC.gearH-surfH(ac.pos.x,ac.pos.z);
-    if(agl<30||ac.ground)ac.boostT=0;}
-  ac.bst=lerp(ac.bst||0,ac.boostT>0?1:0,1-Math.exp(-dt*(ac.boostT>0?2.5:1.1)));
+  if(!ac.gusts)ac.gusts=[];const agl=ac.pos.y-AC.gearH-surfH(ac.pos.x,ac.pos.z);
+  if(agl<30||ac.ground)ac.gusts.length=0;
+  for(let i=ac.gusts.length-1;i>=0;i--){ac.gusts[i]-=dt;if(ac.gusts[i]<=0)ac.gusts.splice(i,1);}
+  ac.boostT=ac.gusts.length?Math.max(...ac.gusts):0;const tgt=STACK[ac.gusts.length];
+  ac.bst=lerp(ac.bst||0,tgt,1-Math.exp(-dt*(tgt>(ac.bst||0)?2.5:1.1)));
   if(ac.bst<.005||ac.ground)return;
   axes();const hl=Math.hypot(_f.x,_f.z);if(hl<.2)return;
   ac.pos.x+=_f.x/hl*BOOST_V*ac.bst*dt;ac.pos.z+=_f.z/hl*BOOST_V*ac.bst*dt;
-  ac.vel.y+=(0-ac.vel.y)*Math.min(1,dt*3*ac.bst);}
+  ac.vel.y+=(0-ac.vel.y)*Math.min(1,dt*3*Math.min(ac.bst,1));}
 
 const beacon=new THREE.Mesh(new THREE.CylinderGeometry(5,5,700,10,1,true).translate(0,350,0),new THREE.MeshBasicMaterial({color:0x8ff0e8,transparent:true,opacity:.12,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide,fog:false}));
 scene.add(beacon);
@@ -1321,7 +1665,7 @@ const _flat=new THREE.Matrix4();
 {const hp=toWorld(STRIPS[0],95,-38);parked.position.set(hp.x,groundH(hp.x,hp.z)+1.35,hp.z);parked.quaternion.setFromEuler(new THREE.Euler(0,-(STRIPS[0].hdg+200)*DEG,0,'YXZ'));}
 const smokeBurst=[];{const mat=new THREE.MeshToonMaterial({color:0x6e6574,gradientMap:gradTex,flatShading:true});
   for(let i=0;i<10;i++){const m=new THREE.Mesh(new THREE.IcosahedronGeometry(1,0),mat);m.visible=false;scene.add(m);smokeBurst.push(m);}}
-const spot=new THREE.SpotLight(0xfff2d8,0,700,.32,.45,1.1);spot.position.set(0,-.4,-2.6);const spotT=new THREE.Object3D();spotT.position.set(0,-14,-80);plane.add(spot,spotT);spot.target=spotT;
+const spot=new THREE.SpotLight(0xfff2d8,0,240,.3,.5,2);spot.position.set(0,-.4,-2.6);const spotT=new THREE.Object3D();spotT.position.set(0,-14,-80);plane.add(spot,spotT);spot.target=spotT;
 const navPts=(()=>{const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute([-5.3,.8,-.5,5.3,.8,-.5,0,1.7,4.5],3));g.setAttribute('color',new THREE.Float32BufferAttribute([1,.25,.2,.3,1,.4,1,1,1],3));
   const m=new THREE.Points(g,new THREE.PointsMaterial({size:2,sizeAttenuation:false,vertexColors:true,fog:false}));plane.add(m);return m;})();
 const TG=new Map();for(const t of trees){const k=((t.x/60)|0)+','+((t.z/60)|0);if(!TG.has(k))TG.set(k,[]);TG.get(k).push(t);}
@@ -1392,6 +1736,7 @@ const BODY=[new V3(-5.25,.78,-.55),new V3(5.25,.78,-.55),new V3(0,-.05,-3.05),ne
 function airContact(){
   for(const b of BODY){_p.copy(b).applyQuaternion(ac.q).add(ac.pos);if(_p.y<surfH(_p.x,_p.z)){
     const gh=groundH(_p.x,_p.z);return crash(gh<.3?'water':(ac.pos.y-surfH(ac.pos.x,ac.pos.z)>3?'terrain':(b.x!==0?'bank':'nose')));}}
+  if(propHit(ac.pos.x,ac.pos.y,ac.pos.z,3))return crash('rock');
   if(ac.pos.y-surfH(ac.pos.x,ac.pos.z)<25&&treeHit(ac.pos.x,ac.pos.y-AC.gearH,ac.pos.z))return crash('tree');
   let low=1e9;for(const g of GEAR){_p.copy(g).applyQuaternion(ac.q).add(ac.pos);low=Math.min(low,_p.y-surfH(_p.x,_p.z));}
   if(low<=0){if(ac.vel.y>.2){ac.pos.y-=low;return;}touchdown(low);}
@@ -1424,7 +1769,7 @@ function stepGround(dt){
   const rot=clamp((ua/23)**2,0,1.3);
   const tgt=clamp(inp.pitch*.22*rot,0,.21);ac.gPitch+=clamp(tgt-ac.gPitch,-.5*dt,.6*dt);
   const CL=CLof(ac.gPitch,f)*1.1,L=qd*AC.S*CL,N=Math.max(0,AC.mass*G-L);
-  const mu={paved:.025,grass:.05,dirt:.06,rough:.09}[surf],bmu=surf==='paved'?.8:.6;
+  const mu={paved:.025,grass:.05,dirt:.06,sand:.075,cinder:.06,rough:.09}[surf]??.09,bmu=surf==='paved'?.8:.6;
   const D=qd*AC.S*(AC.CD0+f.dCD+AC.k*CL*CL),fr=(mu+ac.brake*bmu)*N;
   let acc=(thrust(ac.u)-D)/AC.mass;
   if(ac.u>.01)acc-=fr/AC.mass;else acc=acc*AC.mass>fr?acc-fr/AC.mass:0;
@@ -1455,6 +1800,7 @@ const REASONS={
   bank:['A wingtip touched','Keep the wings level as you touch down. Small stick moves near the ground.'],
   nose:['Nose first','Touch down on the main wheels with the nose slightly up.'],
   tree:['Into the trees','Trees are taller than they look. Stay over the runway or open ground when low.'],
+  rock:['Met the rock','That gap was a little tighter than it looked. Line up early, wings level, and go straight through.'],
   rough:['Too rough here','That ground was too steep or bumpy to land or roll on.'],
 };
 function crash(why,v){
@@ -1465,7 +1811,7 @@ function crash(why,v){
     showCard(`<div class="who"><img src="${portrait('gus')}" alt=""><div><b>${t}</b><span>GUS PATCHES IT UP · THE MAIL IS STILL IN THE BAG</span></div></div><p>${b}</p>${extra}`,[
       ['Try that approach again',()=>spawnApproach(dest),true],['Back to '+stripById(ac.lastField).name,()=>spawnField(stripById(ac.lastField))]]);},900);
 }
-function resetAc(){ac.boostT=0;ac.bst=0;ac.w.set(0,0,0);ac.td=null;ac.brake=0;ac.brakeHeld=false;ac.trimHold=0;ac.ice=0;smokeBurst.forEach(m=>m.visible=false);snapCam=true;}
+function resetAc(){ac.boostT=0;ac.bst=0;ac.gusts=[];ac.w.set(0,0,0);ac.td=null;ac.brake=0;ac.brakeHeld=false;ac.trimHold=0;ac.ice=0;smokeBurst.forEach(m=>m.visible=false);snapCam=true;}
 function intoWindDir(s){return (s.fx*WIND.x+s.fz*WIND.z)<0?1:-1;}
 function spawnField(s,dirSign){
   dirSign=dirSign||intoWindDir(s);resetAc();
@@ -1511,6 +1857,7 @@ function finishLanding(){
   g('land_'+s.id);if(STRIPS.every(q=>log.goals['land_'+q.id]))g('hopper');if(isTrip){log.trips++;g('trip');}if(fpm<90&&!td.bounced)g('butter');if(s.id==='ridge'&&total===3)g('ridge3');if(td.view==='cockpit')g('instrument');
   if(ckOk)g('checklist');if(td.tod==='night')g('night');
   if(ckOk&&mail.active)stamp(1);
+  const firstHere=F.landings===1,lpts=total*25+(firstHere?150:0);addScore(lpts);
   ac.lastField=s.id;ac.from=s.id;saveL();
   const missed=[!ck.carb&&'carb heat',!ck.mix&&'mixture rich',!ck.flaps&&'flaps',!ck.light&&'landing light'].filter(Boolean).join(', ');
   const ckRow=`<span class="k">CHECKLIST</span><span>${ckOk?'All done'+(mail.active?' · +1 stamp':''):'Missed: '+missed}</span><span class="s">${ckOk?'✓':''}</span>`;
@@ -1519,10 +1866,11 @@ function finishLanding(){
   const btns=here.length?[[`Deliver the mail (${here.length})`,()=>deliverAt(s),true]]
     :homeDone?[['Hand in the day',endDay,true]]
     :[['Take off from here',()=>spawnField(s),true],['Practice this landing',()=>spawnApproach(s,td.dirSign)],['Keep taxiing',()=>{hideModal();mode='fly';}]];
+  btns.splice(1,0,...errandBtns(s));
   showCard(`<h2>${stopped?'Landed at':'Rolled off'} ${s.name}</h2><div class="sub">${isTrip?'TRIP FROM '+stripById(fromId).name.toUpperCase()+' · ':''}${stars(total)}</div>
     <div class="rows"><span class="k">TOUCHDOWN</span><span>${Math.round(fpm)} ft/min at ${Math.round(td.kt)} kt · ${softTxt}</span><span class="s">${stars(soft)}</span>
     <span class="k">CENTERLINE</span><span>${off<.2?'Right down the middle':off<.5?'A little off center':'Way off center'}</span><span class="s">${stars(cen)}</span>
-    <span class="k">AIM POINT</span><span>${zoneTxt}</span><span class="s">${stars(zone)}</span>${ckRow}</div>
+    <span class="k">AIM POINT</span><span>${zoneTxt}</span><span class="s">${stars(zone)}</span>${ckRow}<span class="k">SCORE</span><span>+${lpts}${firstHere?' · first landing here':''}</span><span class="s"></span></div>
     ${!stopped?'<p>You ran off the end. Touch down nearer the markers and hold BRAKE.</p>':''}
     ${news.length?`<p><b>New in your logbook:</b> ${news.join(', ')}</p>`:''}`,btns);
   mode='card';
@@ -1537,11 +1885,11 @@ function deliverAt(s){
       const homeDone=s.id==='harbor'&&!mail.bag.length;
       const nxt=mail.bag.length?`Next stop: <b>${dest.name}</b>.`:homeDone?'That\'s everything. Mabel is waiting to close the day.':'The bag is empty. Head home to Harbor Field.';
       showCard(`<h2>Mail delivered</h2><div class="sub">${log.stamps} STAMPS ON YOUR ROUTE CARD</div>${pick.length?`<p>Picked up: ${pick.map(o=>`<b>${o.item}</b> for ${CHARS[o.to].name.split(' ')[0]}`).join(', ')}.</p>`:''}<p>${nxt}</p>`,
-        homeDone?[['Hand in the day',endDay,true]]:[['Take off',()=>spawnField(s),true],['Look around first',()=>{hideModal();mode='fly';}]]);return;}
+        homeDone?[['Hand in the day',endDay,true]]:[['Take off',()=>spawnField(s),true],...errandBtns(s),['Look around first',()=>{hideModal();mode='fly';}]]);return;}
     if(q.kind==='meet'){log.met[q.who]=1;saveL();const c=CHARS[q.who];
       showCard(`<div class="who"><img src="${portrait(q.who)}" alt=""><div><b>${c.name}</b><span>${c.role}</span></div></div><p class="say">“${MEET[q.who]}”</p>`,[['Nice to meet you',step,true]]);return;}
-    const it=q.it,c=CHARS[it.to];stamp(1);
-    showCard(`<div class="who"><img src="${portrait(it.to)}" alt=""><div><b>${c.name}</b><span>${c.role}</span></div></div><p class="say">“${it.line}”</p><div class="got">DELIVERED: ${it.item.toUpperCase()} · +1 STAMP</div>`,[['You\'re welcome',step,true]]);};
+    const it=q.it,c=CHARS[it.to];stamp(1);addScore(100);
+    showCard(`<div class="who"><img src="${portrait(it.to)}" alt=""><div><b>${c.name}</b><span>${c.role}</span></div></div><p class="say">“${it.line}”</p><div class="got">DELIVERED: ${it.item.toUpperCase()} · +1 STAMP · +100</div>`,[['You\'re welcome',step,true]]);};
   step();
 }
 function offerDay(after){
@@ -1550,13 +1898,13 @@ function offerDay(after){
   if(!day){showCard(`<div class="who"><img src="${portrait('mabel')}" alt=""><div><b>Mabel Ostrander</b><span>POSTMASTER · HARBOR FIELD</span></div></div><p class="say">“No mail today. Every island on the chain is caught up. Go and enjoy the sky.”</p>`,[['Go flying',after,true]]);return;}
   const meet=!log.met.mabel;if(meet)log.met.mabel=1;saveL();
   const list=day.items.map(it=>`<b>${it.item}</b> for ${CHARS[it.to].name}, ${stripById(CHARS[it.to].home).name}`).join('<br>');
-  showCard(`<div class="who"><img src="${portrait('mabel')}" alt=""><div><b>Mabel Ostrander</b><span>POSTMASTER · ${mail.day>6?'WEEK 2 · DAY '+(mail.day-6):'DAY '+mail.day} OF 6</span></div></div>
+  showCard(`<div class="who"><img src="${portrait('mabel')}" alt=""><div><b>Mabel Ostrander</b><span>POSTMASTER · ${mail.day>6?'WEEK '+Math.ceil(mail.day/6)+' · DAY '+((mail.day-1)%6+1):'DAY '+mail.day} OF 6</span></div></div>
     ${meet?`<p class="say">“${MEET.mabel}”</p>`:''}<p class="say">“${day.intro}”</p><p>${list}</p>`,
     [['Load the bag',()=>{mail.bag=day.items.map(x=>({...x}));mail.active=true;saveL();refreshBag();after();},true],['Just flying today',()=>{mail.active=false;saveL();refreshBag();after();}]]);
 }
 function meetBea(){if(mode!=='fly'||log.met.bea)return;log.met.bea=1;saveL();mode='card';
   showCard(`<div class="who"><img src="${portrait('bea')}" alt=""><div><b>Bea Hollis</b><span>RETIRED MAIL PILOT · HARBOR FIELD</span></div></div><p class="say">“${MEET.bea}”</p><p>Bea's logbook is in the pause menu whenever you want it.</p>`,[['Thanks, Bea',()=>{hideModal();mode='fly';},true],['Open the logbook',()=>bea(-1)]]);}
-function endDay(){const day=DAYS[mail.day-1];mail.active=false;mail.bag=[];mail.day++;stamp(2);if(mail.day>6)goal('week',true);if(mail.day>DAYS.length)goal('week2',true);saveL();refreshBag();
+function endDay(){const day=DAYS[mail.day-1];mail.active=false;mail.bag=[];mail.day++;stamp(2);if(mail.day>6)goal('week',true);if(mail.day>12)goal('week2',true);if(mail.day>18)goal('week3',true);saveL();refreshBag();
   showCard(`<div class="who"><img src="${portrait('mabel')}" alt=""><div><b>Mabel Ostrander</b><span>END OF DAY · +2 STAMPS</span></div></div><p class="say">“${day?day.outro:'Good flying.'}”</p><div class="got">${log.stamps} STAMPS ON YOUR ROUTE CARD</div>`,
     [[mail.day<=DAYS.length?'Start the next day':'Keep flying',()=>{if(mail.day<=DAYS.length)offerDay(()=>spawnField(STRIPS[0]));else{hideModal();mode='fly';}},true],['Free flight',()=>{hideModal();mode='fly';pickDest('harbor');}]]);}
 function goal(id,quiet){if(log.goals[id])return false;log.goals[id]=Date.now();saveL();if(!quiet){const g=GOALS.find(x=>x.id===id);toast('Logbook: '+g.name,2.5);}return true;}
@@ -1719,7 +2067,7 @@ const music={on:false,
   hat(t,v){const c=snd.ctx,s=c.createBufferSource();s.buffer=this.noise;const f=c.createBiquadFilter();f.type='highpass';f.frequency.value=6500;const g=c.createGain();g.gain.setValueAtTime(v*(.6+Math.random()*.5),t);g.gain.exponentialRampToValueAtTime(.001,t+.045);
     s.connect(f);f.connect(g);g.connect(this.bus);s.start(t,Math.random());s.stop(t+.06);}};
 /* ---------- maps ---------- */
-const MAPW=16000,mapBase=(()=>{const N=512,c=document.createElement('canvas');c.width=c.height=N;const x=c.getContext('2d'),img=x.createImageData(N,N);
+const MAPW=SIZE,mapBase=(()=>{const N=512,c=document.createElement('canvas');c.width=c.height=N;const x=c.getContext('2d'),img=x.createImageData(N,N);
   for(let j=0;j<N;j++)for(let i=0;i<N;i++){const wx=-MAPW/2+(i+.5)*MAPW/N,wz=-MAPW/2+(j+.5)*MAPW/N,h=groundH(wx,wz);let r,g,b;
     if(h<0){const d=clamp(-h/40,0,1);r=lerp(70,30,d);g=lerp(150,72,d);b=lerp(170,120,d);}
     else if(h<4){r=226;g=205;b=150;}
@@ -1738,23 +2086,25 @@ function drawMiniMap(dt){mapT-=dt;if(mapT>0)return;mapT=.08;const W=96,x=mctx;x.
   const near=dest?Math.hypot(dest.x-ac.pos.x,dest.z-ac.pos.z):1e9,R=near<2600?1500:2800,k=(W/2)/R,cy=W/2+14;
   x.fillStyle='#1d2a44';x.fillRect(0,0,W,W);x.save();x.translate(W/2,cy);x.rotate(-hdg);x.scale(k,k);x.translate(-ac.pos.x,-ac.pos.z);
   x.drawImage(mapBase,-MAPW/2,-MAPW/2,MAPW,MAPW);drawStripsOn(x,k,dest);
-  x.fillStyle='#ffb02e';for(const [k_,v] of Object.entries(sights))if(log.sights[k_])x.fillRect(v.x-2/k,v.z-2/k,4/k,4/k);
+  x.fillStyle='#ffb02e';for(const [k_,v] of Object.entries(sights))if(log.sights[k_])x.fillRect(v.x-2/k,v.z-2/k,4/k,4/k);x.fillStyle='#8ff0e8';for(const g of FLYGATES)if(log.gates[g.id])x.fillRect(g.x-2/k,g.z-2/k,4/k,4/k);
   if(dest){x.fillStyle='#8ff0e8';x.beginPath();x.arc(dest.x,dest.z,3.5/k,0,TAU);x.fill();}
   x.restore();
   x.fillStyle='#fff8ec';x.strokeStyle='#241c2e';x.lineWidth=1;x.beginPath();x.moveTo(W/2,cy-6);x.lineTo(W/2-4,cy+4);x.lineTo(W/2,cy+2);x.lineTo(W/2+4,cy+4);x.closePath();x.fill();x.stroke();
   const na=-hdg;x.fillStyle='#ffb02e';x.font='13px VT323, monospace';x.textAlign='center';x.textBaseline='middle';x.fillText('N',clamp(W/2+Math.sin(na)*40,6,W-6),clamp(cy-Math.cos(na)*40,6,W-6));
   if(dest&&near>R*.9){const brg=Math.atan2(dest.x-ac.pos.x,-(dest.z-ac.pos.z))-hdg;x.fillStyle='#8ff0e8';x.beginPath();x.arc(clamp(W/2+Math.sin(brg)*44,4,W-4),clamp(cy-Math.cos(brg)*44,4,W-4),3,0,TAU);x.fill();}}
 function bigMap(){
-  showCard(`<h2>Bea's chart</h2><div class="sub">${Object.keys(sights).filter(q=>log.sights[q]).length} OF ${Object.keys(sights).length} LANDMARKS FOUND · DASHED LINES SHOW WHERE TO LINE UP FOR ${dest?dest.name.toUpperCase():'EACH RUNWAY'}</div><canvas id="bigmap" width="512" height="384"></canvas>`,[['Back to flying',()=>{hideModal();mode='fly';},true]]);
+  showCard(`<h2>Bea's chart</h2><div class="sub">★ ${log.score.toLocaleString()} · ${Object.keys(sights).filter(q=>log.sights[q]).length}/${Object.keys(sights).length} LANDMARKS (ORANGE) · ${FLYGATES.filter(g=>log.gates[g.id]).length}/${FLYGATES.length} GAPS FLOWN (CYAN)${activeErrands().length?' · ERRANDS: '+activeErrands().map(errLine).join(', ').toUpperCase():''}</div><canvas id="bigmap" width="512" height="384"></canvas>`,[['Back to flying',()=>{hideModal();mode='fly';},true]]);
   $('cardBody').parentElement.querySelector('.card').classList.add('wide');
-  const c=$('bigmap'),x=c.getContext('2d');x.imageSmoothingEnabled=false;const k=384/12600,CX=-200,CZ=300;x.fillStyle='#1d2a44';x.fillRect(0,0,512,384);x.save();x.translate(256-CX*k,192-CZ*k);x.scale(k,k);
+  const c=$('bigmap'),x=c.getContext('2d');x.imageSmoothingEnabled=false;const k=384/19400,CX=150,CZ=250;x.fillStyle='#1d2a44';x.fillRect(0,0,512,384);x.save();x.translate(256-CX*k,192-CZ*k);x.scale(k,k);
   x.drawImage(mapBase,-MAPW/2,-MAPW/2,MAPW,MAPW);drawStripsOn(x,k,dest);
   x.restore();
   const P=(wx,wz)=>[256+(wx-CX)*k,192+(wz-CZ)*k];x.font='13px VT323, monospace';x.font='15px VT323, monospace';x.textBaseline='middle';
   const label=(t,wx,wz,col,dy=-12)=>{const [a,b]=P(wx,wz);x.textAlign='center';x.fillStyle='#241c2e';x.fillText(t,a+1,b+dy+1);x.fillStyle=col;x.fillText(t,a,b+dy);};
-  for(const s of STRIPS)label(s.name.toUpperCase(),s.x,s.z,s===dest?'#8ff0e8':'#fff8ec',-11);
-  for(const [k_,v] of Object.entries(sights)){if(!log.sights[k_])continue;const [a,b]=P(v.x,v.z);x.fillStyle='#ffb02e';x.fillRect(a-2,b-2,5,5);label(v.name.toUpperCase(),v.x,v.z,'#ffd890',10);}
-  for(const I of Object.values(ISLES))label(I.name.toUpperCase(),I.x,I.z+(I.r?I.r*.55:700),'#ffd890',0);
+  x.font='13px VT323, monospace';
+  for(const [k_,v] of Object.entries(sights)){if(!log.sights[k_])continue;const [a,b]=P(v.x,v.z);x.fillStyle='#241c2e';x.fillRect(a-3,b-3,6,6);x.fillStyle='#ffb02e';x.fillRect(a-2,b-2,4,4);}
+  for(const g of FLYGATES){if(!log.gates[g.id])continue;const [a,b]=P(g.x,g.z);x.fillStyle='#8ff0e8';x.beginPath();x.moveTo(a,b-4);x.lineTo(a+4,b);x.lineTo(a,b+4);x.lineTo(a-4,b);x.closePath();x.fill();}
+  for(const I of Object.values(ISLES))label(I.name.toUpperCase(),I.x,I.z+(I.r?Math.min(I.r*.6,600)+260:1500),'#ffd890',0);
+  if(dest)label(dest.name.toUpperCase(),dest.x,dest.z,'#8ff0e8',-11);
   const [px,pz]=P(ac.pos.x,ac.pos.z);axes();const hdg=ac.ground?-ac.gYaw:Math.atan2(_f.x,-_f.z);x.save();x.translate(px,pz);x.rotate(hdg);x.fillStyle='#fff8ec';x.strokeStyle='#241c2e';x.lineWidth=1.5;x.beginPath();x.moveTo(0,-9);x.lineTo(-6,6);x.lineTo(0,3);x.lineTo(6,6);x.closePath();x.fill();x.stroke();x.restore();
   x.fillStyle='#ffb02e';x.textAlign='left';x.fillText('N ↑',10,14);
   const wd=70*DEG;x.strokeStyle='#fff8ec';x.lineWidth=2;x.beginPath();x.moveTo(478-Math.sin(wd)*12,30+Math.cos(wd)*12);x.lineTo(478+Math.sin(wd)*12,30-Math.cos(wd)*12);x.stroke();x.fillStyle='#fff8ec';x.textAlign='center';x.fillText('WIND',478,52);}
@@ -1822,7 +2172,7 @@ function logbook(){
   const go=GOALS.map(g=>`<div class="item ${log.goals[g.id]?'done':''}"><span><b>${g.name}</b><span class="d">${g.hint}</span></span><span class="chk">${log.goals[g.id]?'✓':''}</span></div>`).join('');
   const done=GOALS.filter(g=>log.goals[g.id]).length;
   showCard(`<h2>Your logbook</h2><div class="sub">${log.flights} FLIGHTS · ${log.trips} TRIPS · ${log.stamps} STAMPS · ${done}/${GOALS.length} GOALS</div><h3>PEOPLE</h3><div class="list">${ppl}</div><h3>FIELDS</h3><div class="list">${f}</div><h3>SIGHTS</h3><div class="list">${si}</div><h3>GOALS</h3><div class="list">${go}</div>`,[['Back',back,true]]);}
-const SET=[['tilt','Tilt to steer','Turn the phone like a steering wheel to bank. Tip it toward you to raise the nose, away to lower it. CENTER resets the level point. The touch stick still works.'],['steady','Steady wings','Levels the wings when you let go, and handles the rudder.'],['stallGuard','Stall guard','Stops you pulling the nose up far enough to stall.'],
+const SET=[['dog','Biscuit barks','Your dog barks and points when something worth finding is nearby.'],['tilt','Tilt to steer','Turn the phone like a steering wheel to bank. Tip it toward you to raise the nose, away to lower it. CENTER resets the level point. The touch stick still works.'],['steady','Steady wings','Levels the wings when you let go, and handles the rudder.'],['stallGuard','Stall guard','Stops you pulling the nose up far enough to stall.'],
   ['autoTrim','Auto-trim','Holds your current speed when you let go of the stick.'],['tips','Tips','Short pointers the first time things happen.'],
   ['invert','Invert pitch','Drag up to raise the nose instead of down.'],['shadows','Shadows','Long shadows from the sun and moon. Turn off if your phone gets warm.'],['sound','Sound','Engine, wind, music and the stall horn.'],['fps','Frame rate','Shows frames per second, the slowest frame, triangles and draw calls in a strip at the top of the screen while you fly. For checking how your phone keeps up.']];
 function settingsCard(){
@@ -1831,7 +2181,7 @@ function settingsCard(){
   const ev=[['OFF',0],['HUSH',.5],['SOFT',1],['FULL',2]].map(([n,v])=>`<button data-ev="${v}" class="${settings.engVol==v?'primary':''}">${n}</button>`).join('');
   const mv=[['OFF',0],['SOFT',.5],['ON',1]].map(([n,v])=>`<button data-mv="${v}" class="${(settings.music??.5)==v?'primary':''}">${n}</button>`).join('');
   const lt=Object.keys(TOD).map(k=>`<button data-lt="${k}" class="${settings.light===k?'primary':''}">${TOD[k].name.toUpperCase()}</button>`).join('');
-  showCard(`<h2>Settings</h2><div class="sub">ASSISTS · TURN THEM OFF ONE AT A TIME AS YOU IMPROVE</div>${rows}<h3>ENGINE VOLUME</h3><div class="btns">${ev}</div><h3>LO-FI RADIO</h3><div class="btns">${mv}</div><h3>TIME OF DAY</h3><div class="btns">${lt}</div><h3>PIXELS</h3><div class="btns">${px}</div><div class="sub" style="margin-top:14px">BUILD e1d15e3</div>`,[['Back',back,true]]);
+  showCard(`<h2>Settings</h2><div class="sub">ASSISTS · TURN THEM OFF ONE AT A TIME AS YOU IMPROVE</div>${rows}<h3>ENGINE VOLUME</h3><div class="btns">${ev}</div><h3>LO-FI RADIO</h3><div class="btns">${mv}</div><h3>TIME OF DAY</h3><div class="btns">${lt}</div><h3>PIXELS</h3><div class="btns">${px}</div><div class="sub" style="margin-top:14px">BUILD 375f222</div>`,[['Back',back,true]]);
   const cb=$('cardBody');
   cb.querySelectorAll('[data-k]').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.k;if(k==='tilt'){if(!settings.tilt){settings.tilt=true;saveS();enableTilt().then(()=>{updTiltUI();settingsCard();});}else{settings.tilt=false;saveS();disableTilt();updTiltUI();settingsCard();}return;}settings[k]=!settings[k];saveS();if(k==='sound')snd.setOn(settings.sound);if(k==='fps'){$('fps').hidden=!settings.fps;$('fps').textContent='FPS: measuring…';fpsN=fpsT=0;fpsLast=0;}if(k==='sound')music.setVol();settingsCard();}));
   cb.querySelectorAll('[data-px]').forEach(b=>b.addEventListener('click',()=>{settings.pixels=b.dataset.px;pixMode=settings.pixels;saveS();resize();settingsCard();}));
@@ -1869,7 +2219,7 @@ function gameChecks(dt){
   if(!ac.ground&&Math.abs(bank)>20*DEG&&ac.vel.y<-1.5)tip('turn','In a turn, hold the stick a little down (back) to keep from sinking.');
   if(airT>45)tip('pitchpower','Good to know: the stick mostly sets your speed. Power decides whether you climb or descend.');
   let showCheck=false;
-  if(!ac.ground&&dest&&airT>8&&Math.hypot(dest.x-ac.pos.x,dest.z-ac.pos.z)>3500)tip('tailwind','Long way to go? Tap TAILWIND under the map for a gust that carries you fast and level for a few seconds. You hold three; leave it alone for 5 seconds and one comes back.',.5);
+  if(!ac.ground&&dest&&airT>8&&Math.hypot(dest.x-ac.pos.x,dest.z-ac.pos.z)>3500)tip('tailwind','Long way to go? Tap TAILWIND under the map for a short gust that carries you fast and level. Tap again while it blows to stack gusts and go faster. Charges come back once the wind dies down; big stacks take longer.',.5);
   if(dest){const gl=glide(dest);if(!ac.ground&&Math.hypot(dest.x-ac.pos.x,dest.z-ac.pos.z)<5500)tip('gates','See the cyan gates? They show the way in. Start lining up at the first one, 2 km out and about 450 ft up.');
     if(gl.active&&gl.along<3200){showCheck=true;tip('approach','Fly through the three cyan gates. Keep the diamond in the ring at the top of the screen. Flaps down, power back, about 55 knots.');
       if(gl.along<1800)tip('papi','The four lights beside the runway: two white and two red means you\'re on the glide path. All white is too high, all red too low.',3);}
@@ -1879,9 +2229,9 @@ function gameChecks(dt){
     ck.innerHTML=`<b>BEFORE LANDING</b>${row(c.carb,'CARB HEAT ON')}${row(c.mix,'MIXTURE RICH')}${row(c.flaps,'FLAPS 1 OR 2')}${c.needLight?row(c.light,'LANDING LIGHT'):''}`;ck.hidden=false;tip('checklist','Before-landing checklist: tap the switches beside the chart. Bea\'s logbook explains each one.',1);}
   else ck.hidden=true;
   sightT+=dt;if(sightT>.3){sightT=0;
-    for(const [k,v] of Object.entries(sights)){if(log.sights[k])continue;if(Math.hypot(ac.pos.x-v.x,ac.pos.z-v.z)<450&&ac.pos.y-v.y<650){log.sights[k]=Date.now();stamp(1);saveL();
+    for(const [k,v] of Object.entries(sights)){if(log.sights[k])continue;if(Math.hypot(ac.pos.x-v.x,ac.pos.z-v.z)<450&&ac.pos.y-v.y<650){log.sights[k]=Date.now();stamp(1);addScore(100);saveL();
       const n=Object.keys(sights).filter(q=>log.sights[q]).length;snd.beep(990);setTimeout(()=>snd.beep(1320),110);setTimeout(()=>snd.beep(1760),220);
-      toast(`Discovered: ${v.name} (${n}/${Object.keys(sights).length})\n${v.desc||''}`,4);tip('discover','Landmarks you discover go on Bea\'s chart, with a stamp for each. Fly over anything that looks interesting.',4.5);}}
+      toast(`Discovered: ${v.name} (${n}/${Object.keys(sights).length}) · +100\n${v.desc||''}`,4);tip('discover','Landmarks you discover go on Bea\'s chart, with a stamp for each. Fly over anything that looks interesting.',4.5);}}
     if(!ac.ground&&Math.hypot(ac.pos.x-summit.x,ac.pos.z-summit.z)<320&&ac.pos.y>summit.h+10)goal('summit');}
   const hdg=(Math.atan2(_f.x,-_f.z)/DEG+360)%360;let dh=hdg-hdgPrev;if(dh>180)dh-=360;if(dh<-180)dh+=360;hdgPrev=hdg;turnRate=lerp(turnRate,dh/Math.max(dt,1e-3),.1);
 }
@@ -1992,14 +2342,121 @@ function updateVisuals(dt,t){
   blob.visible=mode!=='crashed'&&mode!=='title'&&agl<220;if(blob.visible){plane.updateMatrix();_flat.set(1,0,0,0, 0,0,0,gh+.22, 0,0,1,0, 0,0,0,1);blob.matrix.multiplyMatrices(_flat,plane.matrix);blob.matrixWorld.copy(blob.matrix);
     blob.material.opacity=(settings.shadows?.42:.55)*(1-smooth(4,200,agl))+(ac.ground?.08:0);}
   if(dest){beacon.visible=mode==='fly'||mode==='paused';beacon.position.set(dest.x,dest.elev,dest.z);const d=Math.hypot(dest.x-ac.pos.x,dest.z-ac.pos.z);beacon.material.opacity=.13*smooth(500,1600,d);}
-  spot.intensity=ac.light&&mode!=='title'?(TOD[tod].lights>0?2.4:.6):0;
-  updPAPI();updGates();updWind(dt);updFog();
-  {const fb=(camMode==='chase'?58:70)+(ac.bst||0)*9;if(Math.abs(camera.fov-fb)>.05){camera.fov=fb;camera.updateProjectionMatrix();}}
+  spot.intensity=ac.light&&mode!=='title'?(TOD[tod].lights>0?1.35:.3):0;
+  updPAPI();updGates();updWind(dt);updFog();updDog(dt,t);
+  {const fb=(camMode==='chase'?58:70)+(ac.bst||0)*6;if(Math.abs(camera.fov-fb)>.05){camera.fov=fb;camera.updateProjectionMatrix();}}
   sunL.castShadow=settings.shadows;const fo=mode==='title'?ac.pos:camera.position;
   axes();_sc.set(fo.x+_f.x*SHADOW_HALF*.5,surfH(fo.x,fo.z),fo.z+_f.z*SHADOW_HALF*.5);snapShadow(_sc);sunL.target.position.copy(_sc);sunL.position.copy(_sc).addScaledVector(sunDir,1500);
   if(mode==='crashed'){crashT+=dt;smokeBurst.forEach(m=>{m.position.y+=dt*m.userData.v*1.5;m.scale.setScalar(Math.min(.5+crashT*m.userData.v*1.5,6));});}
   snd.update(ac.rpm,ac.ias+(ac.bst||0)*22,ac.stallWarn,mode==='fly',ac.rough);
 }
+
+/* ---------- score, fly-through gaps, errands, and Biscuit the dog ---------- */
+if(log.score==null)log.score=0;if(!log.gates)log.gates={};if(!log.errands)log.errands={};if(!log.gateHint)log.gateHint={};
+if(settings.dog==null)settings.dog=true;
+function updScore(){const e=$('score');if(e)e.textContent='★ '+log.score.toLocaleString();}
+function addScore(n){log.score+=n;saveL();updScore();const e=$('score');if(e){e.classList.remove('pop');void e.offsetWidth;e.classList.add('pop');}}
+
+/* fly-through gaps: cross the window's plane inside its width and height */
+const fgSide={},fgLastT={};let canyonIn=-1e9,canyonOut=-1e9;
+function checkGates(){if(ac.ground)return;for(const g of FLYGATES){const dx=ac.pos.x-g.x,dz=ac.pos.z-g.z,d=dx*g.nx+dz*g.nz,lat=-dx*g.nz+dz*g.nx;
+  if(Math.abs(d)>500||Math.abs(lat)>500){fgSide[g.id]=0;continue;}
+  if(!log.gateHint[g.id]&&Math.hypot(dx,dz)<650&&ac.pos.y<g.y1+250){log.gateHint[g.id]=1;saveL();toast(`${g.name}\n${g.desc} Fly through for points.`,3.5);}
+  const s=d>=0?1:-1,prev=fgSide[g.id];fgSide[g.id]=s;
+  if(prev&&prev!==s&&Math.abs(lat)<g.w&&ac.pos.y>g.y0&&ac.pos.y<g.y1)passGate(g);}}
+function passGate(g){const now=simT;if(now-(fgLastT[g.id]||-1e9)<12)return;fgLastT[g.id]=now;
+  const first=!log.gates[g.id];log.gates[g.id]=(log.gates[g.id]||0)+1;snd.beep(1175);setTimeout(()=>snd.beep(1568),110);
+  let pts=first?250:50,extra='';if(first)stamp(1);
+  if(g.id==='cleft_in')canyonIn=now;if(g.id==='cleft_out')canyonOut=now;
+  if((g.id==='cleft_out'&&now-canyonIn<90)||(g.id==='cleft_in'&&now-canyonOut<90)){pts+=400;extra='\nThe whole canyon, end to end! +400';canyonIn=canyonOut=-1e9;goal('canyon',true);}
+  addScore(pts);saveL();
+  if(FLYGATES.every(q=>log.gates[q.id]))goal('threader');
+  toast(`${first?'Threaded it! ':''}${g.name} · +${first?250:50}${first?' · +1 STAMP':''}${extra}`,2.6);}
+
+/* errands: an islander asks you to find some things (or one thing) and come back and tell them */
+const ERRANDS={
+  buoys:{giver:'ollie',set:'buoys',what:'orange buoys',one:'an orange buoy',ask:"Dad's lobster-pot buoys broke loose in the storm. Six orange ones with little flags, all round the cay somewhere. Can you spot them for me?",thanks:"You found them! I'm going to row out with Dad and get every one. You're officially strip crew now."},
+  nests:{giver:'ada',set:'nests',what:'osprey nests',one:'an osprey nest',ask:"The ospreys are back on Tallpine. Big stick nests on dead trees, six of them if they all came home. Count them for me from up there?",thanks:"All of them came home. I'll write it in the book in my best handwriting."},
+  kites:{giver:'hattie',set:'kites',what:'kites',one:'a kite',ask:"The school kite day got away from us. Six kites stuck in the orchard trees, flapping about. Find them so I can send the children up ladders?",thanks:"Every one! The children will be thrilled. The trees less so."},
+  goats:{giver:'tam',set:'goats',what:'goats',one:'a goat',ask:"Five of my goats went over the bridge and down the canyon ledges. White ones. Spot them and I'll go and talk them home.",thanks:"Five goats! They'll pretend they weren't lost. Goats are like that."},
+  cairns:{giver:'kit',set:'cairns',what:'trail cairns',one:'a cairn',ask:"I've built six cairns with orange flags to mark the high trail. I need to know they're all still standing after the wind. Have a look?",thanks:"All six standing. That's the trail open for summer, then."},
+  lanterns:{giver:'lu',set:'lanterns',what:'paper lanterns',one:'a lantern',ask:"Seven festival lanterns floated off last night. They're still up there, glowing, drifting round the key. Find them all and I'll light you one of your own.",thanks:"Seven! Every lantern came home. This one is yours, pilot. Hang it in your cockpit."},
+  sheep:{giver:'agnes',set:'sheep',what:'red sheep',one:'a red sheep',ask:"My ewes are marked red so I can find them. Six have wandered off along the ridge. You'll see them better than I will.",thanks:"That's my six. I'll take the dog out. Not your dog. Mine's less clever."},
+  heart:{giver:'lio',sight:'heart',what:'the heart-shaped island',ask:"Sailors talk about an island shaped like a heart, somewhere between Ferrow and Applecross. I'd love to paint it. Find it and come and tell me?",thanks:"A heart! Just as they said. I'll paint it from your description. Then I'll paint it again."},
+  meteor:{giver:'odile',sight:'meteor',what:'the fallen star',ask:"Desmond on the Saltpans says a star fell there once. A real meteorite would be wonderful. Find it and report back?",thanks:"A ring of scorched stone and a black heart in the middle. That's a meteorite. I'm writing to three universities."},
+  wreck:{giver:'wren',sight:'wreck',what:'the wreck on Tern Bars',ask:"There's an old wreck out on the sandbars to the east, past Lantern Key. I've only heard about it. Find it and tell me what it's called?",thanks:"The Merrow! My grandfather sailed on her. Thank you for finding her."},
+};
+const errState=id=>log.errands[id]||(log.errands[id]={st:'new',found:[]});
+function errCount(id){const e=ERRANDS[id],s=errState(id);return e.set?{n:s.found.length,of:FINDS[e.set].length}:{n:log.sights[e.sight]?1:0,of:1};}
+function errLine(id){const e=ERRANDS[id],c=errCount(id);return e.set?`${c.n} of ${c.of} ${e.what}`:(c.n?`Found ${e.what}`:`Looking for ${e.what}`);}
+function activeErrands(){return Object.keys(ERRANDS).filter(k=>errState(k).st==='active');}
+function updErrandUI(){const b=$('errand');if(!b)return;const a=activeErrands();if(!a.length){b.hidden=true;return;}b.hidden=false;b.textContent=a.map(k=>{const c=errCount(k),g=CHARS[ERRANDS[k].giver];return `${g.name.split(' ')[0].toUpperCase()}: ${ERRANDS[k].set?c.n+'/'+c.of:(c.n?'FOUND':'?')}`;}).join(' · ');}
+let findT=0;
+function checkFinds(dt){findT+=dt;if(findT<.3)return;findT=0;
+  for(const id of activeErrands()){const e=ERRANDS[id],s=errState(id);
+    if(e.set){FINDS[e.set].forEach((p,i)=>{if(s.found.includes(i))return;if(Math.hypot(ac.pos.x-p.x,ac.pos.z-p.z)<140&&ac.pos.y-p.y<300){s.found.push(i);addScore(50);snd.beep(1320);
+        const c=errCount(id),g=CHARS[e.giver];toast(c.n<c.of?`Found ${e.one}! ${c.n} of ${c.of} · +50`:`That's all ${c.of} ${e.what}! · +50\nFly back to ${g.name.split(' ')[0]} at ${stripById(g.home).name} to report.`,c.n<c.of?2.2:4);updErrandUI();}});}
+    else if(log.sights[e.sight]&&!s.told){s.told=1;saveL();const g=CHARS[e.giver];toast(`That's ${e.what}! Fly back to ${g.name.split(' ')[0]} at ${stripById(g.home).name} to tell them.`,4);updErrandUI();}}}
+/* buttons for a landing card: report back, or a new favour from someone who lives here */
+function errandBtns(s){const out=[];
+  for(const id of activeErrands()){const e=ERRANDS[id];if(CHARS[e.giver].home!==s.id)continue;const c=errCount(id);out.push([`Report to ${CHARS[e.giver].name.split(' ')[0]} (${e.set?c.n+'/'+c.of:c.n?'found':'not yet'})`,()=>reportErrand(id,s)]);}
+  if(!out.length&&mode!=='title'){const id=Object.keys(ERRANDS).find(k=>{const e=ERRANDS[k];return CHARS[e.giver].home===s.id&&errState(k).st==='new'&&(!e.sight||!log.sights[e.sight]);});
+    if(id)out.push([`${CHARS[ERRANDS[id].giver].name.split(' ')[0]} has a favour to ask`,()=>offerErrand(id,s)]);}
+  return out;}
+const afterBtns=s=>[['Take off',()=>spawnField(s),true],['Look around first',()=>{hideModal();mode='fly';}]];
+function offerErrand(id,s){const e=ERRANDS[id],c=CHARS[e.giver],meet=!log.met[e.giver];if(meet){log.met[e.giver]=1;saveL();}
+  showCard(`<div class="who"><img src="${portrait(e.giver)}" alt=""><div><b>${c.name}</b><span>${c.role}</span></div></div>${meet?`<p class="say">“${MEET[e.giver]}”</p>`:''}<p class="say">“${e.ask}”</p>`,
+    [['I\'ll keep an eye out',()=>{errState(id).st='active';saveL();updErrandUI();toast(`Errand: ${errLine(id)}. Biscuit will help sniff them out.`,3);showCard(`<h2>Errand accepted</h2><p>${e.set?`Find all ${FINDS[e.set].length} ${e.what}`:`Find ${e.what}`}, then land back here and report to ${c.name.split(' ')[0]}. Fly low and slow near them; Biscuit barks when one is close.</p>`,afterBtns(s));},true],
+     ['Maybe later',()=>showCard(`<p class="say">“No hurry. It'll keep.”</p>`,afterBtns(s))]]);}
+function reportErrand(id,s){const e=ERRANDS[id],c=CHARS[e.giver],n=errCount(id);
+  if(n.n<n.of){showCard(`<div class="who"><img src="${portrait(e.giver)}" alt=""><div><b>${c.name}</b><span>${c.role}</span></div></div><p class="say">“${e.set?`${n.n} of ${n.of} so far? Keep looking, they're out there.`:`Not found it yet? It's out there somewhere.`}”</p>`,afterBtns(s));return;}
+  const st=errState(id);st.st='done';const pts=e.set?200+n.of*30:300;addScore(pts);stamp(2);saveL();updErrandUI();
+  if(Object.keys(ERRANDS).every(k=>errState(k).st==='done'))goal('errands',true);goal('errand',true);
+  showCard(`<div class="who"><img src="${portrait(e.giver)}" alt=""><div><b>${c.name}</b><span>${c.role}</span></div></div><p class="say">“${e.thanks}”</p><div class="got">ERRAND DONE · +${pts} · +2 STAMPS</div>`,afterBtns(s));}
+
+/* Biscuit: a scruffy golden dog with his head out of the right window */
+const dog=(()=>{const g=new THREE.Group(),fur=0xe8a850,lt=0xf4e4c8,dk=0x2c2833;
+  g.add(new THREE.Mesh(merge([{geo:BOX(.34,.3,.4),m:M([0,0,0]),color:fur},{geo:BOX(.22,.17,.24),m:M([0,-.05,-.28]),color:lt},{geo:BOX(.1,.08,.06),m:M([0,.02,-.41]),color:dk},
+    {geo:BOX(.06,.06,.02),m:M([-.09,.07,-.205]),color:dk},{geo:BOX(.06,.06,.02),m:M([.09,.07,-.205]),color:dk},{geo:BOX(.2,.1,.12),m:M([0,.16,.02]),color:lt},{geo:BOX(.3,.24,.3),m:M([-.06,-.1,.28]),color:fur}]),litify(toon({},false))));
+  const ear=s=>{const e=new THREE.Mesh(merge([{geo:BOX(.07,.26,.16).translate(0,-.13,0),m:M([0,0,0]),color:0xa8743e}]),litify(toon({},false)));e.position.set(s*.18,.12,.03);g.add(e);return e;};
+  const eL=ear(-1),eR=ear(1),tongue=new THREE.Mesh(BOX(.08,.14,.03).translate(0,-.07,0),new THREE.MeshToonMaterial({color:0xe86a7a,gradientMap:gradTex}));tongue.position.set(.03,-.14,-.34);g.add(tongue);
+  g.position.set(.8,.6,-1.5);g.scale.setScalar(1.8);plane.add(g);return {g,eL,eR,tongue,bark:0,yaw:0};})();
+snd.woof=function(){if(!this.ctx||!settings.sound)return;const c=this.ctx,t0=c.currentTime;
+  for(const [dt,f0] of [[0,520],[.2,480]]){const t=t0+dt,o=c.createOscillator(),g=c.createGain(),f=c.createBiquadFilter(),n=c.createBufferSource();o.type='sawtooth';o.frequency.setValueAtTime(f0,t);o.frequency.exponentialRampToValueAtTime(f0*.42,t+.13);
+    f.type='bandpass';f.frequency.value=900;f.Q.value=1.2;n.buffer=this.buf;const ng=c.createGain();ng.gain.value=.5;
+    g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.32,t+.012);g.gain.exponentialRampToValueAtTime(.001,t+.16);
+    o.connect(f);n.connect(ng);ng.connect(f);f.connect(g);g.connect(this.master);o.start(t);o.stop(t+.2);n.start(t,Math.random());n.stop(t+.2);}};
+const barked={};let barkCD=8,barkT=0,dogTarget=null;
+function dogBark(dt){barkCD-=dt;barkT+=dt;if(barkT<1)return;barkT=0;if(!settings.dog||ac.ground||barkCD>0)return;
+  const cand=[],P=ac.pos,near=(x,z,r)=>Math.hypot(P.x-x,P.z-z)<r;
+  for(const [k,v] of Object.entries(sights))if(!log.sights[k]&&near(v.x,v.z,1150)&&P.y-v.y<900)cand.push({key:'s'+k,x:v.x,z:v.z,y:v.y,say:'something down there worth a look'});
+  for(const g of FLYGATES)if(!log.gates[g.id]&&near(g.x,g.z,1000))cand.push({key:'g'+g.id,x:g.x,z:g.z,y:(g.y0+g.y1)/2,say:'a gap you could fly through'});
+  for(const id of activeErrands()){const e=ERRANDS[id];if(!e.set)continue;FINDS[e.set].forEach((p,i)=>{if(!errState(id).found.includes(i)&&near(p.x,p.z,900))cand.push({key:'f'+id+i,x:p.x,z:p.z,y:p.y,say:e.one,hot:1});});}
+  let best=null,bd=1e9;for(const c of cand){if(simT-(barked[c.key]||-1e9)<(c.hot?45:150))continue;const d=Math.hypot(P.x-c.x,P.z-c.z)-(c.hot?400:0);if(d<bd){bd=d;best=c;}}
+  if(!best)return;barked[best.key]=simT;barkCD=best.hot?10:22;dogTarget=best;dog.bark=1.6;snd.woof();
+  axes();const hdg=Math.atan2(_f.x,-_f.z),brg=Math.atan2(best.x-P.x,-(best.z-P.z));let rel=((brg-hdg)/DEG+540)%360-180;
+  const dir=Math.abs(rel)<25?'dead ahead':Math.abs(rel)>150?'behind you':rel<0?(rel<-70?'off to the left':'ahead and to the left'):(rel>70?'off to the right':'ahead and to the right');
+  const km=Math.hypot(P.x-best.x,P.z-best.z);tip('dog','That\'s Biscuit. He barks when he smells something worth seeing. Follow his nose.',4);
+  toast(`Woof! Biscuit's nose points ${dir}${km<350?', right below':''}: ${best.say}.`,2.8);}
+function updDog(dt,t){const U=plane.userData;dog.g.visible=U.bodyM.visible;if(!dog.g.visible)return;const sp=Math.min(ac.ias/45,1.3);
+  dog.bark=Math.max(0,dog.bark-dt);const b=dog.bark>0?1:0;
+  dog.eL.rotation.x=dog.eR.rotation.x=-sp*1.1+Math.sin(t*22)*.18*sp;dog.eL.rotation.z=-.3*sp-Math.sin(t*17)*.12*sp;dog.eR.rotation.z=.3*sp+Math.sin(t*19)*.12*sp;
+  dog.tongue.rotation.x=-sp*.9+Math.sin(t*25)*.2;
+  let yaw=0;if(b&&dogTarget){const lp=plane.worldToLocal(_c1.set(dogTarget.x,ac.pos.y,dogTarget.z));yaw=clamp(Math.atan2(-lp.x,-lp.z),-.8,.8);}
+  dog.yaw=lerp(dog.yaw,yaw,1-Math.exp(-dt*6));dog.g.rotation.set(Math.sin(t*3)*.05-(b?Math.abs(Math.sin(t*14))*.25:0),dog.yaw,Math.sin(t*2.1)*.06);
+  dog.g.position.x=.8+(b?.12:0)+Math.sin(t*1.3)*.02;dog.g.position.y=.6+(b?.06:0);}
+function playChecks(dt){checkGates();checkFinds(dt);dogBark(dt);dogPopTick(dt);}
+/* Biscuit's pixel portrait pops up beside the message when he barks */
+const dogPic=(()=>{const c=document.createElement('canvas');c.width=c.height=32;const x=c.getContext('2d'),P=(col,a,b,w=1,h=1)=>{x.fillStyle=col;x.fillRect(a,b,w,h);};
+  P('#9cc3e6',0,0,32,32);P('#86b0d8',0,24,32,8);const fur='#e8a850',dk='#b87a38',lt='#f6e6c8';
+  P(fur,8,9,16,15);P(fur,9,8,14,1);P(fur,7,11,1,10);P(fur,24,11,1,10);P(dk,4,8,5,11);P(dk,23,8,5,11);P(dk,5,19,3,3);P(dk,24,19,3,3);
+  P(lt,14,8,4,8);P(lt,11,17,10,7);P('#2a2230',14,17,4,3);P('#2a2230',11,13,2,2);P('#2a2230',19,13,2,2);P('#ffffff',11,13,1,1);P('#ffffff',19,13,1,1);
+  P('#2a2230',13,22,6,1);P('#e86a7a',16,23,3,4);P('#c84a5a',17,26,1,1);P('#c2453a',9,25,14,2);P('#ffd36b',15,26,2,2);return c.toDataURL();})();
+(function(){const d=document.createElement('div');d.id='dogpop';d.hidden=true;d.innerHTML=`<img src="${dogPic}" alt=""><b>WOOF!</b>`;$('flightUI').appendChild(d);
+  const st=document.createElement('style');st.textContent='#dogpop{position:fixed;right:calc(var(--sr) + 8px);bottom:calc(var(--sb) + 150px);display:flex;align-items:center;gap:6px;background:var(--paper);color:var(--ink);padding:4px 10px 4px 4px;box-shadow:4px 4px 0 #0008;font-family:var(--mono);font-size:20px;pointer-events:none;animation:pop .4s}#dogpop img{width:44px;height:44px;image-rendering:pixelated}';document.head.appendChild(st);})();
+let dogPopT=0;
+function dogPopTick(dt){if(dog.bark>1.5&&dogPopT<=0){dogPopT=2.2;$('dogpop').hidden=false;}if(dogPopT>0){dogPopT-=dt;if(dogPopT<=0)$('dogpop').hidden=true;}}
+
 
 /* ---------- main loop ---------- */
 let acc=0,last=performance.now(),fpsN=0,fpsT=0,fpsLast=0,fpsPrev=0,fpsMin=999;renderer.info.autoReset=false;
@@ -2008,7 +2465,8 @@ function loop(now){
   skyMat.uniforms.uTime.value=t;waterMat.uniforms.uTime.value=t;for(const a of anims)a(t);
   cloudGroup.position.set((t*2.2)%400,0,-(t*.8)%400);
   if(mode==='fly'){readInput(dt);acc+=dt;const H_=1/120;let n=0;while(acc>=H_&&n<10){if(ac.ground)stepGround(H_);else{stepAir(H_);stepBoost(H_);stepBumps(H_);}simT+=H_;acc-=H_;n++;if(mode!=='fly')break;}if(n>=10)acc=0;
-    if(mode==='fly')gameChecks(dt);runTips(dt);}
+    if(!Number.isFinite(ac.pos.x+ac.pos.y+ac.pos.z+ac.vel.x+ac.vel.y+ac.vel.z+ac.q.x+ac.q.w)){console.warn('sim NaN, respawning');spawnField(stripById(ac.lastField)||STRIPS[0]);}
+    if(mode==='fly'){gameChecks(dt);playChecks(dt);}runTips(dt);}
   else acc=0;
   if(toastT>0){toastT-=dt;if(toastT<=0)$('toast').hidden=true;}
   if(callT>0){callT-=dt;if(callT<=0)$('callout').hidden=true;}
@@ -2021,7 +2479,7 @@ function loop(now){
 }
 addEventListener('resize',()=>{resize();setThrottleUI();placeRingIdle();checkRotate();});
 $('wind').addEventListener('click',e=>{e.stopPropagation();useWind();});pixMode=settings.pixels;resize();setTOD(settings.light);toTitle();placeRingIdle();checkRotate();refreshBag();
-const ld=$('load');if(ld)ld.hidden=true;$('fps').hidden=!settings.fps;$('fps').textContent='FPS: measuring…';
+updScore();updErrandUI();const ld=$('load');if(ld)ld.hidden=true;$('fps').hidden=!settings.fps;$('fps').textContent='FPS: measuring…';
 requestAnimationFrame(loop);
 
 </script>

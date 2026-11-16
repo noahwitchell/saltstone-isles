@@ -28,8 +28,8 @@ const GOALS=[
   {id:'land_marram',name:'Land at Marram Beach',hint:'The hard-sand strip on the atoll far to the southeast.'},
   {id:'land_kettle',name:'Land at Crater Shelf',hint:'The cinder strip on the volcano, far to the northeast.'},
   {id:'land_farhold',name:'Land at Farhold',hint:'The lit runway on the foggy island far to the northwest.'},
-  {id:'hopper',name:'Island hopper',hint:'Land at all six fields.'},
-  {id:'tailwind',name:'Riding the wind',hint:'Use all three tailwinds on one trip.'},
+  {id:'hopper',name:'Island hopper',hint:'Land at every airfield in the islands.'},
+  {id:'tailwind',name:'Riding the wind',hint:'Stack all three tailwinds into one gale.'},
   {id:'trip',name:'Make a trip',hint:'Take off from one field and land at another.'},
   {id:'butter',name:'Butter landing',hint:'Touch down on a runway at under 90 ft/min.'},
   {id:'checklist',name:'By the book',hint:'Land with the whole before-landing checklist done.'},
@@ -39,9 +39,18 @@ const GOALS=[
   {id:'instrument',name:'From the seat',hint:'Land on a runway in Cockpit view.'},
   {id:'week',name:'A full week',hint:'Finish the first six days of mail.'},
   {id:'week2',name:'The whole chain',hint:'Finish the second week, out to the far islands.'},
+  {id:'week3',name:'The archipelago',hint:'Finish the third week of mail, out to Bea\'s new chart.'},
+  {id:'canyon',name:'Canyon run',hint:'Fly the Cleft on Cleft Isle end to end, under the rim.'},
+  {id:'threader',name:'Needle threader',hint:'Fly through every gap, arch and bridge in the islands.'},
+  {id:'errand',name:'Good neighbour',hint:'Finish an errand for an islander.'},
+  {id:'errands',name:'Everybody\'s favourite',hint:'Finish every islander\'s errand.'},
 ];
+const DESC_ARCH={sisters:'Twin Sisters. Grass shelf beside two rock spires. Gusty off the rocks.',cleft:'Cleft Isle. Dirt strip on the plateau, beside a canyon.',apple:'Applecross. Paved, among the orchards. Easy and friendly.',
+  salt:'The Saltpans. Hard white salt, flat as a table. Glare at noon.',mirror:'Looking-Glass Isle. Grass beside the lake rim. Short-ish.',mesa:'Starwatch Mesa. Paved, on top of the mesa. Cliffs at both ends.',
+  cascade:'Cascade Isle. Grass terrace under the cliffs. Mind the trees.',lantern:'Lantern Key. Paved, low and lit. Lovely at night.',quarry:'Greystone. Dirt strip on the quarry hill. Dusty.',windward:'Windward. Grass on the ridge flank. Always a breeze.'};
 const DESC={harbor:'Ferrow. Long paved runway by the village. The friendly one.',light:'Gull Point. Grass strip on the clifftop, sea at both ends.',ridge:'Tallpine. Short dirt strip on a mountain saddle. Slow down early.',
-  marram:'Marram Cay. Hard sand on a low atoll. Flat, but watch the palms.',kettle:'Kettle Rock. Cinder shelf below the crater. Bumpy air off the slopes.',farhold:'Farhold. Long lit runway, nearly always in fog. Trust the lights.'};
+  marram:'Marram Cay. Hard sand on a low atoll. Flat, but watch the palms.',kettle:'Kettle Rock. Cinder shelf below the crater. Bumpy air off the slopes.',farhold:'Farhold. Long lit runway, nearly always in fog. Trust the lights.',...DESC_ARCH};
+for(const st of STRIPS.slice(6))GOALS.splice(GOALS.findIndex(g=>g.id==='hopper'),0,{id:'land_'+st.id,name:'Land at '+st.name,hint:DESC_ARCH[st.id]||st.name});
 
 /* ---------- characters & portraits ---------- */
 const CHARS={
@@ -58,6 +67,16 @@ const CHARS={
   otto:{name:'Otto Lind',role:'OBSERVATORY COOK · KETTLE ROCK',home:'kettle',sp:{bg:'#c8e0d8',skin:'#e8b896',hair:'#e8d8a0',style:'short',beard:'#e8d8a0',hat:'beanie',hatc:'#3a5a8c',shirt:'#eae2cf'}},
   fen:{name:'Fen Morrow',role:'FIELD KEEPER · FARHOLD',home:'farhold',sp:{bg:'#c0c8d0',skin:'#d9a07a',hair:'#5a4a40',style:'short',mustache:'#5a4a40',hat:'cap',hatc:'#4a4e5c',shirt:'#5b6e86',scarf:'#d8d2c8'}},
   ivy:{name:'Ivy Calder',role:'THE HOUSE WITH THE LAMP · FARHOLD',home:'farhold',sp:{bg:'#f0e0b0',skin:'#e2a982',hair:'#f1ece4',style:'long',shirt:'#6a5a8c',scarf:'#d2493c'}},
+  wren:{name:'Wren Okafor',role:'CLIMBER · TWIN SISTERS',home:'sisters',sp:{bg:'#c8e0f0',skin:'#6e4a33',hair:'#1c1616',style:'curly',shirt:'#e2703f',hat:'beanie',hatc:'#3f8fc0'}},
+  tam:{name:'Tam Marlow',role:'GOATHERD · CLEFT ISLE',home:'cleft',sp:{bg:'#e8d0b0',skin:'#e2a982',hair:'#8a5a30',style:'short',beard:'#8a5a30',shirt:'#6b7a3a',hat:'cap',hatc:'#8a5a3a'}},
+  hattie:{name:'Hattie Bloom',role:'ORCHARD KEEPER · APPLECROSS',home:'apple',sp:{bg:'#f4d0d8',skin:'#f0c7a4',hair:'#c0582e',style:'bun',shirt:'#d2493c',freckles:true}},
+  desmond:{name:'Desmond Achebe',role:'SALT RAKER · THE SALTPANS',home:'salt',sp:{bg:'#f0ece0',skin:'#5a3a28',hair:'#e8e4dc',style:'short',beard:'#e8e4dc',shirt:'#3f6f8f',hat:'ranger',hatc:'#e8dcc0'}},
+  lio:{name:'Lio Tanaka',role:'PAINTER · LOOKING-GLASS ISLE',home:'mirror',sp:{bg:'#c8e8e0',skin:'#e8c09a',hair:'#1c1616',style:'long',shirt:'#6a8ab8',glasses:true}},
+  odile:{name:'Prof. Odile Marchetti',role:'RADIO ASTRONOMER · STARWATCH MESA',home:'mesa',sp:{bg:'#9cb0d0',skin:'#d9a07a',hair:'#3a3434',style:'bun',shirt:'#e8e4dc',glasses:true,scarf:'#e8a33a'}},
+  kit:{name:'Kit Calloway',role:'HUT WARDEN · CASCADE ISLE',home:'cascade',sp:{bg:'#b8d8b0',skin:'#c98c5e',hair:'#6a4a30',style:'short',shirt:'#3f6b3a',hat:'ranger',hatc:'#6b7a3a'}},
+  lu:{name:'Auntie Lu',role:'LANTERN MAKER · LANTERN KEY',home:'lantern',sp:{bg:'#f8d8a8',skin:'#e8c09a',hair:'#cfc8c0',style:'bun',shirt:'#d2493c',glasses:true}},
+  bram:{name:'Bram Holloway',role:'QUARRYMAN · GREYSTONE',home:'quarry',sp:{bg:'#d0ccc4',skin:'#e2a982',hair:'#3a3434',style:'short',mustache:'#3a3434',shirt:'#8a8a92',hat:'cap',hatc:'#e8a33a'}},
+  agnes:{name:'Agnes Flint',role:'MILLER · WINDWARD',home:'windward',sp:{bg:'#f0e4c0',skin:'#f0c7a4',hair:'#f1ece4',style:'bun',shirt:'#8a5a3a',scarf:'#3f8f8a'}},
 };
 function shade(hex,a){const n=parseInt(hex.slice(1),16);let r=n>>16,g=(n>>8)&255,b=n&255;const f=v=>clamp(Math.round(a<0?v*(1+a):v+(255-v)*a),0,255);return '#'+[f(r),f(g),f(b)].map(v=>v.toString(16).padStart(2,'0')).join('');}
 const PORT={};
@@ -156,6 +175,38 @@ const DAYS=[
           {to:'ivy',item:'Bea\'s letter',line:"She's coming. On the Thursday boat, she says, because she's too old to land in fog. Forty years late. That's alright. The sweet peas are up."}],
    out:{},
    outro:"That's every island on the chain with its mail again. Bea's off to Farhold on Thursday. She asked who'd fly the post while she's gone. I told her we already have a pilot."},
+  {intro:"Week three. Bea's back from Farhold, and she brought a new chart: fourteen more islands, and nobody's flown mail to them in thirty years. Start east, at the Twin Sisters and Lantern Key.",
+   items:[{to:'wren',item:'New climbing rope',line:"Sixty metres, bright blue. The tall Sister doesn't stand a chance. ...Probably."},
+          {to:'lu',item:'Box of rice paper',line:"Paper for the festival lanterns! A whole box. I'll make you one with a little plane on it."}],
+   out:{lu:[{to:'bea',item:'A paper lantern',line:"A lantern from Lu? I used to bring her matches. She remembered."}]},
+   outro:"Twin Sisters and Lantern Key, back on the route. Bea pinned the new chart over my desk. She drew Biscuit in the corner."},
+  {intro:"South today. Applecross has orchards to the water, and someone on Looking-Glass Isle has ordered a great deal of blue paint.",
+   items:[{to:'hattie',item:'Grafting knife',line:"Sharp as anything. I'll graft the old Saltwhistle Pippin onto the young trees. Bea's mother planted the first one."},
+          {to:'lio',item:'Tubes of blue paint',line:"Cerulean, cobalt, ultramarine. The lake needs all three. On a good day it needs more."}],
+   out:{hattie:[{to:'mabel',item:'Basket of apples',line:"Apples from Hattie? The post office will smell like autumn for a week."}],lio:[{to:'tomas',item:'Painting of the lighthouse',line:"Lio painted my light from the air? From your plane? Well. It's never looked so brave."}]},
+   outro:"Hattie's apples are on the counter. Take one. Gus has had four."},
+  {intro:"West, to the Saltpans and Windward. Agnes at the mills has been waiting on her chisel since before you were born.",
+   items:[{to:'desmond',item:'New rake teeth',line:"Iron teeth! The old rake has been bald since spring. The salt will come up white again."},
+          {to:'agnes',item:'Millstone chisel',line:"Finally. You dress a millstone or it grinds like gravel. Thirty years I've waited. It was worth it. Almost."}],
+   out:{agnes:[{to:'hattie',item:'Sack of flour',line:"Flour from Agnes! Apple pie it is. You'll have the first slice."}]},
+   outro:"Agnes sent a note: she says the post is very slow these days. Then she drew a smiley face. I've never seen her smile."},
+  {intro:"Starwatch Mesa, out to the far west. Professor Marchetti's parcel is marked 'fragile, from space'. It isn't. It's from the mainland.",
+   items:[{to:'odile',item:'Box of radio valves',line:"New valves! The dish has been half deaf. Tonight we'll hear the whole sky."},
+          {to:'desmond',item:'Letter from his daughter',line:"From Ama. She's coming home for the salt harvest. You've made an old raker very happy."},
+          {to:'ines',item:'Star chart from Odile',line:"A star chart, from the mesa? Odile and I were at university together. She still writes in green ink."}],
+   out:{odile:[{to:'otto',item:'Recording of Saturn',line:"A recording of Saturn. From Odile. It sounds like... a kettle. I love it."}]},
+   outro:"Two observatories writing to each other. Bea says the islands are talking again, and it's your doing."},
+  {intro:"North: Cascade Isle and Greystone. Kit at the hut needs a first-aid kit, and Bram needs his wedges. Don't mix them up.",
+   items:[{to:'kit',item:'First-aid kit',line:"Bandages, iodine, and somebody's put in a chocolate bar. Probably you. Thank you."},
+          {to:'bram',item:'Steel wedges',line:"Proper wedges. Now the stone splits clean. Ferrow's new harbour wall starts tomorrow."}],
+   out:{bram:[{to:'mabel',item:'Stone for the post office step',line:"A new step for the post office? From Bram? I'll stop tripping on the old one. Tell him thank you."}]},
+   outro:"Bram's stone came over on the boat. The new step has a little plane carved in it. And a dog."},
+  {intro:"Last day of Bea's chart. Tam's goats need bells, and Bea has one more letter. She says you'll know who it's for.",
+   items:[{to:'tam',item:'Goat bells',line:"Bells! Now I'll hear them on the ledges. The goats are furious. That's how you know it's working."},
+          {to:'wren',item:'Bea\'s old flying gloves',line:"Bea's gloves? For climbing? She says they've held on to worse. I'll wear them up the tall Sister."},
+          {to:'lu',item:'Bea\'s letter',line:"She wants a lantern for every island on the chart. Twenty lanterns, one festival night, all lit at once. ...Tell her yes."}],
+   out:{},
+   outro:"Every island on Bea's chart has its mail. Lu's lighting twenty lanterns on festival night, one for each island, and Bea wants you to fly over them. So do I."},
 ];
 const MEET={
   mabel:"I'm Mabel. I run the post office, which means I run this island. Your mail goes out from here every morning.",
@@ -171,6 +222,16 @@ const MEET={
   otto:"Otto. I cook for the observatory, which is mostly coffee. You'll stay for a cup, ja?",
   fen:"Fen Morrow. I keep the lights on this field so pilots can find it. You're the first one in a long while.",
   ivy:"So you're the one carrying my letters. I'm Ivy. Bea and I learned to fly together, a very long time ago.",
+  wren:"Wren. I climb the Sisters. Not the tall one yet. Next summer. Did you fly between them? Everyone does once.",
+  tam:"Tam. Goats, mostly. The goats think the bridge is theirs and I've stopped arguing.",
+  hattie:"Hattie Bloom. Two hundred apple trees and a cider barn. Take an apple. Take two, they're small this year.",
+  desmond:"Desmond. I rake salt. White pans, pink pans, and the sun does the rest. Don't land in a pan, please.",
+  lio:"I'm Lio. I paint the lake. Every day it's a different lake. Hold still, you're in the light.",
+  odile:"Odile Marchetti. I listen to the sky with a very big ear. Mostly it hums. Sometimes it sings.",
+  kit:"Kit. I keep the hut and the trail on Cascade. If you hear thunder on a clear day, that's the falls.",
+  lu:"Everyone calls me Auntie Lu. I make the lanterns. Come at night and you'll see why.",
+  bram:"Bram. Greystone's mine, and the stone in every harbour wall from here to Ferrow. Mind the dust on the strip.",
+  agnes:"Agnes Flint. Seven mills and I know every creak. The wind never stops on Windward, so neither do I.",
 };
 const mail=log.mail;
 const bagFor=stripId=>mail.bag.filter(it=>CHARS[it.to].home===stripId);
@@ -228,33 +289,39 @@ function updGates(){
       snd.beep(inside?990:440);toast(inside?`Gate ${i+1} ✓ ${i<2?'on the path':'nice. Flaps 2, power back.'}`:`Missed gate ${i+1}. ${Math.abs(dy)>=26?(dy>0?'A little high.':'A little low.'):'Off to the side.'} Line up for the next.`,2);}});
   gateAlong=along;}
 
-/* tailwind button: three charges, each a 12 s gust that carries you along fast and holds your height.
-   After 5 s without a tap, one charge comes back, then another every 5 s until all three are ready. */
-const BOOST_V=55,BOOST_T=12,WIND_N=3,WIND_CD=5;
-let windCharges=WIND_N,windCD=0,windUiT=0;
+/* tailwind button: three charges, each a 6 s gust that carries you along fast and holds your height.
+   Tap again while a gust is blowing and they stack: two gusts go faster, three faster still.
+   Charges only refill once every gust has died down: 5 s for a single, longer the bigger the stack you used. */
+const BOOST_V=55,BOOST_T=6,WIND_N=3,WIND_CD=5,STACK=[0,1,1.7,2.25];
+let windCharges=WIND_N,windCD=0,windUiT=0,windWait=WIND_CD,windPeak=0;
 const glideAlt=(s,d)=>s.elev+AC.gearH+Math.tan(4*DEG)*d;
 function windBlock(){if(ac.ground||mode!=='fly')return 'IN THE AIR';const agl=ac.pos.y-AC.gearH-surfH(ac.pos.x,ac.pos.z);if(agl<40)return 'TOO LOW';
   return null;}
 function useWind(){const b=windBlock();
-  if(windCharges<=0){toast(`The wind is gathering. Next one in ${Math.ceil(windCD)} s.`,1.4);return;}
+  if(windCharges<=0){toast(ac.gusts&&ac.gusts.length?'All three are blowing. Ride it out.':`The wind is gathering. Next one in ${Math.ceil(windCD)} s.`,1.4);return;}
   if(b){toast(b==='TOO LOW'?'Climb a little first. Tailwinds need some height.':'Tailwinds work once you\'re flying.',1.8);return;}
-  windCharges--;windCD=WIND_CD;ac.boostT=BOOST_T;snd.beep(1320);setTimeout(()=>snd.beep(1760),90);
-  toast(windCharges?`Tailwind! ${windCharges} left.`:'Last tailwind for now. Leave it 5 seconds and one comes back.',1.6);
-  if(!log.goals.tailwind&&windCharges===0)goal('tailwind');updWindUI();}
-function updWindUI(){const b=$('wind');if(!b)return;const blk=windBlock(),cool=windCharges<=0,fill=windCharges<WIND_N;
-  b.innerHTML=`TAILWIND <span>${'●'.repeat(windCharges)+'○'.repeat(WIND_N-windCharges)}</span>`;
-  b.classList.toggle('cool',cool);b.classList.toggle('off',!!blk&&!cool);b.classList.toggle('on',ac.boostT>0);
-  b.style.setProperty('--w',fill?Math.round((1-windCD/WIND_CD)*100)+'%':'0%');}
-function updWind(dt){if(windCharges<WIND_N){windCD-=dt;if(windCD<=0){windCharges++;windCD=WIND_CD;if(windCharges===WIND_N)windCD=0;}}
+  if(!ac.gusts)ac.gusts=[];ac.gusts.push(BOOST_T);windCharges--;const n=ac.gusts.length;windPeak=Math.max(windPeak,n);
+  windWait=WIND_CD*[0,1,1.6,2.4][windPeak];windCD=windWait;ac.boostT=Math.max(...ac.gusts);
+  snd.beep(1320+n*180);setTimeout(()=>snd.beep(1760+n*220),90);
+  toast(n>1?`Tailwind ×${n}!${n===3?' Full gale.':''}`:windCharges?`Tailwind! ${windCharges} left.`:'Last tailwind for now.',1.4);
+  if(!log.goals.tailwind&&n===3)goal('tailwind');updWindUI();}
+function updWindUI(){const b=$('wind');if(!b)return;const blk=windBlock(),cool=windCharges<=0,n=(ac.gusts||[]).length,fill=windCharges<WIND_N&&!n;
+  b.innerHTML=`TAILWIND${n>1?' ×'+n:''} <span>${'●'.repeat(windCharges)+'○'.repeat(WIND_N-windCharges)}</span>`;
+  b.classList.toggle('cool',cool&&!n);b.classList.toggle('off',!!blk&&!cool);b.classList.toggle('on',n>0);
+  b.style.setProperty('--w',fill?Math.round((1-windCD/windWait)*100)+'%':'0%');}
+function updWind(dt){const blowing=ac.gusts&&ac.gusts.length;
+  if(!blowing&&windCharges<WIND_N){windCD-=dt;if(windCD<=0){windCharges++;windCD=windWait;if(windCharges===WIND_N){windCD=0;windPeak=0;windWait=WIND_CD;}}}
   windUiT-=dt;if(windUiT<=0){windUiT=.1;updWindUI();}}
 function stepBoost(dt){
-  if(ac.boostT>0){ac.boostT-=dt;const agl=ac.pos.y-AC.gearH-surfH(ac.pos.x,ac.pos.z);
-    if(agl<30||ac.ground)ac.boostT=0;}
-  ac.bst=lerp(ac.bst||0,ac.boostT>0?1:0,1-Math.exp(-dt*(ac.boostT>0?2.5:1.1)));
+  if(!ac.gusts)ac.gusts=[];const agl=ac.pos.y-AC.gearH-surfH(ac.pos.x,ac.pos.z);
+  if(agl<30||ac.ground)ac.gusts.length=0;
+  for(let i=ac.gusts.length-1;i>=0;i--){ac.gusts[i]-=dt;if(ac.gusts[i]<=0)ac.gusts.splice(i,1);}
+  ac.boostT=ac.gusts.length?Math.max(...ac.gusts):0;const tgt=STACK[ac.gusts.length];
+  ac.bst=lerp(ac.bst||0,tgt,1-Math.exp(-dt*(tgt>(ac.bst||0)?2.5:1.1)));
   if(ac.bst<.005||ac.ground)return;
   axes();const hl=Math.hypot(_f.x,_f.z);if(hl<.2)return;
   ac.pos.x+=_f.x/hl*BOOST_V*ac.bst*dt;ac.pos.z+=_f.z/hl*BOOST_V*ac.bst*dt;
-  ac.vel.y+=(0-ac.vel.y)*Math.min(1,dt*3*ac.bst);}
+  ac.vel.y+=(0-ac.vel.y)*Math.min(1,dt*3*Math.min(ac.bst,1));}
 
 const beacon=new THREE.Mesh(new THREE.CylinderGeometry(5,5,700,10,1,true).translate(0,350,0),new THREE.MeshBasicMaterial({color:0x8ff0e8,transparent:true,opacity:.12,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide,fog:false}));
 scene.add(beacon);
@@ -270,7 +337,7 @@ const _flat=new THREE.Matrix4();
 {const hp=toWorld(STRIPS[0],95,-38);parked.position.set(hp.x,groundH(hp.x,hp.z)+1.35,hp.z);parked.quaternion.setFromEuler(new THREE.Euler(0,-(STRIPS[0].hdg+200)*DEG,0,'YXZ'));}
 const smokeBurst=[];{const mat=new THREE.MeshToonMaterial({color:0x6e6574,gradientMap:gradTex,flatShading:true});
   for(let i=0;i<10;i++){const m=new THREE.Mesh(new THREE.IcosahedronGeometry(1,0),mat);m.visible=false;scene.add(m);smokeBurst.push(m);}}
-const spot=new THREE.SpotLight(0xfff2d8,0,700,.32,.45,1.1);spot.position.set(0,-.4,-2.6);const spotT=new THREE.Object3D();spotT.position.set(0,-14,-80);plane.add(spot,spotT);spot.target=spotT;
+const spot=new THREE.SpotLight(0xfff2d8,0,240,.3,.5,2);spot.position.set(0,-.4,-2.6);const spotT=new THREE.Object3D();spotT.position.set(0,-14,-80);plane.add(spot,spotT);spot.target=spotT;
 const navPts=(()=>{const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute([-5.3,.8,-.5,5.3,.8,-.5,0,1.7,4.5],3));g.setAttribute('color',new THREE.Float32BufferAttribute([1,.25,.2,.3,1,.4,1,1,1],3));
   const m=new THREE.Points(g,new THREE.PointsMaterial({size:2,sizeAttenuation:false,vertexColors:true,fog:false}));plane.add(m);return m;})();
 const TG=new Map();for(const t of trees){const k=((t.x/60)|0)+','+((t.z/60)|0);if(!TG.has(k))TG.set(k,[]);TG.get(k).push(t);}
@@ -341,6 +408,7 @@ const BODY=[new V3(-5.25,.78,-.55),new V3(5.25,.78,-.55),new V3(0,-.05,-3.05),ne
 function airContact(){
   for(const b of BODY){_p.copy(b).applyQuaternion(ac.q).add(ac.pos);if(_p.y<surfH(_p.x,_p.z)){
     const gh=groundH(_p.x,_p.z);return crash(gh<.3?'water':(ac.pos.y-surfH(ac.pos.x,ac.pos.z)>3?'terrain':(b.x!==0?'bank':'nose')));}}
+  if(propHit(ac.pos.x,ac.pos.y,ac.pos.z,3))return crash('rock');
   if(ac.pos.y-surfH(ac.pos.x,ac.pos.z)<25&&treeHit(ac.pos.x,ac.pos.y-AC.gearH,ac.pos.z))return crash('tree');
   let low=1e9;for(const g of GEAR){_p.copy(g).applyQuaternion(ac.q).add(ac.pos);low=Math.min(low,_p.y-surfH(_p.x,_p.z));}
   if(low<=0){if(ac.vel.y>.2){ac.pos.y-=low;return;}touchdown(low);}
@@ -373,7 +441,7 @@ function stepGround(dt){
   const rot=clamp((ua/23)**2,0,1.3);
   const tgt=clamp(inp.pitch*.22*rot,0,.21);ac.gPitch+=clamp(tgt-ac.gPitch,-.5*dt,.6*dt);
   const CL=CLof(ac.gPitch,f)*1.1,L=qd*AC.S*CL,N=Math.max(0,AC.mass*G-L);
-  const mu={paved:.025,grass:.05,dirt:.06,rough:.09}[surf],bmu=surf==='paved'?.8:.6;
+  const mu={paved:.025,grass:.05,dirt:.06,sand:.075,cinder:.06,rough:.09}[surf]??.09,bmu=surf==='paved'?.8:.6;
   const D=qd*AC.S*(AC.CD0+f.dCD+AC.k*CL*CL),fr=(mu+ac.brake*bmu)*N;
   let acc=(thrust(ac.u)-D)/AC.mass;
   if(ac.u>.01)acc-=fr/AC.mass;else acc=acc*AC.mass>fr?acc-fr/AC.mass:0;
@@ -404,6 +472,7 @@ const REASONS={
   bank:['A wingtip touched','Keep the wings level as you touch down. Small stick moves near the ground.'],
   nose:['Nose first','Touch down on the main wheels with the nose slightly up.'],
   tree:['Into the trees','Trees are taller than they look. Stay over the runway or open ground when low.'],
+  rock:['Met the rock','That gap was a little tighter than it looked. Line up early, wings level, and go straight through.'],
   rough:['Too rough here','That ground was too steep or bumpy to land or roll on.'],
 };
 function crash(why,v){
@@ -414,7 +483,7 @@ function crash(why,v){
     showCard(`<div class="who"><img src="${portrait('gus')}" alt=""><div><b>${t}</b><span>GUS PATCHES IT UP · THE MAIL IS STILL IN THE BAG</span></div></div><p>${b}</p>${extra}`,[
       ['Try that approach again',()=>spawnApproach(dest),true],['Back to '+stripById(ac.lastField).name,()=>spawnField(stripById(ac.lastField))]]);},900);
 }
-function resetAc(){ac.boostT=0;ac.bst=0;ac.w.set(0,0,0);ac.td=null;ac.brake=0;ac.brakeHeld=false;ac.trimHold=0;ac.ice=0;smokeBurst.forEach(m=>m.visible=false);snapCam=true;}
+function resetAc(){ac.boostT=0;ac.bst=0;ac.gusts=[];ac.w.set(0,0,0);ac.td=null;ac.brake=0;ac.brakeHeld=false;ac.trimHold=0;ac.ice=0;smokeBurst.forEach(m=>m.visible=false);snapCam=true;}
 function intoWindDir(s){return (s.fx*WIND.x+s.fz*WIND.z)<0?1:-1;}
 function spawnField(s,dirSign){
   dirSign=dirSign||intoWindDir(s);resetAc();
@@ -460,6 +529,7 @@ function finishLanding(){
   g('land_'+s.id);if(STRIPS.every(q=>log.goals['land_'+q.id]))g('hopper');if(isTrip){log.trips++;g('trip');}if(fpm<90&&!td.bounced)g('butter');if(s.id==='ridge'&&total===3)g('ridge3');if(td.view==='cockpit')g('instrument');
   if(ckOk)g('checklist');if(td.tod==='night')g('night');
   if(ckOk&&mail.active)stamp(1);
+  const firstHere=F.landings===1,lpts=total*25+(firstHere?150:0);addScore(lpts);
   ac.lastField=s.id;ac.from=s.id;saveL();
   const missed=[!ck.carb&&'carb heat',!ck.mix&&'mixture rich',!ck.flaps&&'flaps',!ck.light&&'landing light'].filter(Boolean).join(', ');
   const ckRow=`<span class="k">CHECKLIST</span><span>${ckOk?'All done'+(mail.active?' · +1 stamp':''):'Missed: '+missed}</span><span class="s">${ckOk?'✓':''}</span>`;
@@ -468,10 +538,11 @@ function finishLanding(){
   const btns=here.length?[[`Deliver the mail (${here.length})`,()=>deliverAt(s),true]]
     :homeDone?[['Hand in the day',endDay,true]]
     :[['Take off from here',()=>spawnField(s),true],['Practice this landing',()=>spawnApproach(s,td.dirSign)],['Keep taxiing',()=>{hideModal();mode='fly';}]];
+  btns.splice(1,0,...errandBtns(s));
   showCard(`<h2>${stopped?'Landed at':'Rolled off'} ${s.name}</h2><div class="sub">${isTrip?'TRIP FROM '+stripById(fromId).name.toUpperCase()+' · ':''}${stars(total)}</div>
     <div class="rows"><span class="k">TOUCHDOWN</span><span>${Math.round(fpm)} ft/min at ${Math.round(td.kt)} kt · ${softTxt}</span><span class="s">${stars(soft)}</span>
     <span class="k">CENTERLINE</span><span>${off<.2?'Right down the middle':off<.5?'A little off center':'Way off center'}</span><span class="s">${stars(cen)}</span>
-    <span class="k">AIM POINT</span><span>${zoneTxt}</span><span class="s">${stars(zone)}</span>${ckRow}</div>
+    <span class="k">AIM POINT</span><span>${zoneTxt}</span><span class="s">${stars(zone)}</span>${ckRow}<span class="k">SCORE</span><span>+${lpts}${firstHere?' · first landing here':''}</span><span class="s"></span></div>
     ${!stopped?'<p>You ran off the end. Touch down nearer the markers and hold BRAKE.</p>':''}
     ${news.length?`<p><b>New in your logbook:</b> ${news.join(', ')}</p>`:''}`,btns);
   mode='card';
@@ -486,11 +557,11 @@ function deliverAt(s){
       const homeDone=s.id==='harbor'&&!mail.bag.length;
       const nxt=mail.bag.length?`Next stop: <b>${dest.name}</b>.`:homeDone?'That\'s everything. Mabel is waiting to close the day.':'The bag is empty. Head home to Harbor Field.';
       showCard(`<h2>Mail delivered</h2><div class="sub">${log.stamps} STAMPS ON YOUR ROUTE CARD</div>${pick.length?`<p>Picked up: ${pick.map(o=>`<b>${o.item}</b> for ${CHARS[o.to].name.split(' ')[0]}`).join(', ')}.</p>`:''}<p>${nxt}</p>`,
-        homeDone?[['Hand in the day',endDay,true]]:[['Take off',()=>spawnField(s),true],['Look around first',()=>{hideModal();mode='fly';}]]);return;}
+        homeDone?[['Hand in the day',endDay,true]]:[['Take off',()=>spawnField(s),true],...errandBtns(s),['Look around first',()=>{hideModal();mode='fly';}]]);return;}
     if(q.kind==='meet'){log.met[q.who]=1;saveL();const c=CHARS[q.who];
       showCard(`<div class="who"><img src="${portrait(q.who)}" alt=""><div><b>${c.name}</b><span>${c.role}</span></div></div><p class="say">“${MEET[q.who]}”</p>`,[['Nice to meet you',step,true]]);return;}
-    const it=q.it,c=CHARS[it.to];stamp(1);
-    showCard(`<div class="who"><img src="${portrait(it.to)}" alt=""><div><b>${c.name}</b><span>${c.role}</span></div></div><p class="say">“${it.line}”</p><div class="got">DELIVERED: ${it.item.toUpperCase()} · +1 STAMP</div>`,[['You\'re welcome',step,true]]);};
+    const it=q.it,c=CHARS[it.to];stamp(1);addScore(100);
+    showCard(`<div class="who"><img src="${portrait(it.to)}" alt=""><div><b>${c.name}</b><span>${c.role}</span></div></div><p class="say">“${it.line}”</p><div class="got">DELIVERED: ${it.item.toUpperCase()} · +1 STAMP · +100</div>`,[['You\'re welcome',step,true]]);};
   step();
 }
 function offerDay(after){
@@ -499,13 +570,13 @@ function offerDay(after){
   if(!day){showCard(`<div class="who"><img src="${portrait('mabel')}" alt=""><div><b>Mabel Ostrander</b><span>POSTMASTER · HARBOR FIELD</span></div></div><p class="say">“No mail today. Every island on the chain is caught up. Go and enjoy the sky.”</p>`,[['Go flying',after,true]]);return;}
   const meet=!log.met.mabel;if(meet)log.met.mabel=1;saveL();
   const list=day.items.map(it=>`<b>${it.item}</b> for ${CHARS[it.to].name}, ${stripById(CHARS[it.to].home).name}`).join('<br>');
-  showCard(`<div class="who"><img src="${portrait('mabel')}" alt=""><div><b>Mabel Ostrander</b><span>POSTMASTER · ${mail.day>6?'WEEK 2 · DAY '+(mail.day-6):'DAY '+mail.day} OF 6</span></div></div>
+  showCard(`<div class="who"><img src="${portrait('mabel')}" alt=""><div><b>Mabel Ostrander</b><span>POSTMASTER · ${mail.day>6?'WEEK '+Math.ceil(mail.day/6)+' · DAY '+((mail.day-1)%6+1):'DAY '+mail.day} OF 6</span></div></div>
     ${meet?`<p class="say">“${MEET.mabel}”</p>`:''}<p class="say">“${day.intro}”</p><p>${list}</p>`,
     [['Load the bag',()=>{mail.bag=day.items.map(x=>({...x}));mail.active=true;saveL();refreshBag();after();},true],['Just flying today',()=>{mail.active=false;saveL();refreshBag();after();}]]);
 }
 function meetBea(){if(mode!=='fly'||log.met.bea)return;log.met.bea=1;saveL();mode='card';
   showCard(`<div class="who"><img src="${portrait('bea')}" alt=""><div><b>Bea Hollis</b><span>RETIRED MAIL PILOT · HARBOR FIELD</span></div></div><p class="say">“${MEET.bea}”</p><p>Bea's logbook is in the pause menu whenever you want it.</p>`,[['Thanks, Bea',()=>{hideModal();mode='fly';},true],['Open the logbook',()=>bea(-1)]]);}
-function endDay(){const day=DAYS[mail.day-1];mail.active=false;mail.bag=[];mail.day++;stamp(2);if(mail.day>6)goal('week',true);if(mail.day>DAYS.length)goal('week2',true);saveL();refreshBag();
+function endDay(){const day=DAYS[mail.day-1];mail.active=false;mail.bag=[];mail.day++;stamp(2);if(mail.day>6)goal('week',true);if(mail.day>12)goal('week2',true);if(mail.day>18)goal('week3',true);saveL();refreshBag();
   showCard(`<div class="who"><img src="${portrait('mabel')}" alt=""><div><b>Mabel Ostrander</b><span>END OF DAY · +2 STAMPS</span></div></div><p class="say">“${day?day.outro:'Good flying.'}”</p><div class="got">${log.stamps} STAMPS ON YOUR ROUTE CARD</div>`,
     [[mail.day<=DAYS.length?'Start the next day':'Keep flying',()=>{if(mail.day<=DAYS.length)offerDay(()=>spawnField(STRIPS[0]));else{hideModal();mode='fly';}},true],['Free flight',()=>{hideModal();mode='fly';pickDest('harbor');}]]);}
 function goal(id,quiet){if(log.goals[id])return false;log.goals[id]=Date.now();saveL();if(!quiet){const g=GOALS.find(x=>x.id===id);toast('Logbook: '+g.name,2.5);}return true;}
@@ -668,7 +739,7 @@ const music={on:false,
   hat(t,v){const c=snd.ctx,s=c.createBufferSource();s.buffer=this.noise;const f=c.createBiquadFilter();f.type='highpass';f.frequency.value=6500;const g=c.createGain();g.gain.setValueAtTime(v*(.6+Math.random()*.5),t);g.gain.exponentialRampToValueAtTime(.001,t+.045);
     s.connect(f);f.connect(g);g.connect(this.bus);s.start(t,Math.random());s.stop(t+.06);}};
 /* ---------- maps ---------- */
-const MAPW=16000,mapBase=(()=>{const N=512,c=document.createElement('canvas');c.width=c.height=N;const x=c.getContext('2d'),img=x.createImageData(N,N);
+const MAPW=SIZE,mapBase=(()=>{const N=512,c=document.createElement('canvas');c.width=c.height=N;const x=c.getContext('2d'),img=x.createImageData(N,N);
   for(let j=0;j<N;j++)for(let i=0;i<N;i++){const wx=-MAPW/2+(i+.5)*MAPW/N,wz=-MAPW/2+(j+.5)*MAPW/N,h=groundH(wx,wz);let r,g,b;
     if(h<0){const d=clamp(-h/40,0,1);r=lerp(70,30,d);g=lerp(150,72,d);b=lerp(170,120,d);}
     else if(h<4){r=226;g=205;b=150;}
@@ -687,23 +758,25 @@ function drawMiniMap(dt){mapT-=dt;if(mapT>0)return;mapT=.08;const W=96,x=mctx;x.
   const near=dest?Math.hypot(dest.x-ac.pos.x,dest.z-ac.pos.z):1e9,R=near<2600?1500:2800,k=(W/2)/R,cy=W/2+14;
   x.fillStyle='#1d2a44';x.fillRect(0,0,W,W);x.save();x.translate(W/2,cy);x.rotate(-hdg);x.scale(k,k);x.translate(-ac.pos.x,-ac.pos.z);
   x.drawImage(mapBase,-MAPW/2,-MAPW/2,MAPW,MAPW);drawStripsOn(x,k,dest);
-  x.fillStyle='#ffb02e';for(const [k_,v] of Object.entries(sights))if(log.sights[k_])x.fillRect(v.x-2/k,v.z-2/k,4/k,4/k);
+  x.fillStyle='#ffb02e';for(const [k_,v] of Object.entries(sights))if(log.sights[k_])x.fillRect(v.x-2/k,v.z-2/k,4/k,4/k);x.fillStyle='#8ff0e8';for(const g of FLYGATES)if(log.gates[g.id])x.fillRect(g.x-2/k,g.z-2/k,4/k,4/k);
   if(dest){x.fillStyle='#8ff0e8';x.beginPath();x.arc(dest.x,dest.z,3.5/k,0,TAU);x.fill();}
   x.restore();
   x.fillStyle='#fff8ec';x.strokeStyle='#241c2e';x.lineWidth=1;x.beginPath();x.moveTo(W/2,cy-6);x.lineTo(W/2-4,cy+4);x.lineTo(W/2,cy+2);x.lineTo(W/2+4,cy+4);x.closePath();x.fill();x.stroke();
   const na=-hdg;x.fillStyle='#ffb02e';x.font='13px VT323, monospace';x.textAlign='center';x.textBaseline='middle';x.fillText('N',clamp(W/2+Math.sin(na)*40,6,W-6),clamp(cy-Math.cos(na)*40,6,W-6));
   if(dest&&near>R*.9){const brg=Math.atan2(dest.x-ac.pos.x,-(dest.z-ac.pos.z))-hdg;x.fillStyle='#8ff0e8';x.beginPath();x.arc(clamp(W/2+Math.sin(brg)*44,4,W-4),clamp(cy-Math.cos(brg)*44,4,W-4),3,0,TAU);x.fill();}}
 function bigMap(){
-  showCard(`<h2>Bea's chart</h2><div class="sub">${Object.keys(sights).filter(q=>log.sights[q]).length} OF ${Object.keys(sights).length} LANDMARKS FOUND · DASHED LINES SHOW WHERE TO LINE UP FOR ${dest?dest.name.toUpperCase():'EACH RUNWAY'}</div><canvas id="bigmap" width="512" height="384"></canvas>`,[['Back to flying',()=>{hideModal();mode='fly';},true]]);
+  showCard(`<h2>Bea's chart</h2><div class="sub">★ ${log.score.toLocaleString()} · ${Object.keys(sights).filter(q=>log.sights[q]).length}/${Object.keys(sights).length} LANDMARKS (ORANGE) · ${FLYGATES.filter(g=>log.gates[g.id]).length}/${FLYGATES.length} GAPS FLOWN (CYAN)${activeErrands().length?' · ERRANDS: '+activeErrands().map(errLine).join(', ').toUpperCase():''}</div><canvas id="bigmap" width="512" height="384"></canvas>`,[['Back to flying',()=>{hideModal();mode='fly';},true]]);
   $('cardBody').parentElement.querySelector('.card').classList.add('wide');
-  const c=$('bigmap'),x=c.getContext('2d');x.imageSmoothingEnabled=false;const k=384/12600,CX=-200,CZ=300;x.fillStyle='#1d2a44';x.fillRect(0,0,512,384);x.save();x.translate(256-CX*k,192-CZ*k);x.scale(k,k);
+  const c=$('bigmap'),x=c.getContext('2d');x.imageSmoothingEnabled=false;const k=384/19400,CX=150,CZ=250;x.fillStyle='#1d2a44';x.fillRect(0,0,512,384);x.save();x.translate(256-CX*k,192-CZ*k);x.scale(k,k);
   x.drawImage(mapBase,-MAPW/2,-MAPW/2,MAPW,MAPW);drawStripsOn(x,k,dest);
   x.restore();
   const P=(wx,wz)=>[256+(wx-CX)*k,192+(wz-CZ)*k];x.font='13px VT323, monospace';x.font='15px VT323, monospace';x.textBaseline='middle';
   const label=(t,wx,wz,col,dy=-12)=>{const [a,b]=P(wx,wz);x.textAlign='center';x.fillStyle='#241c2e';x.fillText(t,a+1,b+dy+1);x.fillStyle=col;x.fillText(t,a,b+dy);};
-  for(const s of STRIPS)label(s.name.toUpperCase(),s.x,s.z,s===dest?'#8ff0e8':'#fff8ec',-11);
-  for(const [k_,v] of Object.entries(sights)){if(!log.sights[k_])continue;const [a,b]=P(v.x,v.z);x.fillStyle='#ffb02e';x.fillRect(a-2,b-2,5,5);label(v.name.toUpperCase(),v.x,v.z,'#ffd890',10);}
-  for(const I of Object.values(ISLES))label(I.name.toUpperCase(),I.x,I.z+(I.r?I.r*.55:700),'#ffd890',0);
+  x.font='13px VT323, monospace';
+  for(const [k_,v] of Object.entries(sights)){if(!log.sights[k_])continue;const [a,b]=P(v.x,v.z);x.fillStyle='#241c2e';x.fillRect(a-3,b-3,6,6);x.fillStyle='#ffb02e';x.fillRect(a-2,b-2,4,4);}
+  for(const g of FLYGATES){if(!log.gates[g.id])continue;const [a,b]=P(g.x,g.z);x.fillStyle='#8ff0e8';x.beginPath();x.moveTo(a,b-4);x.lineTo(a+4,b);x.lineTo(a,b+4);x.lineTo(a-4,b);x.closePath();x.fill();}
+  for(const I of Object.values(ISLES))label(I.name.toUpperCase(),I.x,I.z+(I.r?Math.min(I.r*.6,600)+260:1500),'#ffd890',0);
+  if(dest)label(dest.name.toUpperCase(),dest.x,dest.z,'#8ff0e8',-11);
   const [px,pz]=P(ac.pos.x,ac.pos.z);axes();const hdg=ac.ground?-ac.gYaw:Math.atan2(_f.x,-_f.z);x.save();x.translate(px,pz);x.rotate(hdg);x.fillStyle='#fff8ec';x.strokeStyle='#241c2e';x.lineWidth=1.5;x.beginPath();x.moveTo(0,-9);x.lineTo(-6,6);x.lineTo(0,3);x.lineTo(6,6);x.closePath();x.fill();x.stroke();x.restore();
   x.fillStyle='#ffb02e';x.textAlign='left';x.fillText('N ↑',10,14);
   const wd=70*DEG;x.strokeStyle='#fff8ec';x.lineWidth=2;x.beginPath();x.moveTo(478-Math.sin(wd)*12,30+Math.cos(wd)*12);x.lineTo(478+Math.sin(wd)*12,30-Math.cos(wd)*12);x.stroke();x.fillStyle='#fff8ec';x.textAlign='center';x.fillText('WIND',478,52);}
@@ -771,7 +844,7 @@ function logbook(){
   const go=GOALS.map(g=>`<div class="item ${log.goals[g.id]?'done':''}"><span><b>${g.name}</b><span class="d">${g.hint}</span></span><span class="chk">${log.goals[g.id]?'✓':''}</span></div>`).join('');
   const done=GOALS.filter(g=>log.goals[g.id]).length;
   showCard(`<h2>Your logbook</h2><div class="sub">${log.flights} FLIGHTS · ${log.trips} TRIPS · ${log.stamps} STAMPS · ${done}/${GOALS.length} GOALS</div><h3>PEOPLE</h3><div class="list">${ppl}</div><h3>FIELDS</h3><div class="list">${f}</div><h3>SIGHTS</h3><div class="list">${si}</div><h3>GOALS</h3><div class="list">${go}</div>`,[['Back',back,true]]);}
-const SET=[['tilt','Tilt to steer','Turn the phone like a steering wheel to bank. Tip it toward you to raise the nose, away to lower it. CENTER resets the level point. The touch stick still works.'],['steady','Steady wings','Levels the wings when you let go, and handles the rudder.'],['stallGuard','Stall guard','Stops you pulling the nose up far enough to stall.'],
+const SET=[['dog','Biscuit barks','Your dog barks and points when something worth finding is nearby.'],['tilt','Tilt to steer','Turn the phone like a steering wheel to bank. Tip it toward you to raise the nose, away to lower it. CENTER resets the level point. The touch stick still works.'],['steady','Steady wings','Levels the wings when you let go, and handles the rudder.'],['stallGuard','Stall guard','Stops you pulling the nose up far enough to stall.'],
   ['autoTrim','Auto-trim','Holds your current speed when you let go of the stick.'],['tips','Tips','Short pointers the first time things happen.'],
   ['invert','Invert pitch','Drag up to raise the nose instead of down.'],['shadows','Shadows','Long shadows from the sun and moon. Turn off if your phone gets warm.'],['sound','Sound','Engine, wind, music and the stall horn.'],['fps','Frame rate','Shows frames per second, the slowest frame, triangles and draw calls in a strip at the top of the screen while you fly. For checking how your phone keeps up.']];
 function settingsCard(){
@@ -818,7 +891,7 @@ function gameChecks(dt){
   if(!ac.ground&&Math.abs(bank)>20*DEG&&ac.vel.y<-1.5)tip('turn','In a turn, hold the stick a little down (back) to keep from sinking.');
   if(airT>45)tip('pitchpower','Good to know: the stick mostly sets your speed. Power decides whether you climb or descend.');
   let showCheck=false;
-  if(!ac.ground&&dest&&airT>8&&Math.hypot(dest.x-ac.pos.x,dest.z-ac.pos.z)>3500)tip('tailwind','Long way to go? Tap TAILWIND under the map for a gust that carries you fast and level for a few seconds. You hold three; leave it alone for 5 seconds and one comes back.',.5);
+  if(!ac.ground&&dest&&airT>8&&Math.hypot(dest.x-ac.pos.x,dest.z-ac.pos.z)>3500)tip('tailwind','Long way to go? Tap TAILWIND under the map for a short gust that carries you fast and level. Tap again while it blows to stack gusts and go faster. Charges come back once the wind dies down; big stacks take longer.',.5);
   if(dest){const gl=glide(dest);if(!ac.ground&&Math.hypot(dest.x-ac.pos.x,dest.z-ac.pos.z)<5500)tip('gates','See the cyan gates? They show the way in. Start lining up at the first one, 2 km out and about 450 ft up.');
     if(gl.active&&gl.along<3200){showCheck=true;tip('approach','Fly through the three cyan gates. Keep the diamond in the ring at the top of the screen. Flaps down, power back, about 55 knots.');
       if(gl.along<1800)tip('papi','The four lights beside the runway: two white and two red means you\'re on the glide path. All white is too high, all red too low.',3);}
@@ -828,9 +901,9 @@ function gameChecks(dt){
     ck.innerHTML=`<b>BEFORE LANDING</b>${row(c.carb,'CARB HEAT ON')}${row(c.mix,'MIXTURE RICH')}${row(c.flaps,'FLAPS 1 OR 2')}${c.needLight?row(c.light,'LANDING LIGHT'):''}`;ck.hidden=false;tip('checklist','Before-landing checklist: tap the switches beside the chart. Bea\'s logbook explains each one.',1);}
   else ck.hidden=true;
   sightT+=dt;if(sightT>.3){sightT=0;
-    for(const [k,v] of Object.entries(sights)){if(log.sights[k])continue;if(Math.hypot(ac.pos.x-v.x,ac.pos.z-v.z)<450&&ac.pos.y-v.y<650){log.sights[k]=Date.now();stamp(1);saveL();
+    for(const [k,v] of Object.entries(sights)){if(log.sights[k])continue;if(Math.hypot(ac.pos.x-v.x,ac.pos.z-v.z)<450&&ac.pos.y-v.y<650){log.sights[k]=Date.now();stamp(1);addScore(100);saveL();
       const n=Object.keys(sights).filter(q=>log.sights[q]).length;snd.beep(990);setTimeout(()=>snd.beep(1320),110);setTimeout(()=>snd.beep(1760),220);
-      toast(`Discovered: ${v.name} (${n}/${Object.keys(sights).length})\n${v.desc||''}`,4);tip('discover','Landmarks you discover go on Bea\'s chart, with a stamp for each. Fly over anything that looks interesting.',4.5);}}
+      toast(`Discovered: ${v.name} (${n}/${Object.keys(sights).length}) · +100\n${v.desc||''}`,4);tip('discover','Landmarks you discover go on Bea\'s chart, with a stamp for each. Fly over anything that looks interesting.',4.5);}}
     if(!ac.ground&&Math.hypot(ac.pos.x-summit.x,ac.pos.z-summit.z)<320&&ac.pos.y>summit.h+10)goal('summit');}
   const hdg=(Math.atan2(_f.x,-_f.z)/DEG+360)%360;let dh=hdg-hdgPrev;if(dh>180)dh-=360;if(dh<-180)dh+=360;hdgPrev=hdg;turnRate=lerp(turnRate,dh/Math.max(dt,1e-3),.1);
 }
@@ -941,14 +1014,16 @@ function updateVisuals(dt,t){
   blob.visible=mode!=='crashed'&&mode!=='title'&&agl<220;if(blob.visible){plane.updateMatrix();_flat.set(1,0,0,0, 0,0,0,gh+.22, 0,0,1,0, 0,0,0,1);blob.matrix.multiplyMatrices(_flat,plane.matrix);blob.matrixWorld.copy(blob.matrix);
     blob.material.opacity=(settings.shadows?.42:.55)*(1-smooth(4,200,agl))+(ac.ground?.08:0);}
   if(dest){beacon.visible=mode==='fly'||mode==='paused';beacon.position.set(dest.x,dest.elev,dest.z);const d=Math.hypot(dest.x-ac.pos.x,dest.z-ac.pos.z);beacon.material.opacity=.13*smooth(500,1600,d);}
-  spot.intensity=ac.light&&mode!=='title'?(TOD[tod].lights>0?2.4:.6):0;
-  updPAPI();updGates();updWind(dt);updFog();
-  {const fb=(camMode==='chase'?58:70)+(ac.bst||0)*9;if(Math.abs(camera.fov-fb)>.05){camera.fov=fb;camera.updateProjectionMatrix();}}
+  spot.intensity=ac.light&&mode!=='title'?(TOD[tod].lights>0?1.35:.3):0;
+  updPAPI();updGates();updWind(dt);updFog();updDog(dt,t);
+  {const fb=(camMode==='chase'?58:70)+(ac.bst||0)*6;if(Math.abs(camera.fov-fb)>.05){camera.fov=fb;camera.updateProjectionMatrix();}}
   sunL.castShadow=settings.shadows;const fo=mode==='title'?ac.pos:camera.position;
   axes();_sc.set(fo.x+_f.x*SHADOW_HALF*.5,surfH(fo.x,fo.z),fo.z+_f.z*SHADOW_HALF*.5);snapShadow(_sc);sunL.target.position.copy(_sc);sunL.position.copy(_sc).addScaledVector(sunDir,1500);
   if(mode==='crashed'){crashT+=dt;smokeBurst.forEach(m=>{m.position.y+=dt*m.userData.v*1.5;m.scale.setScalar(Math.min(.5+crashT*m.userData.v*1.5,6));});}
   snd.update(ac.rpm,ac.ias+(ac.bst||0)*22,ac.stallWarn,mode==='fly',ac.rough);
 }
+
+/*@PLAY@*/
 
 /* ---------- main loop ---------- */
 let acc=0,last=performance.now(),fpsN=0,fpsT=0,fpsLast=0,fpsPrev=0,fpsMin=999;renderer.info.autoReset=false;
@@ -957,7 +1032,8 @@ function loop(now){
   skyMat.uniforms.uTime.value=t;waterMat.uniforms.uTime.value=t;for(const a of anims)a(t);
   cloudGroup.position.set((t*2.2)%400,0,-(t*.8)%400);
   if(mode==='fly'){readInput(dt);acc+=dt;const H_=1/120;let n=0;while(acc>=H_&&n<10){if(ac.ground)stepGround(H_);else{stepAir(H_);stepBoost(H_);stepBumps(H_);}simT+=H_;acc-=H_;n++;if(mode!=='fly')break;}if(n>=10)acc=0;
-    if(mode==='fly')gameChecks(dt);runTips(dt);}
+    if(!Number.isFinite(ac.pos.x+ac.pos.y+ac.pos.z+ac.vel.x+ac.vel.y+ac.vel.z+ac.q.x+ac.q.w)){console.warn('sim NaN, respawning');spawnField(stripById(ac.lastField)||STRIPS[0]);}
+    if(mode==='fly'){gameChecks(dt);playChecks(dt);}runTips(dt);}
   else acc=0;
   if(toastT>0){toastT-=dt;if(toastT<=0)$('toast').hidden=true;}
   if(callT>0){callT-=dt;if(callT<=0)$('callout').hidden=true;}
@@ -970,5 +1046,5 @@ function loop(now){
 }
 addEventListener('resize',()=>{resize();setThrottleUI();placeRingIdle();checkRotate();});
 $('wind').addEventListener('click',e=>{e.stopPropagation();useWind();});pixMode=settings.pixels;resize();setTOD(settings.light);toTitle();placeRingIdle();checkRotate();refreshBag();
-const ld=$('load');if(ld)ld.hidden=true;$('fps').hidden=!settings.fps;$('fps').textContent='FPS: measuring…';
+updScore();updErrandUI();const ld=$('load');if(ld)ld.hidden=true;$('fps').hidden=!settings.fps;$('fps').textContent='FPS: measuring…';
 requestAnimationFrame(loop);
