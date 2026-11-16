@@ -258,8 +258,15 @@ function stepBoost(dt){
 
 const beacon=new THREE.Mesh(new THREE.CylinderGeometry(5,5,700,10,1,true).translate(0,350,0),new THREE.MeshBasicMaterial({color:0x8ff0e8,transparent:true,opacity:.12,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide,fog:false}));
 scene.add(beacon);
-const blob=new THREE.Mesh(new THREE.CircleGeometry(1,14).rotateX(-Math.PI/2),new THREE.MeshBasicMaterial({color:0x2a2238,transparent:true,opacity:.3,depthWrite:false}));
-blob.renderOrder=2;scene.add(blob);
+/* ground shadow: the plane's silhouette dropped straight down onto whatever is below, darker and sharper the closer
+   you get. Straight down (not along the sun) so it always sits under you and shows your real height on landing. */
+const blob=(()=>{const P=[],q=(x0,z0,x1,z1,w0,w1)=>{P.push(-w0,0,z0, w0,0,z0, -w1,0,z1, -w1,0,z1, w0,0,z0, w1,0,z1);};
+  q(0,-3.2,0,-1.75,.42,.55);q(0,-1.75,0,-.25,5.25,5.25);q(0,-.25,0,3.65,.58,.2);q(0,3.65,0,4.5,1.7,1.7);q(0,-3.45,0,-3.2,.1,.42);
+  for(const sx of [-1,1])P.push(sx*5.25,0,-1.75, sx*5.25,0,-.25, sx*5.6,0,-1.6);
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(P,3));
+  const m=new THREE.Mesh(g,new THREE.MeshBasicMaterial({color:0x1c1626,transparent:true,opacity:.5,depthWrite:false,side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:-4,polygonOffsetUnits:-4}));
+  m.matrixAutoUpdate=false;m.renderOrder=2;m.frustumCulled=false;scene.add(m);return m;})();
+const _flat=new THREE.Matrix4();
 {const hp=toWorld(STRIPS[0],95,-38);parked.position.set(hp.x,groundH(hp.x,hp.z)+1.35,hp.z);parked.quaternion.setFromEuler(new THREE.Euler(0,-(STRIPS[0].hdg+200)*DEG,0,'YXZ'));}
 const smokeBurst=[];{const mat=new THREE.MeshToonMaterial({color:0x6e6574,gradientMap:gradTex,flatShading:true});
   for(let i=0;i<10;i++){const m=new THREE.Mesh(new THREE.IcosahedronGeometry(1,0),mat);m.visible=false;scene.add(m);smokeBurst.push(m);}}
@@ -891,19 +898,20 @@ function drawExtras(){
 }
 
 /* ---------- camera & visuals ---------- */
-const camPos=new V3(),_c1=new V3(),_c2=new V3(),_c3=new V3(),tiltQ=new Q().setFromAxisAngle(new V3(1,0,0),-12*DEG);
+let camLow=0;const camPos=new V3(),_c1=new V3(),_c2=new V3(),_c3=new V3(),tiltQ=new Q().setFromAxisAngle(new V3(1,0,0),-12*DEG);
 function updateCam(dt,t){
   axes();
   if(mode==='title'){const a=t*.1,p=ac.pos;camera.position.set(p.x+Math.cos(a)*24,p.y+4.5,p.z+Math.sin(a)*24);camera.up.set(0,1,0);camera.lookAt(p.x,p.y+.5,p.z);return;}
   const outside=camMode==='chase'||mode==='crashed';
   if(outside){
     const bf=_c1.copy(_f);bf.y*=.4;if(bf.lengthSq()<.01)bf.set(0,0,-1);bf.normalize();
-    const des=_c2.copy(ac.pos).addScaledVector(bf,-15).add(_c3.set(0,4.2,0));
+    const aglC=ac.pos.y-AC.gearH-surfH(ac.pos.x,ac.pos.z);camLow=lerp(camLow,ac.ground||mode==='crashed'?camLow*.98:1-smooth(8,70,aglC),1-Math.exp(-dt*2));
+    const des=_c2.copy(ac.pos).addScaledVector(bf,-15-camLow*5).add(_c3.set(0,4.2+camLow*2.4,0));
     const gh=surfH(des.x,des.z)+2;if(des.y<gh)des.y=gh;
     if(snapCam){camPos.copy(des);snapCam=false;}else camPos.lerp(des,1-Math.exp(-dt*4));
     camera.position.copy(camPos);
     if(ac.ground&&ac.u>4){const st=stripAt(ac.pos.x,ac.pos.z);if(!st||st.surf!=='paved')camera.position.y+=(hash2((t*30)|0,1,9)-.5)*.06*Math.min(ac.u/15,1);}
-    camera.up.set(0,1,0).lerp(_u,.22).normalize();camera.lookAt(_c3.copy(ac.pos).addScaledVector(_f,6).add(_c2.set(0,1.2,0)));
+    camera.up.set(0,1,0).lerp(_u,.22).normalize();camera.lookAt(_c3.copy(ac.pos).addScaledVector(_f,6).add(_c2.set(0,1.2-camLow*4.4,0)));
   } else {
     camera.position.copy(ac.pos).add(_c1.set(0,.5,-.85).applyQuaternion(ac.q));camera.quaternion.copy(ac.q).multiply(tiltQ);
     if((ac.stall&&!ac.ground)||ac.rough>.3){camera.position.x+=(hash2((t*40)|0,3,3)-.5)*.04;}
@@ -930,7 +938,8 @@ function updateVisuals(dt,t){
   const running=mode!=='crashed';ac.rpm=lerp(ac.rpm,running?.22+ac.throttle*ac.pf*.78+Math.min(ac.ias/60,.3):0,1-Math.exp(-dt*3));
   ac.prop+=ac.rpm*60*dt;U.blades.rotation.z=ac.prop;U.disc.material.opacity=running?.06+ac.rpm*.2:0;
   const gh=surfH(ac.pos.x,ac.pos.z),agl=ac.pos.y-AC.gearH-gh;
-  blob.visible=!settings.shadows&&mode!=='crashed';blob.position.set(ac.pos.x,gh+.3,ac.pos.z);blob.rotation.y=Math.atan2(-_f.x,-_f.z);blob.scale.set(4.8,1,3.4);blob.material.opacity=.32*clamp(1-agl/70,0,1);
+  blob.visible=mode!=='crashed'&&mode!=='title'&&agl<220;if(blob.visible){plane.updateMatrix();_flat.set(1,0,0,0, 0,0,0,gh+.22, 0,0,1,0, 0,0,0,1);blob.matrix.multiplyMatrices(_flat,plane.matrix);blob.matrixWorld.copy(blob.matrix);
+    blob.material.opacity=(settings.shadows?.42:.55)*(1-smooth(4,200,agl))+(ac.ground?.08:0);}
   if(dest){beacon.visible=mode==='fly'||mode==='paused';beacon.position.set(dest.x,dest.elev,dest.z);const d=Math.hypot(dest.x-ac.pos.x,dest.z-ac.pos.z);beacon.material.opacity=.13*smooth(500,1600,d);}
   spot.intensity=ac.light&&mode!=='title'?(TOD[tod].lights>0?2.4:.6):0;
   updPAPI();updGates();updWind(dt);updFog();

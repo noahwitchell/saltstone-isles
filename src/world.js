@@ -284,6 +284,18 @@ const SURF={paved:0x5e5a66,grass:0x6c9c45,dirt:0xd6b07c,sand:0xd9c48e,cinder:0x5
       const q=[[a0,-s.wid/2],[a0,s.wid/2],[a1,-s.wid/2],[a1,s.wid/2]].map(([u,t])=>{const w=toWorld(s,u,t);return [w.x,groundH(w.x,w.z)+.14,w.z];});
       for(const k of [0,1,2,2,1,3]){P.push(...q[k]);C.push(col.r,col.g,col.b);}
     }
+    const dec=(u,t,a,b,ang,color)=>{const c=Math.cos(ang),sn=Math.sin(ang);const q=[[-a,-b],[-a,b],[a,-b],[a,b]].map(([du,dt])=>{const w=toWorld(s,u+du*c-dt*sn,t+du*sn+dt*c);return [w.x,groundH(w.x,w.z)+.17,w.z];});
+      for(const k of [0,1,2,2,1,3]){P.push(...q[k]);C.push(color.r,color.g,color.b);}};
+    const dc=new THREE.Color(),hw=s.wid/2,ND=Math.round(s.len*s.wid/9);
+    for(let i=0;i<ND;i++){const u=(rnd()-.5)*s.len,t=(rnd()-.5)*(s.wid-1.2),k=rnd();
+      if(s.surf==='paved'){dc.copy(base).multiplyScalar(k<.5?.86:1.12);dec(u,t,.4+rnd()*1.4,.3+rnd()*.9,rnd()*3,dc);}
+      else if(s.surf==='grass'){dc.setHex(k<.5?0x4f7f34:k<.85?0x86b056:0xd8d06a);dec(u,t,.25+rnd()*.5,.25+rnd()*.5,rnd()*3,dc);}
+      else{dc.copy(base).multiplyScalar(k<.5?.78:1.15);dec(u,t,.18+rnd()*.45,.18+rnd()*.4,rnd()*3,dc);}}
+    if(s.surf==='paved'){const tz=s.len/2-s.len*.22;dc.setHex(0x3a3640);
+      for(const e of [-1,1])for(let i=0;i<46;i++){const u=e*(tz-(rnd()*.9-.2)*90),t=(rnd()<.5?-1:1)*(1.2+rnd()*1.6);dec(u,t,3+rnd()*7,.22+rnd()*.12,(rnd()-.5)*.04,dc);}
+      dc.setHex(0xefe8d8);for(let u=-s.len/2+4;u<s.len/2-4;u+=8)for(const e of [-1,1])dec(u,e*(hw-.8),3.6,.25,0,dc);}
+    else{dc.copy(base).multiplyScalar(s.surf==='grass'?.82:.8);for(let u=-s.len/2;u<s.len/2;u+=6)for(const e of [-1,1])dec(u+3,e*1.6,3.1,.38,0,dc);
+      if(s.surf==='grass'){dc.copy(base).multiplyScalar(1.08);for(let u=-s.len/2;u<s.len/2;u+=10)for(const e of [-1,1])dec(u+5,e*hw*.6,5,hw*.18,0,dc);}}
     const yaw=-s.hdg*DEG, y=s.elev+.2;
     const put=(u,t,w,h,d,color)=>{const p=toWorld(s,u,t);mk.push({geo:BOX(w,h,d),m:M([p.x,groundH(p.x,p.z)+.18+h/2,p.z],[0,yaw,0]),color});};
     if(s.surf==='paved'){
@@ -294,6 +306,9 @@ const SURF={paved:0x5e5a66,grass:0x6c9c45,dirt:0xd6b07c,sand:0xd9c48e,cinder:0x5
       for(let u=-s.len/2;u<=s.len/2;u+=40) for(const t of [-1,1]) put(u,t*(s.wid/2+1),1.2,.6,1.2,0xf4efe2);
       for(const e of [-1,1]) for(let k=-2;k<=2;k++) put(e*(s.len/2+2),k*s.wid/5,1.4,.7,1.4,k%2?0xe8743a:0xf4efe2);
     }
+    // distance boards every 100 m: count down the runway left, so you can judge your roll and your height
+    for(let k=1;k*100<s.len;k++)for(const e of [-1,1]){const u=-s.len/2+k*100,t=e*(hw+(s.surf==='paved'?12:7));
+      put(u,t,.2,2.6,.2,0x3a3440);put(u,t,2.2,1.4,.25,k%2?0xf4efe2:0x2c2833);put(-u,t,.2,2.6,.2,0x3a3440);put(-u,t,2.2,1.4,.25,k%2?0xf4efe2:0x2c2833);}
     for(let u=-s.len/2;u<=s.len/2+.1;u+=s.len/Math.round(s.len/30))for(const t of [-1,1]){const p=toWorld(s,u,t*(s.wid/2+1.5));addLight(p.x,groundH(p.x,p.z)+.7,p.z,Math.abs(Math.abs(u)-s.len/2)<1?0xffb347:0xfff1c8);}
     // windsock
     const wp=toWorld(s,-s.len*.3,-(s.wid/2+22)),wy=groundH(wp.x,wp.z);
