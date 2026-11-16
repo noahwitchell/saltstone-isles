@@ -72,6 +72,7 @@ button:focus-visible{outline:2px solid #fff;outline-offset:2px}
 #check{position:fixed;left:calc(var(--sl) + 200px);top:calc(var(--st) + 50px);background:var(--glass);border:2px solid var(--line);padding:6px 9px;font-family:var(--mono);font-size:14px;line-height:1.6;pointer-events:none}
 #check b{display:block;font-size:9px;opacity:.75;letter-spacing:.06em}
 #check .ok{color:#8fe08a}
+#fps{position:fixed;left:50%;transform:translateX(-50%);top:calc(var(--st) + 46px);white-space:nowrap;background:var(--glass);color:var(--paper);font-family:var(--mono);font-size:13px;padding:3px 6px;pointer-events:none;z-index:5}
 #bag{position:fixed;right:var(--sr);top:calc(var(--st) + 50px);background:var(--glass);border:2px solid var(--line);padding:5px 8px;font-family:var(--mono);font-size:14px;pointer-events:auto;cursor:pointer;color:var(--paper);border-radius:0}
 #stick{position:fixed;left:42%;right:0;top:calc(var(--st) + 50px);bottom:0;touch-action:none}
 #ring{position:absolute;width:132px;height:132px;margin:-66px 0 0 -66px;border:2px dashed #f5e8cf99;border-radius:50%;pointer-events:none}
@@ -152,6 +153,7 @@ h3{font-family:var(--mono);font-size:15px;letter-spacing:.08em;color:var(--ink2)
   <div id="stick"><div id="ring" class="idle"><div id="knob"></div><div id="ringHint">STICK · DRAG ANYWHERE</div></div></div>
 </div>
 <div id="toast" hidden></div>
+<div id="fps" hidden></div>
 
 <div id="title" class="ov">
   <div class="wrap">
@@ -743,20 +745,26 @@ let pb, frameLayer=null, gaugeLayout=[], panelLayout=[];
 const C={bezel:rgba(0x1b1720),face:rgba(0x2b2734),tick:rgba(0xeae2cf),dim:rgba(0x8d8597),needle:rgba(0xfff6e2),orange:rgba(0xffb02e),
   white:rgba(0xf3f0e6),green:rgba(0x5fbf5a),yellow:rgba(0xf1c84a),red:rgba(0xe5483b),sky:rgba(0x6fb2e6),gnd:rgba(0xa8743f),panel:rgba(0x3b3442),panelHi:rgba(0x5a5262),panelLo:rgba(0x27222d),post:rgba(0x2a2531),cyan:rgba(0x6fe0e0)};
 function buildFrame(){
-  const w=LW,h=LH,f=new PixBuf(w,h),k=(window.devicePixelRatio||1)/PS,land=w/h>1.1;
+  // Two low dash pods in the bottom corners, one row of three gauges each, thin windshield posts leaning in. Middle stays open.
+  const w=LW,h=LH,f=new PixBuf(w,h),k=(window.devicePixelRatio||1)/PS;
   const lp=Math.round(205*k);
-  const r=Math.max(10,Math.min(Math.floor(h*.095),Math.floor((w/2-lp)/5.4)));
-  const gap=Math.round(r*2.3),yb=h-r-6,yt=yb-gap;
-  const lx1=lp+r+6,lx2=lx1+gap,rx2=w-lp-r-6,rx1=rx2-gap;
-  gaugeLayout=[{x:lx1,y:yt,r},{x:lx2,y:yt,r},{x:rx1,y:yt,r},{x:lx1,y:yb,r},{x:lx2,y:yb,r},{x:rx2,y:yt,r}];
-  glideCock={x:rx1,y:yb,r};tachCock={x:rx2,y:yb,r};
-  const pod=(x0,x1)=>{const y0=yt-r-7,rad=8;for(let y=y0;y<h;y++){const dy=y-y0;let inset=0;if(dy<rad){const q=rad-dy;inset=Math.round(rad-Math.sqrt(Math.max(0,rad*rad-q*q)));}
-    f.rect(x0+inset,y,x1-x0-2*inset,1,y-y0<2?C.panelHi:C.panel);}f.rect(x0+rad,y0+2,x1-x0-2*rad,1,C.panelLo);};
-  pod(lx1-r-7,lx2+r+8);pod(rx1-r-8,rx2+r+7);
+  const R=Math.max(11,Math.min(Math.floor(h*.1),Math.floor((w*.5-lp)/7.2)));
+  const rs=[Math.round(R*.9),R,Math.round(R*.76)],gp=4,cy=h-R-5;
+  // left pod: SPEED, ATTITUDE, HEADING (small, inner)
+  let x=lp+rs[0]+4;const L=[];for(let i=0;i<3;i++){if(i)x+=rs[i-1]+rs[i]+gp;L.push({x,y:cy,r:rs[i]});}
+  // right pod mirrored: ALTITUDE (big, inner), CLIMB, RPM (small, outer)
+  const rr=[R,Math.round(R*.9),Math.round(R*.76)];let xr=w-6-rr[2];const Rt=[];for(let i=2;i>=0;i--){if(i<2)xr-=rr[i+1]+rr[i]+gp;Rt[i]={x:xr,y:cy,r:rr[i]};}
+  gaugeLayout=[L[0],L[1],Rt[0],null,L[2],Rt[1]];tachCock=Rt[2];glideCock=null;
+  const y0=cy-R-8,sl=.42,le=L[2].x+L[2].r+7,rsx=Rt[0].x-Rt[0].r-7,rad=6;
+  for(let y=y0;y<h;y++){const dy=y-y0;let ins=0;if(dy<rad){const q=rad-dy;ins=Math.round(rad-Math.sqrt(Math.max(0,rad*rad-q*q)));}
+    const c=dy<2?C.panelHi:C.panel,ex=Math.round(dy*sl)-ins;
+    f.rect(0,y,le+ex,1,c);f.rect(rsx-ex,y,w-(rsx-ex),1,c);}
+  f.rect(0,y0+2,le-rad,1,C.panelLo);f.rect(rsx+rad,y0+2,w-rsx-rad,1,C.panelLo);
+  // windshield posts: from the pod top near the outer edge, leaning in toward the top of the screen
+  const pw=Math.max(2,Math.round(w*.006));
+  const post=(xb,xt)=>{for(let y=0;y<=y0;y++){const t=y/y0,xx=Math.round(lerp(xt,xb,t));f.rect(xx-pw,y,1,1,C.panelHi);f.rect(xx-pw+1,y,pw*2-2,1,C.post);f.rect(xx+pw-1,y,1,1,C.panelLo);}};
+  post(Math.round(w*.075),Math.round(w*.17));post(Math.round(w*.925),Math.round(w*.83));
   frameLayer=f.d.slice();
-  const pc=land?3:2,pr=land?2:3,tp=Math.round(46*k),right=land?w*.76:w;let r2=Math.floor(Math.min((h-tp-12)/(pr*2.5),(right-lp)/(pc*2.45)));r2=Math.max(12,r2);
-  const gp=Math.round(r2*2.45),cx0=Math.round(lp+(right-lp)/2-gp*(pc-1)/2);
-  panelLayout=[];const yTop=tp+r2+3;for(let i=0;i<6;i++){const cI=i%pc,rI=(i/pc)|0;panelLayout.push({x:cx0+cI*gp,y:Math.round(yTop+rI*gp),r:r2});}
 }
 function gaugeBase(g){pb.disc(g.x,g.y,g.r+2,C.bezel);pb.disc(g.x,g.y,g.r,C.face);}
 const pt=(g,a,rr)=>[g.x+Math.sin(a)*rr,g.y-Math.cos(a)*rr];
@@ -764,8 +772,8 @@ function ticks(g,a0,a1,n,major,c){for(let i=0;i<=n;i++){const a=lerp(a0,a1,i/n),
 function needle(g,a,len,c){const [x,y]=pt(g,a,len);pb.line(g.x,g.y,x,y,c);const [x2,y2]=pt(g,a+.06,len*.7);pb.line(g.x,g.y,x2,y2,c);pb.disc(g.x,g.y,1,c);}
 function band(g,a0,a1,c){for(let a=a0;a<=a1;a+=.02){const [x,y]=pt(g,a,g.r-2);pb.px(x,y,c);const [x2,y2]=pt(g,a,g.r-3);pb.px(x2,y2,c);}}
 function drawCockpit(st){
-  if(st.panel)pb.d.fill(C.panelLo);else pb.d.set(frameLayer);
-  const [g1,g2,g3,g4,g5,g6]=st.panel?panelLayout:gaugeLayout;
+  pb.d.set(frameLayer);
+  const [g1,g2,g3,g4,g5,g6]=gaugeLayout;
   // airspeed
   gaugeBase(g1);const asA=k=>(-150+clamp(k,0,160)/160*300)*DEG;band(g1,asA(33),asA(85),C.white);band(g1,asA(40),asA(110),C.green);band(g1,asA(110),asA(135),C.yellow);
   ticks(g1,asA(0),asA(160),16,2,C.tick);needle(g1,asA(st.kt),g1.r-3,C.needle);if(g1.r>16)pb.text(Math.round(st.kt),g1.x,g1.y+Math.round(g1.r*.35),C.tick,1,true);
@@ -781,7 +789,7 @@ function drawCockpit(st){
   gaugeBase(g3);ticks(g3,0,TAU-TAU/50,49,5,C.tick);if(g3.r>18)for(let i=0;i<10;i++){const [x,y]=pt(g3,i*TAU/10,g3.r-8);pb.text(i,x-1,y-2,C.dim);}
   if(g3.r>22)pb.text(Math.max(0,Math.round(st.ft)),g3.x,g3.y+Math.round(g3.r*.38),C.tick,1,true);needle(g3,st.ft/10000*TAU,g3.r*.5,C.dim);needle(g3,(st.ft%1000)/1000*TAU,g3.r-3,C.needle);
   // turn coordinator
-  gaugeBase(g4);{const a=clamp(st.turn/3*20,-40,40)*DEG,g=g4,L=g.r*.7;const [x0,y0]=[g.x-Math.cos(a)*L,g.y-Math.sin(a)*L],[x1,y1]=[g.x+Math.cos(a)*L,g.y+Math.sin(a)*L];
+  if(g4){gaugeBase(g4);}if(g4){const a=clamp(st.turn/3*20,-40,40)*DEG,g=g4,L=g.r*.7;const [x0,y0]=[g.x-Math.cos(a)*L,g.y-Math.sin(a)*L],[x1,y1]=[g.x+Math.cos(a)*L,g.y+Math.sin(a)*L];
     pb.line(x0,y0,x1,y1,C.white);pb.line(x0,y0+1,x1,y1+1,C.white);pb.rect(g.x-1,g.y-4,2,4,C.white);
     const ty=g.y+Math.round(g.r*.55);pb.rect(g.x-Math.round(g.r*.5),ty-2,Math.round(g.r),5,C.bezel);pb.disc(g.x+Math.round(clamp(st.slip,-1,1)*g.r*.4),ty,2,C.white);
     for(const s of [-1,1])pb.line(g.x+s*Math.cos(20*DEG)*(g.r-2),g.y+Math.sin(20*DEG)*(g.r-2),g.x+s*Math.cos(20*DEG)*(g.r-6),g.y+Math.sin(20*DEG)*(g.r-6),C.tick);}
@@ -820,7 +828,7 @@ function setTOD(k){tod=k;const T=TOD[k];
 
 /* ---------- save data ---------- */
 const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}};
-const settings=Object.assign({steady:true,stallGuard:true,autoTrim:true,tips:true,invert:false,sound:true,engVol:1,shadows:true,tilt:false,pixels:'classic',light:'golden'},store.get('tac-settings',{}));
+const settings=Object.assign({steady:true,stallGuard:true,autoTrim:true,tips:true,invert:false,sound:true,engVol:1,fps:false,shadows:true,tilt:false,pixels:'classic',light:'golden'},store.get('tac-settings',{}));
 if(!TOD[settings.light])settings.light='golden';
 const log=Object.assign({fields:{},sights:{},goals:{},trips:0,flights:0,tips:{},howto:false,stamps:0,met:{},mail:{day:1,bag:[],active:false}},store.get('tac-log',{}));
 if(!log.mail)log.mail={day:1,bag:[],active:false};if(!log.met)log.met={};if(log.stamps==null)log.stamps=0;
@@ -836,7 +844,7 @@ const GOALS=[
   {id:'ridge3',name:'Three stars on the ridge',hint:'A three-star landing at Ridge Strip.'},
   {id:'summit',name:'Over the top',hint:'Fly over the summit of the mountain.'},
   {id:'night',name:'Night mail',hint:'Land on a runway at night.'},
-  {id:'instrument',name:'By the gauges',hint:'Land on a runway in Gauges view.'},
+  {id:'instrument',name:'From the seat',hint:'Land on a runway in Cockpit view.'},
   {id:'week',name:'A full week',hint:'Finish all six days of mail.'},
 ];
 const DESC={harbor:'Long paved runway by the village. The friendly one.',light:'Grass strip on the cliffs of the western headland.',ridge:'Short dirt strip on a mountain saddle. Slow down early.'};
@@ -1224,7 +1232,7 @@ function finishLanding(){
   const fromId=ac.from,isTrip=fromId&&fromId!==s.id&&fromId!=='__approach';
   const ck=td.check,ckOk=ck.carb&&ck.mix&&ck.flaps&&ck.light;
   const news=[];const g=id=>{if(goal(id,true))news.push(GOALS.find(x=>x.id===id).name);};
-  g('land_'+s.id);if(isTrip){log.trips++;g('trip');}if(fpm<90&&!td.bounced)g('butter');if(s.id==='ridge'&&total===3)g('ridge3');if(td.view==='panel')g('instrument');
+  g('land_'+s.id);if(isTrip){log.trips++;g('trip');}if(fpm<90&&!td.bounced)g('butter');if(s.id==='ridge'&&total===3)g('ridge3');if(td.view==='cockpit')g('instrument');
   if(ckOk)g('checklist');if(td.tod==='night')g('night');
   if(ckOk&&mail.active)stamp(1);
   ac.lastField=s.id;ac.from=s.id;saveL();
@@ -1342,11 +1350,10 @@ function updSwitches(){$('swCarb').classList.toggle('on',ac.carb);$('swCarb').cl
 $('swCarb').addEventListener('click',()=>{ac.carb=!ac.carb;updSwitches();snd.click();});
 $('swMix').addEventListener('click',()=>{ac.lean=!ac.lean;updSwitches();snd.click();if(ac.lean)tip('lean','Leaning the mixture gives a little more power up high. Below 2,000 ft, keep it RICH.');});
 $('swLight').addEventListener('click',()=>{ac.light=!ac.light;updSwitches();snd.click();});
-const VIEWS=['chase','cockpit','panel'],VNAME={chase:'CHASE',cockpit:'COCKPIT',panel:'GAUGES'};
+const VIEWS=['chase','cockpit'],VNAME={chase:'CHASE',cockpit:'COCKPIT'};
 function setView(v){camMode=v;$('view').textContent=VNAME[v];snapCam=true;camera.fov=v==='chase'?58:70;camera.near=v==='chase'?.4:.15;camera.updateProjectionMatrix();postMat.uniforms.cNear.value=camera.near;
-  $('spd').hidden=$('alt').hidden=v==='panel';if(v==='panel')tip('panel','Gauges only. Fly by the instruments: the attitude ball shows your wings and nose. The GLIDE box steers you to the runway.');
-  if(v==='cockpit')tip('cockpit','Cockpit view. Left: speed, attitude, turn, heading. Right: altitude, climb, and the GLIDE box for lining up.');}
-$('view').addEventListener('click',()=>setView(VIEWS[(VIEWS.indexOf(camMode)+1)%3]));
+  if(v==='cockpit')tip('cockpit','Cockpit view. Left: speed, attitude, heading. Right: altitude, climb, engine RPM. The line-up meter appears up top on approach.');}
+$('view').addEventListener('click',()=>setView(VIEWS[(VIEWS.indexOf(camMode)+1)%VIEWS.length]));
 $('pause').addEventListener('click',()=>{if(mode==='fly')openMenu();});
 $('bag').addEventListener('click',()=>{if(mode==='fly'&&mail.active)mailCard();});
 $('center').addEventListener('click',()=>{recenterTilt();toast('Tilt centered. Hold the phone like this to fly level.',2);});
@@ -1441,7 +1448,7 @@ const BEA=[
   {t:'The two thumbs',h:`<p>Left thumb is the throttle. Right thumb is the stick: touch anywhere on the right side and drag.</p><ul><li><b>Drag down</b> to raise the nose. <b>Drag up</b> to lower it.</li><li><b>Drag sideways</b> to bank. Banking is how you turn.</li><li>The rudder looks after itself while Steady Wings is on.</li></ul><p>Small moves. The plane does what you ask, just a moment later than you'd like.</p>`},
   {t:'Pitch and power',h:`<p>Here's the secret most new pilots fight: <b>the stick sets your speed, the throttle sets climb or descent.</b></p><ul><li>Nose up, slower. Nose down, faster.</li><li>Want to climb without slowing down? Add power.</li><li>Want to come down without speeding up? Take power off.</li></ul><p>Let go of the stick and the plane holds the speed you left it at. That's Auto-trim, doing what a real pilot does with the trim wheel.</p>`},
   {t:'Flaps',h:`<p>Flaps are hinged panels on the back of the wing. Lowering them makes the wing curvier: more lift, and also more drag.</p><table><tr><td>FLAPS 0</td><td><b>Cruise.</b> Clean wing, least drag. Climbing out and flying around.</td></tr><tr><td>FLAPS 1</td><td><b>Takeoff and approach.</b> A bit more lift, so you can fly a few knots slower. Good for short strips and the start of an approach.</td></tr><tr><td>FLAPS 2</td><td><b>Landing.</b> Most lift and most drag. You can come down steeply without speeding up, and touch down slow.</td></tr></table><p>Don't fly fast with flaps out: above 85 knots (the top of the white arc on the speed gauge) they're working too hard. With flaps down you need more power to hold your height.</p>`},
-  {t:'The six gauges',h:`<table><tr><td>SPEED</td><td>Airspeed in knots. White arc: flap range. Green: normal. Yellow: careful, smooth air only.</td></tr><tr><td>ATTITUDE</td><td>Blue is sky, brown is ground. The orange wings are you. Shows bank and nose up or down, even when you can't see outside.</td></tr><tr><td>ALTITUDE</td><td>Height in feet above the sea. The long needle is hundreds, the short one thousands. (The readout at the top of the screen is height above the ground, which matters more for landing.)</td></tr><tr><td>TURN</td><td>The little plane tilts as you turn. The ball should sit in the middle: if it slides out, you're slipping sideways.</td></tr><tr><td>HEADING</td><td>Your compass direction. The cyan mark is the way to your next stop.</td></tr><tr><td>CLIMB</td><td>Feet per minute up or down. On approach, about 400 down is right.</td></tr></table><p>Trick: glance, don't stare. Speed, attitude, back to the window.</p>`},
+  {t:'The six gauges',h:`<table><tr><td>SPEED</td><td>Airspeed in knots. White arc: flap range. Green: normal. Yellow: careful, smooth air only.</td></tr><tr><td>ATTITUDE</td><td>Blue is sky, brown is ground. The orange wings are you. Shows bank and nose up or down, even when you can't see outside.</td></tr><tr><td>ALTITUDE</td><td>Height in feet above the sea. The long needle is hundreds, the short one thousands. (The readout at the top of the screen is height above the ground, which matters more for landing.)</td></tr><tr><td>HEADING</td><td>Your compass direction. The cyan mark is the way to your next stop.</td></tr><tr><td>CLIMB</td><td>Feet per minute up or down. On approach, about 400 down is right.</td></tr><tr><td>RPM</td><td>Engine speed. The green band is cruise power.</td></tr></table><p>Trick: glance, don't stare. Speed, attitude, back to the window.</p>`},
   {t:'Taking off',h:`<ul><li>Flaps 0 on a long runway, 1 on a short one.</li><li>Full power. Keep straight with small sideways stick.</li><li>At about 45 knots, drag the stick gently down. The nose lifts and the plane flies itself off.</li><li>Climb at 55 to 65 knots. Let go and it holds that.</li><li>Flaps up once you're well above the trees.</li></ul>`},
   {t:'Turning',h:`<p>Bank to turn. The steeper the bank, the faster the turn, but the wing spends some of its lift turning instead of holding you up.</p><ul><li>In a turn, hold the stick a little down (back) to keep the nose up and stay level.</li><li>Gentle turns are about 20 degrees of bank. Thirty is brisk.</li><li>Let go of the stick and Steady Wings rolls you level.</li></ul>`},
   {t:'The approach',h:`<p>A good landing is made two kilometers out.</p><ul><li>On the chart, the runway you're headed for has a <b>dashed line</b> coming out of each end. Fly to that line, then turn to follow it toward the runway.</li><li>About 2 km out and a few hundred feet up: <b>flaps 1</b>, power back, <b>55 knots</b>.</li><li>Watch the <b>four lights</b> beside the runway. Two white and two red: perfect. More white: too high, take off power. More red: too low, add power.</li><li>Closer in: flaps 2, and keep the runway centered in the windshield.</li><li>Do your before-landing checklist.</li></ul>`},
@@ -1450,7 +1457,7 @@ const BEA=[
   {t:'Stalls',h:`<p>A wing can only meet the air so steeply. Push past that and it stalls: it stops lifting, and the nose drops.</p><ul><li>The horn and the red STALL sign mean you're close.</li><li><b>Fix it: lower the nose.</b> Speed comes back, the wing works again. Then add power.</li><li>Slow, steep and turning is where stalls happen. On approach, watch the speed.</li></ul><p>Stall Guard stops you pulling into one. Turn it off in Settings when you want to feel it.</p>`},
   {t:'Before-landing checklist',h:`<p>I did this every single landing for forty years. Four things:</p><table><tr><td>CARB HEAT</td><td>ON. Low power on approach is when carb ice forms.</td></tr><tr><td>MIXTURE</td><td>RICH, so full power is there if you need to go around.</td></tr><tr><td>FLAPS</td><td>1 or 2.</td></tr><tr><td>LANDING LIGHT</td><td>ON at sunset, blue hour and night.</td></tr></table><p>The checklist box shows up on approach. Land with all of it done and Mabel adds a bonus stamp.</p>`},
   {t:'Carb heat and mixture',h:`<p><b>Carb ice.</b> The carburetor mixes fuel and air, and it gets cold inside, cold enough to freeze damp air. At low power it can ice up and the engine runs rough and weak. CARB HEAT warms the air going in and melts it, at the cost of a little power. Running rough on a long descent? Carb heat on.</p><p><b>Mixture.</b> Higher up the air is thinner, so the engine wants less fuel. Leaning (MIX LEAN) above 2,000 ft gives a little more power. Down low, lean means too little fuel: keep it RICH.</p>`},
-  {t:'Flying by the gauges',h:`<p>In cloud or fog you can't trust your body; it will swear you're level when you're turning. Trust the attitude gauge.</p><ul><li>Keep the orange wings level on the horizon line.</li><li>The <b>GLIDE</b> box: the upright needle is the runway. If it's left of center, turn left. The flat needle is the glide path: if it's below center, you're high.</li><li>Fly toward the needles, gently, until they make a cross.</li></ul>`},
+  {t:'Flying by the gauges',h:`<p>In cloud or fog you can't trust your body; it will swear you're level when you're turning. Trust the attitude gauge.</p><ul><li>Keep the orange wings level on the horizon line.</li><li>On approach, the <b>line-up meter</b> at the top: the diamond is where the path is. Fly gently toward it until it sits in the ring.</li></ul>`},
   {t:'Night flying',h:`<ul><li>Runways have edge lights at night. Amber ones mark the ends.</li><li>Turn on your landing light on approach: it lights the runway in front of you.</li><li>The approach lights work just the same at night, so trust them over your eyes.</li></ul>`},
 ];
 function bea(i){if(mode==='fly')mode='paused';const p=BEA[i];
@@ -1501,7 +1508,7 @@ function logbook(){
   showCard(`<h2>Your logbook</h2><div class="sub">${log.flights} FLIGHTS · ${log.trips} TRIPS · ${log.stamps} STAMPS · ${done}/${GOALS.length} GOALS</div><h3>PEOPLE</h3><div class="list">${ppl}</div><h3>FIELDS</h3><div class="list">${f}</div><h3>SIGHTS</h3><div class="list">${si}</div><h3>GOALS</h3><div class="list">${go}</div>`,[['Back',back,true]]);}
 const SET=[['tilt','Tilt to steer','Turn the phone like a steering wheel to bank. Tip it toward you to raise the nose, away to lower it. CENTER resets the level point. The touch stick still works.'],['steady','Steady wings','Levels the wings when you let go, and handles the rudder.'],['stallGuard','Stall guard','Stops you pulling the nose up far enough to stall.'],
   ['autoTrim','Auto-trim','Holds your current speed when you let go of the stick.'],['tips','Tips','Short pointers the first time things happen.'],
-  ['invert','Invert pitch','Drag up to raise the nose instead of down.'],['shadows','Shadows','Long shadows from the sun and moon. Turn off if your phone gets warm.'],['sound','Sound','Engine, wind and the stall horn.']];
+  ['invert','Invert pitch','Drag up to raise the nose instead of down.'],['shadows','Shadows','Long shadows from the sun and moon. Turn off if your phone gets warm.'],['sound','Sound','Engine, wind and the stall horn.'],['fps','Frame rate','Shows frames per second and triangles drawn, bottom right. For checking how your phone keeps up.']];
 function settingsCard(){
   const rows=SET.map(([k,n,d])=>`<div class="tog"><div><b>${n}</b><span>${d}</span></div><button data-k="${k}" class="${settings[k]?'on':''}">${settings[k]?'ON':'OFF'}</button></div>`).join('');
   const px=['chunky','classic','fine'].map(k=>`<button data-px="${k}" class="${settings.pixels===k?'primary':''}">${k.toUpperCase()}</button>`).join('');
@@ -1509,7 +1516,7 @@ function settingsCard(){
   const lt=Object.keys(TOD).map(k=>`<button data-lt="${k}" class="${settings.light===k?'primary':''}">${TOD[k].name.toUpperCase()}</button>`).join('');
   showCard(`<h2>Settings</h2><div class="sub">ASSISTS · TURN THEM OFF ONE AT A TIME AS YOU IMPROVE</div>${rows}<h3>ENGINE VOLUME</h3><div class="btns">${ev}</div><h3>TIME OF DAY</h3><div class="btns">${lt}</div><h3>PIXELS</h3><div class="btns">${px}</div>`,[['Back',back,true]]);
   const cb=$('cardBody');
-  cb.querySelectorAll('[data-k]').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.k;if(k==='tilt'){if(!settings.tilt){settings.tilt=true;saveS();enableTilt().then(()=>{updTiltUI();settingsCard();});}else{settings.tilt=false;saveS();disableTilt();updTiltUI();settingsCard();}return;}settings[k]=!settings[k];saveS();if(k==='sound')snd.setOn(settings.sound);settingsCard();}));
+  cb.querySelectorAll('[data-k]').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.k;if(k==='tilt'){if(!settings.tilt){settings.tilt=true;saveS();enableTilt().then(()=>{updTiltUI();settingsCard();});}else{settings.tilt=false;saveS();disableTilt();updTiltUI();settingsCard();}return;}settings[k]=!settings[k];saveS();if(k==='sound')snd.setOn(settings.sound);if(k==='fps')$('fps').hidden=!settings.fps;settingsCard();}));
   cb.querySelectorAll('[data-px]').forEach(b=>b.addEventListener('click',()=>{settings.pixels=b.dataset.px;pixMode=settings.pixels;saveS();resize();settingsCard();}));
   cb.querySelectorAll('[data-ev]').forEach(b=>b.addEventListener('click',()=>{settings.engVol=+b.dataset.ev;saveS();settingsCard();}));
   cb.querySelectorAll('[data-lt]').forEach(b=>b.addEventListener('click',()=>{settings.light=b.dataset.lt;saveS();setTOD(settings.light);settingsCard();}));}
@@ -1549,7 +1556,7 @@ function gameChecks(dt){
       if(gl.along<1800)tip('papi','The four lights beside the runway: two white and two red means you\'re on the glide path. All white is too high, all red too low.',3);}
     const st=stripAt(ac.pos.x,ac.pos.z,10);if(st&&!ac.ground&&agl<7&&ac.vel.y<-.5)tip('flare','Just above the runway, ease the stick down (back) to soften the touchdown.');}
   if(ac.ground&&ac.td&&ac.u>8)tip('brake','Hold BRAKE to stop. The longer you hold, the harder it brakes.');
-  const ck=$('check');if(showCheck&&camMode!=='panel'){const c=checklistState();const row=(ok,t)=>`<span class="${ok?'ok':''}">${ok?'✓':'○'} ${t}</span><br>`;
+  const ck=$('check');if(showCheck){const c=checklistState();const row=(ok,t)=>`<span class="${ok?'ok':''}">${ok?'✓':'○'} ${t}</span><br>`;
     ck.innerHTML=`<b>BEFORE LANDING</b>${row(c.carb,'CARB HEAT ON')}${row(c.mix,'MIXTURE RICH')}${row(c.flaps,'FLAPS 1 OR 2')}${c.needLight?row(c.light,'LANDING LIGHT'):''}`;ck.hidden=false;tip('checklist','Before-landing checklist: tap the switches beside the chart. Bea\'s logbook explains each one.',1);}
   else ck.hidden=true;
   sightT+=dt;if(sightT>.3){sightT=0;
@@ -1577,11 +1584,10 @@ function drawHUD(dt){
   if(mode==='fly')drawMiniMap(dt);
   if(camMode==='chase'||mode==='title'){pb.clear();if(mode==='fly'&&approachMeter()){pb.flush();hudWasDrawn=true;}else if(hudWasDrawn){pb.flush();hudWasDrawn=false;}return;}
   hudWasDrawn=true;const bank=Math.atan2(-_r.y,_u.y),pitch=Math.asin(clamp(_f.y,-1,1));
-  const panel=camMode==='panel';
-  drawCockpit({kt,bank,pitch,ft,turn:turnRate,slip:clamp(ac.beta*4,-1,1),hdg,brg,fpm,panel,extra:()=>drawExtras(panel)});
+  drawCockpit({kt,bank,pitch,ft,turn:turnRate,slip:clamp(ac.beta*4,-1,1),hdg,brg,fpm,extra:()=>drawExtras()});
 }
 function approachMeter(){
-  if(!dest||ac.ground||mode!=='fly'||camMode==='panel')return false;
+  if(!dest||ac.ground||mode!=='fly')return false;
   const gl=glide(dest),agl=(ac.pos.y-AC.gearH-surfH(ac.pos.x,ac.pos.z))*FT,over=stripAt(ac.pos.x,ac.pos.z,25);
   const w=LW,h=LH,S=Math.max(16,Math.min(Math.round(h*.12),28)),cx=Math.round(w/2),cy=Math.round(h*.3),K=rgba(0x241c2e);
   const txt=(t,x,y,c,left)=>{pb.text(t,x+1,y+1,K,1,!left);pb.text(t,x,y,c,1,!left);};
@@ -1615,16 +1621,10 @@ function glideBox(bx,by,hs){
     if(hs>14)pb.text((gl.along/1000).toFixed(1),bx,by-hs+3,C.tick,1,true);}
   else pb.text('--',bx,by-2,C.dim,1,true);
 }
-function drawExtras(panel){
-  const w=LW,h=LH;
-  if(panel){const L=panelLayout,lab=['SPEED','ATTITUDE','ALTITUDE','TURN','HEADING','CLIMB'];L.forEach((g,i)=>{if(g.y+g.r+9<h)pb.text(lab[i],g.x,g.y+g.r+4,C.dim,1,true);});
-    const bx=Math.round(w*.88),by=Math.round(h*.56),hs=Math.round(Math.min(w*.09,h*.22));glideBox(bx,by,hs);pb.text('GLIDE',bx,by+hs+4,C.dim,1,true);
-    const tx=bx-hs,ty=Math.round(h*.18);pb.text('PWR',tx,ty-7,C.dim);pb.rect(tx,ty,hs*2,4,C.bezel);pb.rect(tx,ty,Math.round(hs*2*ac.throttle),4,C.orange);
-    pb.text('FLAPS '+ac.flaps,tx,ty+8,C.dim);if(ac.stallWarn)pb.text('STALL',tx,ty+16,C.red);}
-  else if(glideCock){approachMeter();const g=glideCock;glideBox(g.x,g.y,g.r);
-    const T=tachCock;if(T){gaugeBase(T);const rA=v=>(-135+clamp(v,0,3000)/3000*270)*DEG;band(T,rA(2100),rA(2550),C.green);ticks(T,rA(0),rA(3000),6,2,C.tick);
-      const rpm=600+ac.rpm*1950;needle(T,rA(rpm),T.r-3,C.needle);if(T.r>15)pb.text('RPM',T.x,T.y+Math.round(T.r*.35),C.dim,1,true);}
-    if(ac.stallWarn)pb.text('STALL',(gaugeLayout[1].x+glideCock.x)>>1,gaugeLayout[0].y-gaugeLayout[0].r-12,C.red,2,true);}
+function drawExtras(){
+  approachMeter();const T=tachCock;
+  if(T){gaugeBase(T);const rA=v=>(-135+clamp(v,0,3000)/3000*270)*DEG;band(T,rA(2100),rA(2550),C.green);ticks(T,rA(0),rA(3000),6,2,C.tick);
+    const rpm=600+ac.rpm*1950;needle(T,rA(rpm),T.r-3,C.needle);if(T.r>15)pb.text('RPM',T.x,T.y+Math.round(T.r*.35),C.dim,1,true);}
 }
 
 /* ---------- camera & visuals ---------- */
@@ -1672,7 +1672,7 @@ function updateVisuals(dt,t){
 }
 
 /* ---------- main loop ---------- */
-let acc=0,last=performance.now();
+let acc=0,last=performance.now(),fpsN=0,fpsT=0,fpsLast=0,fpsPrev=0,fpsMin=999;renderer.info.autoReset=false;
 function loop(now){
   const dt=Math.min(.05,(now-last)/1000);last=now;const t=now/1000;
   skyMat.uniforms.uTime.value=t;waterMat.uniforms.uTime.value=t;for(const a of anims)a(t);
@@ -1683,13 +1683,15 @@ function loop(now){
   if(toastT>0){toastT-=dt;if(toastT<=0)$('toast').hidden=true;}
   if(callT>0){callT-=dt;if(callT<=0)$('callout').hidden=true;}
   updateVisuals(dt,t);updateCam(dt,t);sky.position.copy(camera.position);
-  renderer.setRenderTarget(rt);renderer.render(scene,camera);renderer.setRenderTarget(null);renderer.render(postScene,postCam);
+  renderer.info.reset();renderer.setRenderTarget(rt);renderer.render(scene,camera);const tri=renderer.info.render.triangles,dc=renderer.info.render.calls;renderer.setRenderTarget(null);renderer.render(postScene,postCam);
   drawHUD(dt);
+  if(settings.fps){fpsN++;fpsT+=now-(fpsLast||now);fpsLast=now;fpsMin=Math.min(fpsMin,1000/Math.max(now-(fpsPrev||now-16),1));fpsPrev=now;
+    if(fpsT>=500){$('fps').textContent=`${Math.round(fpsN*1000/fpsT)} FPS · LOW ${Math.round(fpsMin)} · ${(tri/1e6).toFixed(2)}M TRI · ${dc} DRAWS · ${LW}×${LH}`;fpsN=0;fpsT=0;fpsMin=999;}}
   requestAnimationFrame(loop);
 }
 addEventListener('resize',()=>{resize();setThrottleUI();placeRingIdle();checkRotate();});
 pixMode=settings.pixels;resize();setTOD(settings.light);toTitle();placeRingIdle();checkRotate();refreshBag();
-const ld=$('load');if(ld)ld.hidden=true;
+const ld=$('load');if(ld)ld.hidden=true;$('fps').hidden=!settings.fps;
 requestAnimationFrame(loop);
 
 </script>

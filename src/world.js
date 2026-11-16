@@ -569,20 +569,26 @@ let pb, frameLayer=null, gaugeLayout=[], panelLayout=[];
 const C={bezel:rgba(0x1b1720),face:rgba(0x2b2734),tick:rgba(0xeae2cf),dim:rgba(0x8d8597),needle:rgba(0xfff6e2),orange:rgba(0xffb02e),
   white:rgba(0xf3f0e6),green:rgba(0x5fbf5a),yellow:rgba(0xf1c84a),red:rgba(0xe5483b),sky:rgba(0x6fb2e6),gnd:rgba(0xa8743f),panel:rgba(0x3b3442),panelHi:rgba(0x5a5262),panelLo:rgba(0x27222d),post:rgba(0x2a2531),cyan:rgba(0x6fe0e0)};
 function buildFrame(){
-  const w=LW,h=LH,f=new PixBuf(w,h),k=(window.devicePixelRatio||1)/PS,land=w/h>1.1;
+  // Two low dash pods in the bottom corners, one row of three gauges each, thin windshield posts leaning in. Middle stays open.
+  const w=LW,h=LH,f=new PixBuf(w,h),k=(window.devicePixelRatio||1)/PS;
   const lp=Math.round(205*k);
-  const r=Math.max(10,Math.min(Math.floor(h*.095),Math.floor((w/2-lp)/5.4)));
-  const gap=Math.round(r*2.3),yb=h-r-6,yt=yb-gap;
-  const lx1=lp+r+6,lx2=lx1+gap,rx2=w-lp-r-6,rx1=rx2-gap;
-  gaugeLayout=[{x:lx1,y:yt,r},{x:lx2,y:yt,r},{x:rx1,y:yt,r},{x:lx1,y:yb,r},{x:lx2,y:yb,r},{x:rx2,y:yt,r}];
-  glideCock={x:rx1,y:yb,r};tachCock={x:rx2,y:yb,r};
-  const pod=(x0,x1)=>{const y0=yt-r-7,rad=8;for(let y=y0;y<h;y++){const dy=y-y0;let inset=0;if(dy<rad){const q=rad-dy;inset=Math.round(rad-Math.sqrt(Math.max(0,rad*rad-q*q)));}
-    f.rect(x0+inset,y,x1-x0-2*inset,1,y-y0<2?C.panelHi:C.panel);}f.rect(x0+rad,y0+2,x1-x0-2*rad,1,C.panelLo);};
-  pod(lx1-r-7,lx2+r+8);pod(rx1-r-8,rx2+r+7);
+  const R=Math.max(11,Math.min(Math.floor(h*.1),Math.floor((w*.5-lp)/7.2)));
+  const rs=[Math.round(R*.9),R,Math.round(R*.76)],gp=4,cy=h-R-5;
+  // left pod: SPEED, ATTITUDE, HEADING (small, inner)
+  let x=lp+rs[0]+4;const L=[];for(let i=0;i<3;i++){if(i)x+=rs[i-1]+rs[i]+gp;L.push({x,y:cy,r:rs[i]});}
+  // right pod mirrored: ALTITUDE (big, inner), CLIMB, RPM (small, outer)
+  const rr=[R,Math.round(R*.9),Math.round(R*.76)];let xr=w-6-rr[2];const Rt=[];for(let i=2;i>=0;i--){if(i<2)xr-=rr[i+1]+rr[i]+gp;Rt[i]={x:xr,y:cy,r:rr[i]};}
+  gaugeLayout=[L[0],L[1],Rt[0],null,L[2],Rt[1]];tachCock=Rt[2];glideCock=null;
+  const y0=cy-R-8,sl=.42,le=L[2].x+L[2].r+7,rsx=Rt[0].x-Rt[0].r-7,rad=6;
+  for(let y=y0;y<h;y++){const dy=y-y0;let ins=0;if(dy<rad){const q=rad-dy;ins=Math.round(rad-Math.sqrt(Math.max(0,rad*rad-q*q)));}
+    const c=dy<2?C.panelHi:C.panel,ex=Math.round(dy*sl)-ins;
+    f.rect(0,y,le+ex,1,c);f.rect(rsx-ex,y,w-(rsx-ex),1,c);}
+  f.rect(0,y0+2,le-rad,1,C.panelLo);f.rect(rsx+rad,y0+2,w-rsx-rad,1,C.panelLo);
+  // windshield posts: from the pod top near the outer edge, leaning in toward the top of the screen
+  const pw=Math.max(2,Math.round(w*.006));
+  const post=(xb,xt)=>{for(let y=0;y<=y0;y++){const t=y/y0,xx=Math.round(lerp(xt,xb,t));f.rect(xx-pw,y,1,1,C.panelHi);f.rect(xx-pw+1,y,pw*2-2,1,C.post);f.rect(xx+pw-1,y,1,1,C.panelLo);}};
+  post(Math.round(w*.075),Math.round(w*.17));post(Math.round(w*.925),Math.round(w*.83));
   frameLayer=f.d.slice();
-  const pc=land?3:2,pr=land?2:3,tp=Math.round(46*k),right=land?w*.76:w;let r2=Math.floor(Math.min((h-tp-12)/(pr*2.5),(right-lp)/(pc*2.45)));r2=Math.max(12,r2);
-  const gp=Math.round(r2*2.45),cx0=Math.round(lp+(right-lp)/2-gp*(pc-1)/2);
-  panelLayout=[];const yTop=tp+r2+3;for(let i=0;i<6;i++){const cI=i%pc,rI=(i/pc)|0;panelLayout.push({x:cx0+cI*gp,y:Math.round(yTop+rI*gp),r:r2});}
 }
 function gaugeBase(g){pb.disc(g.x,g.y,g.r+2,C.bezel);pb.disc(g.x,g.y,g.r,C.face);}
 const pt=(g,a,rr)=>[g.x+Math.sin(a)*rr,g.y-Math.cos(a)*rr];
@@ -590,8 +596,8 @@ function ticks(g,a0,a1,n,major,c){for(let i=0;i<=n;i++){const a=lerp(a0,a1,i/n),
 function needle(g,a,len,c){const [x,y]=pt(g,a,len);pb.line(g.x,g.y,x,y,c);const [x2,y2]=pt(g,a+.06,len*.7);pb.line(g.x,g.y,x2,y2,c);pb.disc(g.x,g.y,1,c);}
 function band(g,a0,a1,c){for(let a=a0;a<=a1;a+=.02){const [x,y]=pt(g,a,g.r-2);pb.px(x,y,c);const [x2,y2]=pt(g,a,g.r-3);pb.px(x2,y2,c);}}
 function drawCockpit(st){
-  if(st.panel)pb.d.fill(C.panelLo);else pb.d.set(frameLayer);
-  const [g1,g2,g3,g4,g5,g6]=st.panel?panelLayout:gaugeLayout;
+  pb.d.set(frameLayer);
+  const [g1,g2,g3,g4,g5,g6]=gaugeLayout;
   // airspeed
   gaugeBase(g1);const asA=k=>(-150+clamp(k,0,160)/160*300)*DEG;band(g1,asA(33),asA(85),C.white);band(g1,asA(40),asA(110),C.green);band(g1,asA(110),asA(135),C.yellow);
   ticks(g1,asA(0),asA(160),16,2,C.tick);needle(g1,asA(st.kt),g1.r-3,C.needle);if(g1.r>16)pb.text(Math.round(st.kt),g1.x,g1.y+Math.round(g1.r*.35),C.tick,1,true);
@@ -607,7 +613,7 @@ function drawCockpit(st){
   gaugeBase(g3);ticks(g3,0,TAU-TAU/50,49,5,C.tick);if(g3.r>18)for(let i=0;i<10;i++){const [x,y]=pt(g3,i*TAU/10,g3.r-8);pb.text(i,x-1,y-2,C.dim);}
   if(g3.r>22)pb.text(Math.max(0,Math.round(st.ft)),g3.x,g3.y+Math.round(g3.r*.38),C.tick,1,true);needle(g3,st.ft/10000*TAU,g3.r*.5,C.dim);needle(g3,(st.ft%1000)/1000*TAU,g3.r-3,C.needle);
   // turn coordinator
-  gaugeBase(g4);{const a=clamp(st.turn/3*20,-40,40)*DEG,g=g4,L=g.r*.7;const [x0,y0]=[g.x-Math.cos(a)*L,g.y-Math.sin(a)*L],[x1,y1]=[g.x+Math.cos(a)*L,g.y+Math.sin(a)*L];
+  if(g4){gaugeBase(g4);}if(g4){const a=clamp(st.turn/3*20,-40,40)*DEG,g=g4,L=g.r*.7;const [x0,y0]=[g.x-Math.cos(a)*L,g.y-Math.sin(a)*L],[x1,y1]=[g.x+Math.cos(a)*L,g.y+Math.sin(a)*L];
     pb.line(x0,y0,x1,y1,C.white);pb.line(x0,y0+1,x1,y1+1,C.white);pb.rect(g.x-1,g.y-4,2,4,C.white);
     const ty=g.y+Math.round(g.r*.55);pb.rect(g.x-Math.round(g.r*.5),ty-2,Math.round(g.r),5,C.bezel);pb.disc(g.x+Math.round(clamp(st.slip,-1,1)*g.r*.4),ty,2,C.white);
     for(const s of [-1,1])pb.line(g.x+s*Math.cos(20*DEG)*(g.r-2),g.y+Math.sin(20*DEG)*(g.r-2),g.x+s*Math.cos(20*DEG)*(g.r-6),g.y+Math.sin(20*DEG)*(g.r-6),C.tick);}
