@@ -49,7 +49,7 @@ function marramH(x,z){const I=ISLES.marram,dx=x-I.x,dz=z-I.z,r=Math.hypot(dx,dz)
   ring-=1.3*Math.max(0,Math.cos(a-.35))**40+1.3*Math.max(0,Math.cos(a-2.6))**60;
   if(ring>0) return .6+ring*3.4+fbm(x*.012,z*.012,2,83)*1.1+smooth(.5,1,ring)*1.2;
   const lag=r<R?-2.6-3.2*smooth(R-120,R-420,r):-2-(r-R-150)*.11;
-  return Math.max(-48,Math.min(lag,ring*6-.6));}
+  return Math.max(-48,lag,ring*6-.6);}
 /* Kettle Rock: a ridged volcanic cone with a steaming crater */
 const KET={cr:235,depth:125};
 function kettleCone(r,a){const gul=fbm(Math.cos(a)*3+r*.003,Math.sin(a)*3+r*.003,3,91),R0=1300+gul*110+130*Math.sin(2*a+1)+80*Math.sin(3*a+2),u=1-r/R0;
@@ -449,7 +449,7 @@ const sights={};
   const piv=new THREE.Group();piv.position.set(x,y+30,z);scene.add(piv);
   for(const s of [1,-1]){const c=new THREE.Mesh(new THREE.ConeGeometry(7,80,12,1,true).translate(0,-40,0).rotateZ(s*Math.PI/2),bm);piv.add(c);}
   anims.push(t=>{piv.rotation.y=t*.6;bm.opacity=TOD[tod].beam;});addLight(x,y+30,z,0xfff2b8);
-  sights.lighthouse={x,z,y,name:'Lighthouse'};
+  sights.lighthouse={x,z,y,name:'Gull Point Light',desc:'Tomas keeps it lit every night. For now.'};
 })();
 (function arch(){
   const p=scanTo(250,-600,0,-1,h=>h<-6)||{x:250,z:-2400};
@@ -460,7 +460,7 @@ const sights={};
   it.push({geo:new THREE.DodecahedronGeometry(1,0),m:M([x,30,z+1],[0,.1,.08],[26,7,9]),color:rock[2]});
   for(let k=0;k<6;k++) it.push({geo:new THREE.DodecahedronGeometry(1,0),m:M([x+(rnd()-.5)*90,0,z+(rnd()-.5)*60],[rnd(),rnd(),0],[3+rnd()*6,4+rnd()*8,3+rnd()*6]),color:rock[k%3]});
   scene.add(new THREE.Mesh(merge(it),toon()));
-  sights.arch={x,z,y:20,name:'Sea Arch'};
+  sights.arch={x,z,y:20,name:'Sea Arch',desc:'Big enough to fly through, if you are very brave and very level.'};
 })();
 (function wreck(){
   const p=scanTo(2300,650,1,0,h=>h<-2.5)||{x:3200,z:650};
@@ -469,7 +469,7 @@ const sights={};
   it.push({geo:hull,m:M([x,.4,z],[.12,.9,.35]),color:0x7a4a36});
   beam(it,new V3(x,1,z),new V3(x+6,13,z-3),.5,0x5a4030);
   scene.add(new THREE.Mesh(merge(it),toon()));
-  sights.wreck={x,z,y:2,name:'Shipwreck'};
+  sights.wreck={x,z,y:2,name:'Shipwreck',desc:'The Marigold, run aground in a storm before the lighthouse was built.'};
 })();
 (function windmill(){
   let best=null;for(let k=0;k<80;k++){const a=rnd()*TAU,r=rnd()*420,x=-900+Math.cos(a)*r,z=250+Math.sin(a)*r;
@@ -481,7 +481,7 @@ const sights={};
   const bl=[];for(let k=0;k<4;k++){bl.push({geo:BOX(1.6,9,.2),m:M([Math.cos(k*Math.PI/2)*4.8,Math.sin(k*Math.PI/2)*4.8,0],[0,0,k*Math.PI/2-Math.PI/2]),color:0xe9dcc4});}
   const blades=new THREE.Mesh(merge(bl),toon());const piv=new THREE.Group();piv.position.set(x,h+13,z);piv.rotation.y=-70*DEG+Math.PI;scene.add(piv);
   blades.position.z=-3;piv.add(blades);anims.push(t=>blades.rotation.z=t*.5);
-  sights.windmill={x,z,y:h,name:'Old Windmill'};
+  sights.windmill={x,z,y:h,name:'Old Windmill',desc:'Still turning. Still grinding flour for Ferrow\'s bakery.'};
 })();
 
 /* ---------------- the outer islands: Marram Cay, Kettle Rock, Farhold ---------------- */
@@ -510,7 +510,7 @@ function hutAt(list,roofs,x,z,ry,w,d,hh,wall,roof,lit,roofKind){const g=[groundH
   // dinghies in the lagoon
   for(const [dx,dz,c] of [[120,140,0xf4efe4],[-180,90,0xf0e2a8],[40,-160,0xdfe3e6]]){const m=new THREE.Mesh(merge([{geo:BOX(1.8,.8,4.6),m:M([0,.3,0]),color:c},{geo:BOX(1.9,.3,4.7),m:M([0,-.05,0]),color:0x3f6f8f}]),toon());
     m.position.set(I.x+dx,0,I.z+dz);m.rotation.y=dx*.01;scene.add(m);anims.push(t=>{m.position.y=Math.sin(t*1.2+dx)*.1;m.rotation.z=Math.sin(t*.9+dz)*.04;});}
-  sights.lagoon={x:I.x,z:I.z+60,y:0,name:'Marram Lagoon'};})();
+  sights.lagoon={x:I.x,z:I.z+60,y:0,name:'Marram Lagoon',desc:'Warm, shallow and turquoise. Rosa swims across it every morning.'};})();
 (function kettleProps(){const S=stripOf('kettle'),I=ISLES.kettle,it=[],rf=[],yaw=-S.hdg*DEG;
   // observatory on the north rim
   const a=-1.75,ox=I.x+Math.cos(a)*(KET.cr+40),oz=I.z+Math.sin(a)*(KET.cr+40),oy=groundH(ox,oz);
@@ -527,7 +527,7 @@ function hutAt(list,roofs,x,z,ry,w,d,hh,wall,roof,lit,roofKind){const g=[groundH
   const seeds=[...Array(N)].map((_,i)=>({x:I.x+(hash2(i,1,99)-.5)*170,z:I.z+(hash2(i,2,99)-.5)*170,o:hash2(i,3,99)}));const mm=new THREE.Matrix4(),q=new Q(),sc=new V3();
   anims.push(t=>{for(let i=0;i<N;i++){const s=seeds[i],ph=(t*.035+s.o)%1,k=(6+ph*34)*(ph>.8?(1-ph)/.2:1)*(ph<.08?ph/.08:1);
     mm.compose(sc.set(s.x+ph*120*.94,floor+10+ph*260,s.z-ph*120*.34),q,new V3(k,k*.8,k));pm.setMatrixAt(i,mm);}pm.instanceMatrix.needsUpdate=true;});
-  sights.crater={x:I.x,z:I.z,y:kettleCone(KET.cr,0),name:'Kettle Crater'};})();
+  sights.crater={x:I.x,z:I.z,y:kettleCone(KET.cr,0),name:'Kettle Crater',desc:'It steams, it rumbles, it smells faintly of eggs. Dr. Varga loves it.'};})();
 const fogLights=[];
 (function farholdProps(){const S=stripOf('farhold'),I=ISLES.farhold,it=[],rf=[],yaw=-S.hdg*DEG;
   // a cluster of stone cottages on the south side of the field
@@ -541,7 +541,7 @@ const fogLights=[];
   addLight(lx+Math.sin(.3)*3.8,ly+3,lz+Math.cos(.3)*3.8,0xffd27a);
   scene.add(shadowy(new THREE.Mesh(merge(it),toon())));scene.add(shadowy(new THREE.Mesh(merge(rf),toon())));
   const lamp=new THREE.Mesh(new THREE.BoxGeometry(1.4,1.4,1.4),new THREE.MeshBasicMaterial({color:0xffd27a,fog:false}));lamp.position.set(lx+Math.sin(.3)*4,ly+3.2,lz+Math.cos(.3)*4);scene.add(lamp);
-  sights.lamp={x:lx,z:lz,y:ly,name:'Lamp in the Fog'};
+  sights.lamp={x:lx,z:lz,y:ly,name:'Lamp in the Fog',desc:'One window on Farhold that is always lit.'};
   // approach lights: a bar every 30 m out to 330 m from each end, always lit, with a running "rabbit"
   const P=[],C=[],rab=[],poles=[];
   for(const e of [-1,1]){for(let d=30;d<=330;d+=30){const w=toWorld(S,e*(S.len/2+d),0);const y=Math.max(groundH(w.x,w.z),0)+2.5;
@@ -553,6 +553,91 @@ const fogLights=[];
   const rp=new THREE.Points(rg,new THREE.PointsMaterial({size:4,sizeAttenuation:false,color:0xffffff,fog:false,transparent:true}));rp.frustumCulled=false;scene.add(rp);fogLights.push(rp);
   scene.add(new THREE.Mesh(merge(poles),toon()));
   anims.push(t=>{const k=Math.floor(t*12)%14;for(let i=0;i<rab.length;i++){const j=10-Math.round((rab[i].d-30)/30);rg.attributes.position.array[i*3+1]=j===k?rab[i].y:-999;}rg.attributes.position.needsUpdate=true;});
+})();
+/* ---------------- landmarks to discover: one-off things worth flying over ---------------- */
+function findSpot(cx,cz,r,ok,score,n=400){let best=null;for(let k=0;k<n;k++){const a=rnd()*TAU,d=Math.sqrt(rnd())*r,x=cx+Math.cos(a)*d,z=cz+Math.sin(a)*d,h=groundH(x,z);
+  if(!ok(x,z,h))continue;const sc=score(x,z,h);if(!best||sc>best.sc)best={x,z,h,sc};}return best;}
+const clearOf=(x,z,m)=>!nearStrip(x,z,m)&&!farmSpots.some(f=>Math.hypot(f.x-x,f.z-z)<f.r+12);
+const rockC=[0x9c8a80,0x8a7a74,0xa89888,0x7e7068];
+function mark(id,x,z,y,name,desc){sights[id]={x,z,y,name,desc};farmSpots.push({x,z,r:40});}
+(function landmarks(){const it=[],lit=[];
+  // Ferrow: standing stones on the highest open ground
+  {const p=findSpot(-1150,500,1000,(x,z,h)=>h>20&&isleAt(x,z)==='ferrow'&&slopeAt(x,z)<.14&&clearOf(x,z,150)&&Math.hypot(x-villageC.x,z-villageC.z)>400,(x,z,h)=>h);
+   if(p){for(let k=0;k<11;k++){const a=k/11*TAU,x=p.x+Math.cos(a)*14,z=p.z+Math.sin(a)*14,h=groundH(x,z);it.push({geo:BOX(2.2,5.5+hash2(k,1,31)*2.5,1.3),m:M([x,h+2.2,z],[0,-a,(hash2(k,2,31)-.5)*.12]),color:rockC[k%4]});}
+     for(const a of [0,2.1,4.2]){it.push({geo:BOX(5.4,1.1,1.5),m:M([p.x+Math.cos(a+.29)*13.8,groundH(p.x,p.z)+8.2,p.z+Math.sin(a+.29)*13.8],[0,-a-.29-Math.PI/2,0]),color:rockC[2]});}
+     it.push({geo:BOX(3,1.2,2),m:M([p.x,p.h+.4,p.z],[0,.4,0]),color:rockC[3]});
+     mark('stones',p.x,p.z,p.h,'The Old Stones','A ring of standing stones older than anyone on Ferrow.');}}
+  // Ferrow: chapel with a spire at the top of the village street
+  {const vc=villageC,dx=STRIPS[0].fx,dz=STRIPS[0].fz;let p=null;for(const d of [160,185,140,210,120]){for(const sd of [1,-1]){const x=vc.x+dx*d*sd,z=vc.z+dz*d*sd;if(groundH(x,z)>4&&slopeAt(x,z)<.2&&!nearStrip(x,z,40)){p={x,z};break;}}if(p)break;}
+   if(p){const y=groundH(p.x,p.z),ry=-STRIPS[0].hdg*DEG;it.push({geo:BOX(9,8,16),m:M([p.x,y+3,p.z],[0,ry,0]),color:0xf1ece2});
+     it.push({geo:new THREE.CylinderGeometry(6.3,6.3,17,3,1).rotateX(-Math.PI/2),m:M([p.x,y+9.4,p.z],[0,ry,0],[1,.6,1]),color:0x5b6e86});
+     const tx=p.x-Math.sin(ry)*-9,tz=p.z-Math.cos(ry)*-9;it.push({geo:BOX(5,16,5),m:M([tx,y+7,tz],[0,ry,0]),color:0xf1ece2});
+     it.push({geo:new THREE.ConeGeometry(3.8,11,4).rotateY(Math.PI/4),m:M([tx,y+20.5,tz],[0,ry,0]),color:0x5b6e86});
+     it.push({geo:BOX(2.4,2.4,.3),m:M([tx-Math.sin(ry)*2.6,y+12,tz-Math.cos(ry)*2.6],[0,ry,0]),color:0xffd36b});lit.push([tx,y+12,tz,0xffe0a0]);
+     mark('chapel',p.x,p.z,y,'Saint Brigid\'s Chapel','The spire you can see from the harbor. The clock is always four minutes slow.');}}
+  // Tallpine: fire lookout on a high shoulder
+  {const R=stripOf('ridge');const p=findSpot(800,-350,1100,(x,z,h)=>h>260&&h<430&&isleAt(x,z)==='tall'&&slopeAt(x,z)<.3&&Math.hypot(x-R.x,z-R.z)>500,(x,z,h)=>-Math.abs(h-340)-slopeAt(x,z)*200);
+   if(p){const y=p.h;for(const [a,b] of [[-1,-1],[1,-1],[-1,1],[1,1]])beam(it,new V3(p.x+a*4,y-1,p.z+b*4),new V3(p.x+a*1.8,y+20,p.z+b*1.8),.5,0x6e5240);
+     for(const hh of [6,12])for(const [a,b,c,d] of [[-1,-1,1,-1],[1,-1,1,1],[1,1,-1,1],[-1,1,-1,-1]]){const k=hh/21;beam(it,new V3(p.x+a*(4-2.2*k),y+hh,p.z+b*(4-2.2*k)),new V3(p.x+c*(4-2.2*k),y+hh,p.z+d*(4-2.2*k)),.25,0x6e5240);}
+     it.push({geo:BOX(6,3.2,6),m:M([p.x,y+21.6,p.z]),color:0xe9d3b0});it.push({geo:BOX(6.4,1.2,6.4),m:M([p.x,y+22,p.z]),color:0x3a5a6c});
+     it.push({geo:new THREE.ConeGeometry(5.2,2.6,4).rotateY(Math.PI/4),m:M([p.x,y+24.5,p.z]),color:0xc2553f});lit.push([p.x,y+22,p.z,0xffc25a]);
+     mark('lookout',p.x,p.z,y,'Fire Lookout','Ada climbs it every morning with a thermos and binoculars.');}}
+  // Tallpine: the Grandfather Pine
+  {const p=findSpot(1100,-100,1200,(x,z,h)=>h>40&&h<180&&isleAt(x,z)==='tall'&&slopeAt(x,z)<.25&&clearOf(x,z,120),(x,z,h)=>fbm(x*.0026,z*.0026,3,41));
+   if(p){const y=p.h;it.push({geo:new THREE.CylinderGeometry(2.2,3.4,22,7),m:M([p.x,y+10,p.z]),color:0x6b4f3a});
+     for(let k=0;k<4;k++)it.push({geo:new THREE.ConeGeometry(15-k*3,16,7),m:M([p.x,y+20+k*10,p.z],[0,k*.4,0]),color:[0x2f5534,0x3a5f3c,0x3f6b3a,0x4b7a3d][k]});
+     mark('bigpine',p.x,p.z,y,'The Grandfather Pine','Five times taller than anything around it. The owls like it best.');}}
+  // Tallpine: rusted biplane in a clearing (Bea's old engine)
+  {const p=findSpot(1500,300,1000,(x,z,h)=>h>30&&h<220&&isleAt(x,z)==='tall'&&slopeAt(x,z)<.18&&clearOf(x,z,150),(x,z,h)=>rnd());
+   if(p){const y=p.h,ry=.7;const W=(dx,dy,dz)=>[p.x+Math.cos(ry)*dx+Math.sin(ry)*dz,y+dy,p.z-Math.sin(ry)*dx+Math.cos(ry)*dz];
+     it.push({geo:BOX(1.4,1.4,7),m:M(W(0,.9,0),[.06,ry,.15]),color:0x8a5a3a});it.push({geo:BOX(10,.2,1.6),m:M(W(0,1.5,-1),[0,ry,.15]),color:0xa8743e});
+     it.push({geo:BOX(6,.2,1.6),m:M(W(-1.6,3.2,-1.1),[0,ry,.4]),color:0x9a6a3a});it.push({geo:BOX(3,.2,1),m:M(W(0,1.3,3.4),[0,ry,0]),color:0x8a5a3a});
+     it.push({geo:BOX(.2,1.4,1),m:M(W(0,2,3.5),[0,ry,0]),color:0xc2553f});
+     mark('biplane',p.x,p.z,y,'Rusted Biplane','A cream-and-red wreck in the trees. The tail number matches one in Bea\'s logbook.');}}
+  // Gull Point: sea stacks off the north cliffs, white with seabirds
+  {const g=ISLES.gull,c=scanTo(g.x+80,g.z,0,-1,h=>h<-6)||{x:g.x,z:g.z-700};const bx=c.x,bz=c.z-120;
+   for(const [dx,dz,hh,r] of [[0,0,46,9],[34,22,32,7],[-30,30,24,6],[12,-34,18,5]]){it.push({geo:new THREE.CylinderGeometry(r*.7,r,hh,6),m:M([bx+dx,hh/2-6,bz+dz],[0,dx*.1,0]),color:rockC[(hh|0)%4]});
+     it.push({geo:new THREE.CylinderGeometry(r*.72,r*.72,1.2,6),m:M([bx+dx,hh-5.6,bz+dz],[0,dx*.1,0]),color:0xf4f0e6});}
+   mark('stacks',bx,bz,10,'The Gull Stacks','Four rock pillars and about ten thousand very loud seabirds.');}
+  // Kettle Rock: terraced hot springs on the west flank
+  {const k=ISLES.kettle;let p=null;for(let r=600;r<1300;r+=10){const x=k.x-r,z=k.z+120,h=groundH(x,z);if(h<75){p={x,z,h};break;}}
+   if(p){const pools=[[0,0,9],[14,6,7],[-10,12,6],[6,-14,5]];pools.forEach(([dx,dz,r],i)=>{const h=groundH(p.x+dx,p.z+dz);
+       it.push({geo:new THREE.CylinderGeometry(r+1.4,r+1.8,3,10),m:M([p.x+dx,h-.6,p.z+dz]),color:0xe8e0d0});it.push({geo:new THREE.CylinderGeometry(r,r,.4,10),m:M([p.x+dx,h+.95,p.z+dz]),color:[0x5fd2c8,0x7fe0c8,0x4fb8c8,0x9fe8d0][i]});});
+     const N=8,pm=new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1,0),new THREE.MeshToonMaterial({color:0xf4f0f4,gradientMap:gradTex,flatShading:true}),N);scene.add(pm);const mm=new THREE.Matrix4(),q=new Q();
+     anims.push(t=>{for(let i=0;i<N;i++){const pp=pools[i%4],ph=(t*.12+i/N)%1,s=(1.5+ph*5)*(ph>.75?(1-ph)/.25:1);mm.compose(new V3(p.x+pp[0]+ph*6,groundH(p.x+pp[0],p.z+pp[2])+2+ph*22,p.z+pp[2]-ph*2),q,new V3(s,s,s));pm.setMatrixAt(i,mm);}pm.instanceMatrix.needsUpdate=true;});
+     mark('springs',p.x,p.z,p.h,'Kettle Hot Springs','Warm turquoise pools. Otto swears they cure everything except burnt coffee.');}}
+  // Marram Cay: whale bones on the southwest sand
+  {const m=ISLES.marram;let best=null;for(let r=450;r<950;r+=10){const a=2.85,x=m.x+Math.cos(a)*r,z=m.z+Math.sin(a)*r,h=groundH(x,z);if(h>1.5&&(!best||h>best.h))best={x,z,h};}
+   if(best){const p=best,ry=.4;for(let k=0;k<8;k++){const u=(k-3.5)*2.6,cx=p.x+Math.cos(ry)*u,cz=p.z-Math.sin(ry)*u,rr=5.5-Math.abs(k-3.5)*.5;
+       it.push({geo:new THREE.TorusGeometry(rr,.35,4,10,Math.PI),m:M([cx,p.h-.6,cz],[0,ry+Math.PI/2,0]),color:0xf2ece0});}
+     it.push({geo:BOX(.7,.7,21),m:M([p.x,p.h,p.z],[0,ry+Math.PI/2,0]),color:0xe8e0d0});it.push({geo:BOX(3,2,4),m:M([p.x+Math.cos(ry)*12.5,p.h+.3,p.z-Math.sin(ry)*12.5],[0,ry,0]),color:0xf2ece0});
+     mark('whale',p.x,p.z,p.h,'Whale Bones','Washed up before Ollie was born. He has named every rib.');}}
+  // Farhold: castle ruin on the eastern headland
+  {const f=ISLES.farhold;let p=null;for(let r=200;r<1600;r+=10){const x=f.x+Math.cos(.55)*r,z=f.z+Math.sin(.55)*r,h=groundH(x,z);if(h<14){p={x:f.x+Math.cos(.55)*(r-70),z:f.z+Math.sin(.55)*(r-70)};break;}}
+   if(p){const y=groundH(p.x,p.z),st=0x9a968c;for(const [dx,dz,w,d,hh] of [[0,-14,28,2.4,9],[-14,0,2.4,28,7],[14,2,2.4,22,5],[4,14,18,2.4,8]])it.push({geo:BOX(w,hh,d),m:M([p.x+dx,y+hh/2-1,p.z+dz]),color:st});
+     it.push({geo:new THREE.CylinderGeometry(5,5.6,20,8),m:M([p.x-14,y+9,p.z-14]),color:0xa8a49c});
+     for(let k=0;k<8;k++){const a=k/8*TAU;it.push({geo:BOX(1.6,1.6,1.6),m:M([p.x-14+Math.cos(a)*4.6,y+19.8,p.z-14+Math.sin(a)*4.6],[0,-a,0]),color:0xa8a49c});}
+     for(let k=0;k<6;k++)it.push({geo:new THREE.DodecahedronGeometry(1,0),m:M([p.x+(rnd()-.5)*36,y,p.z+(rnd()-.5)*36],[rnd(),rnd(),0],[1+rnd()*2,.8+rnd(),1+rnd()*2]),color:st});
+     mark('castle',p.x,p.z,y,'Calder Keep','A broken tower on the headland. Ivy\'s family built it, or so she says.');}}
+  // open sea: Hermit's Rock, a stump of rock with one tiny house
+  {const x=1300,z=2700;it.push({geo:new THREE.DodecahedronGeometry(1,1),m:M([x,4,z],[.2,.5,0],[30,18,24]),color:rockC[1]});it.push({geo:new THREE.DodecahedronGeometry(1,0),m:M([x+22,1,z+10],[1,2,0],[10,8,9]),color:rockC[0]});
+   it.push({geo:BOX(6,4,5),m:M([x,21,z],[0,.4,0]),color:0xf0e2c0});it.push({geo:new THREE.CylinderGeometry(3.7,3.7,5.8,3).rotateX(-Math.PI/2),m:M([x,24.3,z],[0,.4,0],[1,.6,1]),color:0xc2553f});
+   it.push({geo:BOX(.5,8,.5),m:M([x+5,24,z+2]),color:0x6e5240});lit.push([x+1,21,z+2.6,0xffc25a]);
+   mark('hermit',x,z,20,'Hermit\'s Rock','One rock, one house, one man who waves at every plane. Nobody knows his name.');}
+  // the lightship anchored on the way to Farhold
+  {const x=-4300,z=-2450;const it2=[{geo:BOX(6,3,22),m:M([0,.6,0]),color:0xc2453a},{geo:BOX(6.2,.6,22.2),m:M([0,-.7,0]),color:0x2c2833},{geo:BOX(4,3,6),m:M([0,3.5,-3]),color:0xf4efe4},
+     {geo:new THREE.CylinderGeometry(.4,.4,12,5),m:M([0,8,4]),color:0xd8d2c8},{geo:new THREE.CylinderGeometry(1.4,1.4,1.8,8),m:M([0,14.5,4]),color:0x2c2833}];
+   const sh=new THREE.Mesh(merge(it2),toon());sh.position.set(x,0,z);scene.add(sh);
+   const lamp=new THREE.Mesh(new THREE.BoxGeometry(1.6,1.2,1.6),new THREE.MeshBasicMaterial({color:0xfff2b8,fog:false}));lamp.position.set(0,14.5,4);sh.add(lamp);
+   anims.push(t=>{sh.position.y=Math.sin(t*.9)*.25;sh.rotation.z=Math.sin(t*.7)*.04;sh.rotation.y=.3+Math.sin(t*.05)*.2;lamp.visible=(t%2)<1.2;});
+   sights.lightship={x,z,y:0,name:'The Lightship',desc:'An old red light vessel, anchored halfway to Farhold to show the way.'};}
+  // a hot-air balloon drifting slowly round the home islands
+  {const g=new THREE.Group(),cols=[0xd2493c,0xf0e2a8,0x3f8f8a,0xe8a33a],b=[];
+   for(let k=0;k<8;k++)b.push({geo:new THREE.SphereGeometry(9,8,6,k/8*TAU,TAU/8,0,Math.PI*.78),m:M([0,0,0]),color:cols[k%4]});
+   b.push({geo:BOX(3,2,3),m:M([0,-13,0]),color:0x8a6a4a});for(const [a,c] of [[-1,-1],[1,-1],[-1,1],[1,1]])b.push({geo:BOX(.12,6,.12),m:M([a*1.6,-9.5,c*1.6]),color:0x3a3440});
+   g.add(new THREE.Mesh(merge(b),toon({},false)));scene.add(g);sights.balloon={x:0,z:0,y:0,name:'The Balloon',desc:'Somebody on Ferrow has a hot-air balloon. Nobody will say who.'};
+   anims.push(t=>{const a=t*.004;g.position.set(-700+Math.cos(a)*2600,360+Math.sin(t*.07)*25,200+Math.sin(a)*1700);g.rotation.y=t*.03;sights.balloon.x=g.position.x;sights.balloon.z=g.position.z;sights.balloon.y=g.position.y-200;});}
+  scene.add(shadowy(new THREE.Mesh(merge(it),toon())));for(const [x,y,z,c] of lit)addLight(x,y,z,c);
 })();
 /* ---------------- trees ---------------- */
 const trees=[];

@@ -229,27 +229,27 @@ function updGates(){
   gateAlong=along;}
 
 /* tailwind button: three charges, each a 12 s gust that carries you along fast and holds your height.
-   Once all three are spent the wind needs a minute to pick up again. Not available close to your next field. */
-const BOOST_V=55,BOOST_T=12,WIND_N=3,WIND_CD=60;
+   After 5 s without a tap, one charge comes back, then another every 5 s until all three are ready. */
+const BOOST_V=55,BOOST_T=12,WIND_N=3,WIND_CD=5;
 let windCharges=WIND_N,windCD=0,windUiT=0;
 const glideAlt=(s,d)=>s.elev+AC.gearH+Math.tan(4*DEG)*d;
 function windBlock(){if(ac.ground||mode!=='fly')return 'IN THE AIR';const agl=ac.pos.y-AC.gearH-surfH(ac.pos.x,ac.pos.z);if(agl<40)return 'TOO LOW';
-  if(dest&&Math.hypot(dest.x-ac.pos.x,dest.z-ac.pos.z)<2400)return 'NEAR FIELD';return null;}
+  return null;}
 function useWind(){const b=windBlock();
-  if(windCharges<=0){toast(`The wind is resting. Back in ${Math.ceil(windCD)} s.`,1.6);return;}
-  if(b){toast(b==='NEAR FIELD'?'No tailwind this close to the field. Time to set up the approach.':b==='TOO LOW'?'Climb a little first. Tailwinds need some height.':'Tailwinds work once you\'re flying.',1.8);return;}
-  windCharges--;if(!windCharges)windCD=WIND_CD;ac.boostT=BOOST_T;snd.beep(1320);setTimeout(()=>snd.beep(1760),90);
-  toast(windCharges?`Tailwind! ${windCharges} left.`:'Last tailwind for now. The wind picks up again in a minute.',1.6);
+  if(windCharges<=0){toast(`The wind is gathering. Next one in ${Math.ceil(windCD)} s.`,1.4);return;}
+  if(b){toast(b==='TOO LOW'?'Climb a little first. Tailwinds need some height.':'Tailwinds work once you\'re flying.',1.8);return;}
+  windCharges--;windCD=WIND_CD;ac.boostT=BOOST_T;snd.beep(1320);setTimeout(()=>snd.beep(1760),90);
+  toast(windCharges?`Tailwind! ${windCharges} left.`:'Last tailwind for now. Leave it 5 seconds and one comes back.',1.6);
   if(!log.goals.tailwind&&windCharges===0)goal('tailwind');updWindUI();}
-function updWindUI(){const b=$('wind');if(!b)return;const blk=windBlock(),cool=windCharges<=0;
+function updWindUI(){const b=$('wind');if(!b)return;const blk=windBlock(),cool=windCharges<=0,fill=windCharges<WIND_N;
   b.innerHTML=`TAILWIND <span>${'●'.repeat(windCharges)+'○'.repeat(WIND_N-windCharges)}</span>`;
   b.classList.toggle('cool',cool);b.classList.toggle('off',!!blk&&!cool);b.classList.toggle('on',ac.boostT>0);
-  b.style.setProperty('--w',cool?Math.round((1-windCD/WIND_CD)*100)+'%':'0%');}
-function updWind(dt){if(windCharges<=0){windCD-=dt;if(windCD<=0){windCharges=WIND_N;windCD=0;if(mode==='fly')toast('The wind is back. Three tailwinds ready.',1.6);}}
-  windUiT-=dt;if(windUiT<=0){windUiT=.25;updWindUI();}}
+  b.style.setProperty('--w',fill?Math.round((1-windCD/WIND_CD)*100)+'%':'0%');}
+function updWind(dt){if(windCharges<WIND_N){windCD-=dt;if(windCD<=0){windCharges++;windCD=WIND_CD;if(windCharges===WIND_N)windCD=0;}}
+  windUiT-=dt;if(windUiT<=0){windUiT=.1;updWindUI();}}
 function stepBoost(dt){
   if(ac.boostT>0){ac.boostT-=dt;const agl=ac.pos.y-AC.gearH-surfH(ac.pos.x,ac.pos.z);
-    if(agl<30||ac.ground||(dest&&Math.hypot(dest.x-ac.pos.x,dest.z-ac.pos.z)<2200))ac.boostT=0;}
+    if(agl<30||ac.ground)ac.boostT=0;}
   ac.bst=lerp(ac.bst||0,ac.boostT>0?1:0,1-Math.exp(-dt*(ac.boostT>0?2.5:1.1)));
   if(ac.bst<.005||ac.ground)return;
   axes();const hl=Math.hypot(_f.x,_f.z);if(hl<.2)return;
@@ -680,13 +680,14 @@ function drawMiniMap(dt){mapT-=dt;if(mapT>0)return;mapT=.08;const W=96,x=mctx;x.
   const near=dest?Math.hypot(dest.x-ac.pos.x,dest.z-ac.pos.z):1e9,R=near<2600?1500:2800,k=(W/2)/R,cy=W/2+14;
   x.fillStyle='#1d2a44';x.fillRect(0,0,W,W);x.save();x.translate(W/2,cy);x.rotate(-hdg);x.scale(k,k);x.translate(-ac.pos.x,-ac.pos.z);
   x.drawImage(mapBase,-MAPW/2,-MAPW/2,MAPW,MAPW);drawStripsOn(x,k,dest);
+  x.fillStyle='#ffb02e';for(const [k_,v] of Object.entries(sights))if(log.sights[k_])x.fillRect(v.x-2/k,v.z-2/k,4/k,4/k);
   if(dest){x.fillStyle='#8ff0e8';x.beginPath();x.arc(dest.x,dest.z,3.5/k,0,TAU);x.fill();}
   x.restore();
   x.fillStyle='#fff8ec';x.strokeStyle='#241c2e';x.lineWidth=1;x.beginPath();x.moveTo(W/2,cy-6);x.lineTo(W/2-4,cy+4);x.lineTo(W/2,cy+2);x.lineTo(W/2+4,cy+4);x.closePath();x.fill();x.stroke();
   const na=-hdg;x.fillStyle='#ffb02e';x.font='13px VT323, monospace';x.textAlign='center';x.textBaseline='middle';x.fillText('N',clamp(W/2+Math.sin(na)*40,6,W-6),clamp(cy-Math.cos(na)*40,6,W-6));
   if(dest&&near>R*.9){const brg=Math.atan2(dest.x-ac.pos.x,-(dest.z-ac.pos.z))-hdg;x.fillStyle='#8ff0e8';x.beginPath();x.arc(clamp(W/2+Math.sin(brg)*44,4,W-4),clamp(cy-Math.cos(brg)*44,4,W-4),3,0,TAU);x.fill();}}
 function bigMap(){
-  showCard(`<h2>Bea's chart</h2><div class="sub">DASHED LINES SHOW WHERE TO LINE UP FOR ${dest?dest.name.toUpperCase():'EACH RUNWAY'}</div><canvas id="bigmap" width="512" height="384"></canvas>`,[['Back to flying',()=>{hideModal();mode='fly';},true]]);
+  showCard(`<h2>Bea's chart</h2><div class="sub">${Object.keys(sights).filter(q=>log.sights[q]).length} OF ${Object.keys(sights).length} LANDMARKS FOUND · DASHED LINES SHOW WHERE TO LINE UP FOR ${dest?dest.name.toUpperCase():'EACH RUNWAY'}</div><canvas id="bigmap" width="512" height="384"></canvas>`,[['Back to flying',()=>{hideModal();mode='fly';},true]]);
   $('cardBody').parentElement.querySelector('.card').classList.add('wide');
   const c=$('bigmap'),x=c.getContext('2d');x.imageSmoothingEnabled=false;const k=384/12600,CX=-200,CZ=300;x.fillStyle='#1d2a44';x.fillRect(0,0,512,384);x.save();x.translate(256-CX*k,192-CZ*k);x.scale(k,k);
   x.drawImage(mapBase,-MAPW/2,-MAPW/2,MAPW,MAPW);drawStripsOn(x,k,dest);
@@ -759,7 +760,7 @@ function picker(kind){
 function logbook(){
   const f=STRIPS.map(s=>{const F=log.fields[s.id]||{};return `<div class="item ${F.landings?'done':''}"><span><b>${s.name}</b><span class="d">${F.landings?F.landings+' landing'+(F.landings>1?'s':''):'Not visited yet'}</span></span><span class="r">${F.best?stars(F.best):''}</span></div>`;}).join('');
   const ppl=Object.keys(CHARS).map(id=>log.met[id]?`<div class="item done"><span style="display:flex;gap:10px;align-items:center"><img src="${portrait(id)}" alt="" style="width:40px;height:40px;image-rendering:pixelated"><span><b>${CHARS[id].name}</b><span class="d">${CHARS[id].role}</span></span></span></div>`:`<div class="item"><span><b>???</b><span class="d">Someone you haven't met yet.</span></span></div>`).join('');
-  const si=Object.entries(sights).map(([k,v])=>`<div class="item ${log.sights[k]?'done':''}"><span><b>${log.sights[k]?v.name:'???'}</b><span class="d">${log.sights[k]?'Spotted':'Something worth seeing. Fly low and look around.'}</span></span><span class="chk">${log.sights[k]?'✓':''}</span></div>`).join('');
+  const si=Object.entries(sights).map(([k,v])=>`<div class="item ${log.sights[k]?'done':''}"><span><b>${log.sights[k]?v.name:'???'}</b><span class="d">${log.sights[k]?(v.desc||'Spotted'):'Something worth seeing. Fly over it to put it on the chart.'}</span></span><span class="chk">${log.sights[k]?'✓':''}</span></div>`).join('');
   const go=GOALS.map(g=>`<div class="item ${log.goals[g.id]?'done':''}"><span><b>${g.name}</b><span class="d">${g.hint}</span></span><span class="chk">${log.goals[g.id]?'✓':''}</span></div>`).join('');
   const done=GOALS.filter(g=>log.goals[g.id]).length;
   showCard(`<h2>Your logbook</h2><div class="sub">${log.flights} FLIGHTS · ${log.trips} TRIPS · ${log.stamps} STAMPS · ${done}/${GOALS.length} GOALS</div><h3>PEOPLE</h3><div class="list">${ppl}</div><h3>FIELDS</h3><div class="list">${f}</div><h3>SIGHTS</h3><div class="list">${si}</div><h3>GOALS</h3><div class="list">${go}</div>`,[['Back',back,true]]);}
@@ -810,7 +811,7 @@ function gameChecks(dt){
   if(!ac.ground&&Math.abs(bank)>20*DEG&&ac.vel.y<-1.5)tip('turn','In a turn, hold the stick a little down (back) to keep from sinking.');
   if(airT>45)tip('pitchpower','Good to know: the stick mostly sets your speed. Power decides whether you climb or descend.');
   let showCheck=false;
-  if(!ac.ground&&dest&&airT>8&&Math.hypot(dest.x-ac.pos.x,dest.z-ac.pos.z)>3500)tip('tailwind','Long way to go? Tap TAILWIND under the map for a gust that carries you fast and level for a few seconds. You get three, then the wind rests for a minute.',.5);
+  if(!ac.ground&&dest&&airT>8&&Math.hypot(dest.x-ac.pos.x,dest.z-ac.pos.z)>3500)tip('tailwind','Long way to go? Tap TAILWIND under the map for a gust that carries you fast and level for a few seconds. You hold three; leave it alone for 5 seconds and one comes back.',.5);
   if(dest){const gl=glide(dest);if(!ac.ground&&Math.hypot(dest.x-ac.pos.x,dest.z-ac.pos.z)<5500)tip('gates','See the cyan gates? They show the way in. Start lining up at the first one, 2 km out and about 450 ft up.');
     if(gl.active&&gl.along<3200){showCheck=true;tip('approach','Fly through the three cyan gates. Keep the diamond in the ring at the top of the screen. Flaps down, power back, about 55 knots.');
       if(gl.along<1800)tip('papi','The four lights beside the runway: two white and two red means you\'re on the glide path. All white is too high, all red too low.',3);}
@@ -820,7 +821,9 @@ function gameChecks(dt){
     ck.innerHTML=`<b>BEFORE LANDING</b>${row(c.carb,'CARB HEAT ON')}${row(c.mix,'MIXTURE RICH')}${row(c.flaps,'FLAPS 1 OR 2')}${c.needLight?row(c.light,'LANDING LIGHT'):''}`;ck.hidden=false;tip('checklist','Before-landing checklist: tap the switches beside the chart. Bea\'s logbook explains each one.',1);}
   else ck.hidden=true;
   sightT+=dt;if(sightT>.3){sightT=0;
-    for(const [k,v] of Object.entries(sights)){if(log.sights[k])continue;if(Math.hypot(ac.pos.x-v.x,ac.pos.z-v.z)<520&&ac.pos.y-v.y<380){log.sights[k]=Date.now();saveL();toast('Spotted: '+v.name,2.5);}}
+    for(const [k,v] of Object.entries(sights)){if(log.sights[k])continue;if(Math.hypot(ac.pos.x-v.x,ac.pos.z-v.z)<450&&ac.pos.y-v.y<650){log.sights[k]=Date.now();stamp(1);saveL();
+      const n=Object.keys(sights).filter(q=>log.sights[q]).length;snd.beep(990);setTimeout(()=>snd.beep(1320),110);setTimeout(()=>snd.beep(1760),220);
+      toast(`Discovered: ${v.name} (${n}/${Object.keys(sights).length})\n${v.desc||''}`,4);tip('discover','Landmarks you discover go on Bea\'s chart, with a stamp for each. Fly over anything that looks interesting.',4.5);}}
     if(!ac.ground&&Math.hypot(ac.pos.x-summit.x,ac.pos.z-summit.z)<320&&ac.pos.y>summit.h+10)goal('summit');}
   const hdg=(Math.atan2(_f.x,-_f.z)/DEG+360)%360;let dh=hdg-hdgPrev;if(dh>180)dh-=360;if(dh<-180)dh+=360;hdgPrev=hdg;turnRate=lerp(turnRate,dh/Math.max(dt,1e-3),.1);
 }
