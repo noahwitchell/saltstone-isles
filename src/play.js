@@ -83,7 +83,7 @@ function reportErrand(id,s){const e=ERRANDS[id],c=CHARS[e.giver],n=errCount(id);
   if(n.n<n.of){showCard(`<div class="who"><img src="${portrait(e.giver)}" alt=""><div><b>${c.name}</b><span>${c.role}</span></div></div><p class="say">“${e.set?`${n.n} of ${n.of} so far? Keep looking, they're out there.`:`Not found it yet? It's out there somewhere.`}”</p>`,afterBtns(s));return;}
   const st=errState(id);st.st='done';const pts=e.set?200+n.of*30:300;addScore(pts);stamp(2);saveL();updErrandUI();
   if(Object.keys(ERRANDS).every(k=>errState(k).st==='done'))goal('errands',true);goal('errand',true);
-  showCard(`<div class="who"><img src="${portrait(e.giver)}" alt=""><div><b>${c.name}</b><span>${c.role}</span></div></div><p class="say">“${e.thanks}”</p><div class="got">ERRAND DONE · +${pts} · +2 STAMPS</div>`,afterBtns(s));}
+  showCard(`<div class="who"><img src="${portrait(e.giver)}" alt=""><div><b>${c.name}</b><span>${c.role}</span></div></div><p class="say">“${e.thanks}”</p><div class="got">ERRAND DONE · +${pts} · +2 STAMPS</div>${typeof giftLine==='function'?giftLine(id):''}`,afterBtns(s));}
 
 /* Biscuit: a scruffy golden dog with his head out of the right window */
 const dog=(()=>{const g=new THREE.Group(),fur=0xe8a850,lt=0xf4e4c8,dk=0x2c2833;

@@ -959,16 +959,16 @@ function fixNums(root){const tw=document.createTreeWalker(root,NodeFilter.SHOW_T
 
 /* ---------- menus ---------- */
 /* menus: "Back"-type buttons sit in a bar at the top of the card; everything else stays at the bottom */
-const isBackBtn=(l,fn)=>fn===back||l==='Back to flying'||l==='All pages'||l==='Resume';
+const isBackBtn=(l,fn)=>fn===back||l==='Back to flying'||l==='All pages'||l==='Resume'||l==='Title screen';
 function showCard(html,buttons,opt){$('cardBody').innerHTML='<div class="topbar"></div>'+html+'<div class="btns'+(opt&&opt.grid?' grid':'')+'"></div>';$('cardBody').classList.remove('wide');const b=$('cardBody').querySelector('.btns:last-child'),tb=$('cardBody').querySelector('.topbar');
-  (buttons||[]).forEach(([l,fn,p])=>{const el=document.createElement('button');const top=isBackBtn(l,fn);el.textContent=top?'‹ '+(l==='Done'?'Back':l):l;if(p&&!top)el.className='primary';if(top)el.classList.add('backbtn');if(opt&&opt.colors&&opt.colors[l])el.style.setProperty('--bc',opt.colors[l]);el.addEventListener('click',fn);(top?tb:b).appendChild(el);});
+  (buttons||[]).forEach(([l,fn,p])=>{const el=document.createElement('button');const top=isBackBtn(l,fn);el.textContent=top&&l!=='Title screen'?'‹ '+(l==='Done'?'Back':l):l;if(l==='Title screen'){el.style.marginLeft='auto';el.style.setProperty('--bc','#eaa6a6');el.style.background='#eaa6a6';}if(p&&!top)el.className='primary';if(top)el.classList.add('backbtn');if(opt&&opt.colors&&opt.colors[l])el.style.setProperty('--bc',opt.colors[l]);el.addEventListener('click',fn);(top?tb:b).appendChild(el);});
   if(!tb.children.length)tb.remove();if(!b.children.length)b.remove();$('modal').hidden=false;$('cardBody').scrollTop=0;scriptify($('cardBody'));fixNums($('cardBody'));}
 function hideModal(){$('modal').hidden=true;}
 function back(){hideModal();if(mode==='title')$('title').hidden=false;else if(mode==='paused'||mode==='card')openMenu();}
 function openMenu(){if(mode==='fly')mode='paused';showCard(`<h2>Paused</h2><div class="sub">${dest?'HEADING FOR '+dest.name.toUpperCase():''}${mail.active?' · '+mail.bag.length+' IN THE BAG':''} · ${log.stamps} STAMPS</div>`,[
-  ['Resume',()=>{hideModal();mode='fly';},true],...(mail.active?[['Mail bag',()=>mailCard()]]:[]),["Bea's chart",()=>bigMap()],["Bea's logbook",()=>bea(-1)],['Practice a landing',()=>picker('practice')],['Start at a field',()=>picker('start')],['Your logbook',()=>logbook()],['Settings',()=>settingsCard()],['Title screen',()=>{hideModal();toTitle();}]],{grid:true,colors:MENU_COL});$('cardBody').classList.add('wide');}
+  ['Resume',()=>{hideModal();mode='fly';},true],['Title screen',()=>{hideModal();toTitle();}],['Mail bag',()=>mail.active?mailCard():showCard('<h2>Mail bag</h2><p>No mail in the bag today. Start a day at Harbor Field from the title screen and Mabel will load it.</p>',[['Back',back,true]])],["Bea's chart",()=>bigMap()],["Bea's logbook",()=>bea(-1)],['Your logbook',()=>logbook()],['Practice a landing',()=>picker('practice')],['Start at a field',()=>picker('start')],['Hangar',()=>hangarCard()],['Settings',()=>settingsCard()]],{grid:true,colors:MENU_COL});$('cardBody').classList.add('wide');}
 /* each pause-menu button gets its own colour so they're easy to tell apart at a glance */
-const MENU_COL={'Mail bag':'#f2c25a',"Bea's chart":'#7cc4d4',"Bea's logbook":'#a6d38a','Practice a landing':'#c4aee6','Start at a field':'#f0a77c','Your logbook':'#9fc4ef','Settings':'#cfc6b4','Title screen':'#eaa6a6'};
+const MENU_COL={'Mail bag':'#f2c25a',"Bea's chart":'#7cc4d4',"Bea's logbook":'#a6d38a','Practice a landing':'#c4aee6','Start at a field':'#f0a77c','Your logbook':'#9fc4ef','Settings':'#cfc6b4','Hangar':'#f2a8d4'};
 function picker(kind){
   const items=STRIPS.map(s=>{const F=log.fields[s.id];return `<button class="item" data-id="${s.id}"><span><b>${s.name}</b><span class="d">${DESC[s.id]}</span></span><span class="r">${F&&F.best?stars(F.best):'NOT YET'}</span></button>`;}).join('');
   showCard(`<h2>${kind==='practice'?'Practice a landing':'Start at a field'}</h2><div class="sub">${kind==='practice'?'START 1.5 KM OUT, LINED UP, ON THE GLIDE PATH':'START ON THE RUNWAY, ENGINE AT IDLE'}</div><div class="list">${items}</div>`,[['Back',back]]);
@@ -1156,7 +1156,7 @@ function updateVisuals(dt,t){
     blob.material.opacity=(settings.shadows?.42:.55)*(1-smooth(4,200,agl))+(ac.ground?.08:0);}
   if(dest){beacon.visible=mode==='fly'||mode==='paused';beacon.position.set(dest.x,dest.elev,dest.z);const d=Math.hypot(dest.x-ac.pos.x,dest.z-ac.pos.z);beacon.material.opacity=.13*smooth(500,1600,d);}
   spot.intensity=ac.light&&mode!=='title'?(TOD[tod].lights>0?1.35:.3):0;
-  updPAPI();updGates();updWind(dt);updFog();updDrops(dt);updSwitchesFx(dt);updPanels();updDog(dt,t);updSpark(dt,t);
+  updPAPI();updGates();updWind(dt);updFog();updDrops(dt);updSwitchesFx(dt);updDecor(dt,t);updPanels();updDog(dt,t);updSpark(dt,t);
   {const fb=(lookDown?64:camMode==='chase'?58:70)+(ac.bst||0)*6;if(Math.abs(camera.fov-fb)>.05){camera.fov=fb;camera.updateProjectionMatrix();}}
   sunL.castShadow=settings.shadows;const fo=mode==='title'?ac.pos:camera.position;
   axes();_sc.set(fo.x+_f.x*SHADOW_HALF*.5,surfH(fo.x,fo.z),fo.z+_f.z*SHADOW_HALF*.5);snapShadow(_sc);sunL.target.position.copy(_sc);sunL.position.copy(_sc).addScaledVector(sunDir,1500);
