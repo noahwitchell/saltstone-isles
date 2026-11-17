@@ -11,7 +11,12 @@ const FORMS=[];
   const clear=(x,z)=>!Object.values(sights).some(s=>Math.hypot(s.x-x,s.z-z)<650)&&!FLYGATES.some(g=>Math.hypot(g.x-x,g.z-z)<650)&&!FORMS.some(f=>Math.hypot(f.x-x,f.z-z)<900)&&!STRIPS.some(s=>Math.hypot(s.x-x,s.z-z)<900);
   const routes=[];for(let i=0;i<STRIPS.length;i++)for(let j=i+1;j<STRIPS.length;j++){const a=STRIPS[i],b=STRIPS[j],d=Math.hypot(a.x-b.x,a.z-b.z);if(d>1600&&d<7500)routes.push([a,b,d]);}
   routes.sort((p,q)=>p[2]-q[2]);
-  function spot(R){for(let n=0;n<500;n++){const [a,b]=routes[(fr()*Math.min(routes.length,40))|0],t=.3+fr()*.4,dx=b.x-a.x,dz=b.z-a.z,L=Math.hypot(dx,dz),off=(fr()-.5)*500;
+  let NEAR=null;   // when set, look for spots in a ring round the home islands instead of out on the long crossings
+  const HOME=STRIPS.filter(s=>['harbor','light','ridge'].includes(s.id));
+  function spot(R){if(NEAR)for(let n=0;n<900;n++){const an=fr()*TAU,rr=lerp(NEAR.r0,NEAR.r1,fr()),x=NEAR.x+Math.cos(an)*rr,z=NEAR.z+Math.sin(an)*rr;
+      if(!clear(x,z)||!open(x,z,R+90))continue;const h=HOME.reduce((a,s)=>Math.hypot(s.x-x,s.z-z)<Math.hypot(a.x-x,a.z-z)?s:a);return {x,z,yaw:Math.atan2(h.z-z,h.x-x)+(fr()-.5)*.6};}
+    if(NEAR)return null;
+    for(let n=0;n<500;n++){const [a,b]=routes[(fr()*Math.min(routes.length,40))|0],t=.3+fr()*.4,dx=b.x-a.x,dz=b.z-a.z,L=Math.hypot(dx,dz),off=(fr()-.5)*500;
       const x=a.x+dx*t-dz/L*off,z=a.z+dz*t+dx/L*off;if(!clear(x,z)||!open(x,z,R+90))continue;const yaw=Math.atan2(dz,dx);return {x,z,yaw};}return null;}
   /* ---- building blocks, in each formation's own frame: a = along the way through, b = across it, y = up ---- */
   let F;const P=(a,b)=>({x:F.x+Math.cos(F.yaw)*a-Math.sin(F.yaw)*b,z:F.z+Math.sin(F.yaw)*a+Math.cos(F.yaw)*b});
@@ -77,6 +82,41 @@ const FORMS=[];
   if(place(150,'f_steps','Granny, Mum and Little Lil')){[[42,34,'Granny'],[28,22,'Mum'],[18,12,'Little Lil']].forEach(([R,rise,who],k)=>{const a=-110+k*110,th=k?7:9;
       for(const e of [-1,1])column(a,e*R,-12,rise,th*1.5,th*1.05);ring(a,0,rise,R,R*.62,0,th,0,Math.PI);cap(a,0,rise+R*.62+th*.6,th*1.6);
       gate('f_steps'+(k+1),`Under ${who}`,a,0,-1,rise+R*.62-th*1.1,R-th*1.2,'Three arches in a row, Granny, Mum and Little Lil. Can you thread all three in one go?');});shoal(140);}
+
+
+  /* ---------- round the home islands (Ferrow, Gull Point, Tallpine): more to play with close to Harbor Field ---------- */
+  NEAR={x:-900,z:150,r0:1200,r1:4300};
+  /* 12. The Crown: a ring of spires standing in the sea, with a way in on one side and out on the other */
+  if(place(110,'h_crown','The Crown')){const R=78;for(let k=0;k<12;k++){const an=k/12*TAU;if(k===0||k===6)continue;const a=Math.cos(an)*R,b=Math.sin(an)*R;
+      const p=P(a,b);spireAt(it,p.x,p.z,-12,58+fr()*40,9,5,40+k);foam(a,b,9);}
+    rock(0,0,-2,14,8,false);cap(0,0,5,10);
+    gate('h_crown1','Into the Crown',-R,0,-1,70,13,'A ring of spires with one way in and one way out. Go round inside if you like.');
+    gate('h_crown2','Out of the Crown',R,0,-1,70,13,'A ring of spires with one way in and one way out. Go round inside if you like.');shoal(100);}
+  /* 13. The Ladder: a tall wall of rock with three holes, one above the other */
+  if(place(60,'h_ladder','The Ladder')){const holes=[[22,13],[64,12],[106,11]];
+    for(let b=-34;b<=34;b+=9.5)for(let y=-6;y<=132;y+=9.5){const r=Math.hypot(b/(36-y*.08),(y-62)/72);if(r>1)continue;if(holes.some(([cy,hr])=>Math.hypot(b,y-cy)<hr+5.5))continue;rock((fr()-.5)*4,b+(fr()-.5)*3,y,7.2,6.8);}
+    for(const [cy,hr] of holes)ring(0,0,cy,hr+4,hr+4,0,5.5);cap(0,0,136,12);foam(0,0,30);
+    holes.forEach(([cy,hr],k)=>gate('h_ladder'+(k+1),['The Ladder, bottom rung','The Ladder, middle rung','The Ladder, top rung'][k],0,0,cy-hr+4,cy+hr-4,hr-4,'Three holes up one wall of rock. Climb the ladder: bottom, middle, top.'));shoal(50);}
+  /* 14. The Wishbone: two arches side by side on a shared middle leg */
+  if(place(90,'h_wish','The Wishbone')){const R=26,rise=20,th=8;for(const b of [-52,0,52])column(0,b,-12,rise,th*1.5,th*1.05);
+    for(const e of [-1,1]){ring(0,e*26,rise,R,R*.7,0,th,0,Math.PI);cap(0,e*26,rise+R*.7+th*.6,th*1.5);}
+    for(const e of [-1,1])gate(e<0?'h_wish1':'h_wish2',e<0?'The Wishbone, left':'The Wishbone, right',0,e*26,-1,rise+R*.7-th*1.1,R-th*1.6,'Two arches on one middle leg. Fly one, turn round, fly the other.');shoal(80);}
+  /* 15. Old Man's Bridge: a very long, very low stone span */
+  if(place(120,'h_bridge','Old Man\'s Bridge')){const R=92,rise=10,th=8;for(const e of [-1,1])column(0,e*R,-12,rise+4,th*2,th*1.4);ring(0,0,rise,R,15,0,th,0,Math.PI);
+    for(let k=0;k<4;k++)cap(-4+fr()*8,-60+k*40,rise+15+th*.7,8);gate('h_bridge','Under Old Man\'s Bridge',0,0,-1,rise+15-th*1.15,R-th*2,'A long, low bridge of stone. Plenty of room sideways, hardly any up.');shoal(110);}
+  /* 16. The Hoop: a ring of rock held up on a single stalk */
+  if(place(50,'h_hoop','The Hoop')){const cy=74,R=21,th=6.5;ring(0,0,cy,R,R,0,th);column(0,0,-12,cy-R-2,10,5);foam(0,0,10);
+    for(let k=0;k<3;k++)rock(0,(fr()-.5)*10,cy+R+th*.6,th,th*.7);cap(0,0,cy+R+th*1.3,7);gate('h_hoop','Through the Hoop',0,0,cy-R+th,cy+R-th,R-th-2,'A ring of rock on a stalk, like a hoop for a circus dog. Biscuit approves.');shoal(40);}
+  /* 17. Ferrow Needles: three pairs of thin spires, tight and stepped */
+  if(place(150,'h_needles','Ferrow Needles')){[0,1,2].forEach(k=>{const a=-110+k*110,b0=[-28,30,-24][k];for(const e of [-1,1]){const p=P(a,b0+e*15);spireAt(it,p.x,p.z,-12,58+fr()*20,6.5,3.5,60+k*2+(e>0?1:0));foam(a,b0+e*15,6.5);}
+      gate('h_needle'+(k+1),`Ferrow Needles, ${['first','second','third'][k]} pair`,a,b0,-1,50,9,'Three pairs of needle-thin spires close to home. Tighter than the Slalom.');});shoal(130);}
+  /* 18. The Ribcage: seven stone ribs over a winding channel; follow the bend all the way through */
+  if(place(170,'h_ribs','The Ribcage')){const rib=k=>({a:-150+k*50,b:Math.sin(k*.75)*28});for(let k=0;k<7;k++){const {a,b}=rib(k),R=25,rise=8,th=6.5;
+      for(const e of [-1,1])column(a,b+e*R,-12,rise,th*1.3,th);ring(a,b,rise,R,R*.95,0,th,0,Math.PI);}
+    cap(-100,rib(1).b,8+25*.95+6,8);cap(50,rib(4).b,8+25*.95+6,8);
+    gate('h_ribs1','Into the Ribcage',rib(0).a,rib(0).b,-1,8+25*.95-7.5,17,'Seven stone ribs over a winding channel. In one end, out the other, without touching.');
+    gate('h_ribs2','Out of the Ribcage',rib(6).a,rib(6).b,-1,8+25*.95-7.5,17,'Seven stone ribs over a winding channel. In one end, out the other, without touching.');shoal(160);}
+  NEAR=null;
 
   scene.add(shadowy(new THREE.Mesh(merge(it),toon())));if(grass.length)scene.add(shadowy(new THREE.Mesh(merge(grass),toon())));
   if(foamIt.length){const fm=new THREE.Mesh(merge(foamIt),new THREE.MeshBasicMaterial({color:0xf6f1e4,transparent:true,opacity:.55,depthWrite:false}));fm.renderOrder=2;scene.add(fm);

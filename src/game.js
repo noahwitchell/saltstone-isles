@@ -15,7 +15,7 @@ function setTOD(k){tod=k;const T=TOD[k];
 
 /* ---------- save data ---------- */
 const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}};
-const settings=Object.assign({steady:true,stallGuard:true,autoTrim:true,tips:true,dog:true,invert:false,sound:true,engVol:1,music:.5,fps:false,shadows:true,tilt:false,pixels:'classic',light:'golden'},store.get('tac-settings',{}));
+const settings=Object.assign({steady:true,stallGuard:true,autoTrim:true,tips:true,dog:true,invert:false,sound:true,engVol:1,music:.5,fps:false,shadows:true,tilt:false,pixels:'classic',light:'golden',station:'lofi'},store.get('tac-settings',{}));
 if(!TOD[settings.light])settings.light='golden';
 const log=Object.assign({fields:{},sights:{},goals:{},trips:0,flights:0,tips:{},howto:false,stamps:0,met:{},mail:{day:1,bag:[],active:false}},store.get('tac-log',{}));
 if(!log.mail)log.mail={day:1,bag:[],active:false};if(!log.met)log.met={};if(log.stamps==null)log.stamps=0;
@@ -42,6 +42,9 @@ const GOALS=[
   {id:'week3',name:'The archipelago',hint:'Finish the third week of mail, out to Bea\'s new chart.'},
   {id:'canyon',name:'Canyon run',hint:'Fly the Cleft on Cleft Isle end to end, under the rim.'},
   {id:'threader',name:'Needle threader',hint:'Fly through every gap, arch and bridge in the islands.'},
+  {id:'drop1',name:'Special delivery',hint:'Air-drop a parcel onto one of the bullseye drop targets.'},
+  {id:'bullseye',name:'Bullseye',hint:'Land a parcel within 5 m of the middle of a drop target.'},
+  {id:'drops',name:'Every doorstep',hint:'Land a parcel on every drop target in the islands.'},
   {id:'errand',name:'Good neighbour',hint:'Finish an errand for an islander.'},
   {id:'errands',name:'Everybody\'s favourite',hint:'Finish every islander\'s errand.'},
 ];
@@ -483,7 +486,7 @@ function crash(why,v){
     showCard(`<div class="who"><img src="${portrait('gus')}" alt=""><div><b>${t}</b><span>GUS PATCHES IT UP · THE MAIL IS STILL IN THE BAG</span></div></div><p>${b}</p>${extra}`,[
       ['Try that approach again',()=>spawnApproach(dest),true],['Back to '+stripById(ac.lastField).name,()=>spawnField(stripById(ac.lastField))]]);},900);
 }
-function resetAc(){ac.boostT=0;ac.bst=0;ac.gusts=[];ac.w.set(0,0,0);ac.td=null;ac.brake=0;ac.brakeHeld=false;ac.trimHold=0;ac.ice=0;smokeBurst.forEach(m=>m.visible=false);snapCam=true;}
+function resetAc(){if(typeof refillParcels==='function'){refillParcels();lookDown=false;}ac.boostT=0;ac.bst=0;ac.gusts=[];ac.w.set(0,0,0);ac.td=null;ac.brake=0;ac.brakeHeld=false;ac.trimHold=0;ac.ice=0;smokeBurst.forEach(m=>m.visible=false);snapCam=true;}
 function intoWindDir(s){return (s.fx*WIND.x+s.fz*WIND.z)<0?1:-1;}
 function spawnField(s,dirSign){
   dirSign=dirSign||intoWindDir(s);resetAc();
@@ -513,7 +516,7 @@ function startFly(){if(settings.tilt){if(!tilt.listening)enableTilt();recenterTi
 /* ---------- landing grades + deliveries ---------- */
 function stars(n){return '★'.repeat(n)+'☆'.repeat(3-n);}
 function finishLanding(){
-  const td=ac.td;td.done=true;
+  const td=ac.td;td.done=true;if(td.strip)refillParcels();
   if(!td.strip){toast('Off-field landing. Gentle, but find a runway next time.',3);return;}
   const s=stripById(td.strip),dist=td.s*td.dirSign+s.len/2,aim=s.len*.22,fpm=td.sink*196.85;
   let soft=fpm<180?3:fpm<360?2:1,softTxt=fpm<90?'Butter':fpm<180?'Soft':fpm<360?'Firm':'Hard';if(td.bounced){soft=1;softTxt='Bounced';}
@@ -657,7 +660,7 @@ $('dest').addEventListener('click',()=>{const i=STRIPS.indexOf(dest);dest=STRIPS
 $('mapc').addEventListener('click',()=>{if(mode==='fly'){mode='paused';bigMap();}});
 const keys={};
 addEventListener('keydown',e=>{keys[e.code]=true;if(mode!=='fly')return;
-  if(e.code==='KeyF')$('flaps').dispatchEvent(new Event('pointerdown'));if(e.code==='KeyV')$('view').click();if(e.code==='KeyB')bOn();if(e.code==='KeyM'){mode='paused';bigMap();}
+  if(e.code==='KeyF')$('flaps').dispatchEvent(new Event('pointerdown'));if(e.code==='KeyV')$('view').click();if(e.code==='KeyL')toggleLook();if(e.code==='KeyG')doDrop();if(e.code==='KeyB')bOn();if(e.code==='KeyM'){mode='paused';bigMap();}
   if(e.code==='KeyC')$('swCarb').click();if(e.code==='KeyT')recenterTilt();if(e.code==='KeyL')$('swLight').click();
   if(e.code==='Escape'||e.code==='KeyP')openMenu();if(e.code.startsWith('Arrow'))e.preventDefault();});
 addEventListener('keyup',e=>{keys[e.code]=false;if(e.code==='KeyB')bOff();});
@@ -699,45 +702,120 @@ const snd={ctx:null,
   thump(v=1){this.burst(.6*v,260,.25);},crash(){this.burst(.5,900,1.2);},click(){this.burst(.25,3000,.03);},
   setOn(v){if(this.master)this.master.gain.value=v?.5:0;if(this.ctx&&this.ctx.state==='suspended')this.ctx.resume();}};
 
-/* ---------- lo-fi radio: a small generative band (keys, bass, brushed drums, vinyl hiss), all WebAudio ---------- */
+/* ---------- the radio: five generative stations (all WebAudio), one dial on the flight screen ---------- */
+const STATIONS=[
+  {id:'lofi',fq:'88.1',name:'Saltwhistle Lo-fi',desc:'Dusty keys, brushed drums, vinyl hiss.',bpm:72,sw:.16,lp:2400,minor:false},
+  {id:'tide',fq:'91.4',name:'Slow Tide',desc:'Long soft pads and bells, no drums. For drifting.',bpm:56,sw:0,lp:1900,minor:false},
+  {id:'jazz',fq:'94.7',name:'Harbor Jazz',desc:'Walking bass, ride cymbal and a trio that has been at it all night.',bpm:104,sw:.26,lp:3200,minor:false},
+  {id:'bounce',fq:'99.2',name:'Island Bounce',desc:'Steel pan, off-beat chords and a shaker. Sunny and quick.',bpm:112,sw:.08,lp:3600,minor:false},
+  {id:'night',fq:'102.5',name:'Night Shift',desc:'Deep and slow. Sub bass, vibes and a heartbeat kick.',bpm:64,sw:.12,lp:1600,minor:true},
+];
+const stationAt=id=>STATIONS.find(s=>s.id===id)||STATIONS[0];
 const music={on:false,
   start(){const c=snd.ctx;if(!c||this.out)return;
-    this.out=c.createGain();this.out.gain.value=0;const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=2400;lp.Q.value=.4;
+    this.out=c.createGain();this.out.gain.value=0;const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=2400;lp.Q.value=.4;this.lp=lp;
     const comp=c.createDynamicsCompressor();comp.threshold.value=-22;comp.ratio.value=3;this.bus=c.createGain();this.bus.gain.value=1;
     this.bus.connect(lp);lp.connect(comp);comp.connect(this.out);this.out.connect(snd.master);
+    // a little echo for the slow stations
+    this.dly=c.createDelay(1);this.dly.delayTime.value=.42;this.fb=c.createGain();this.fb.gain.value=.32;this.wet=c.createGain();this.wet.gain.value=0;
+    this.bus.connect(this.dly);this.dly.connect(this.fb);this.fb.connect(this.dly);this.dly.connect(this.wet);this.wet.connect(lp);
     this.wow=c.createOscillator();this.wow.frequency.value=.55;this.wowG=c.createGain();this.wowG.gain.value=7;this.wow.connect(this.wowG);this.wow.start();
     // vinyl: soft hiss plus sparse crackle
     const n=c.sampleRate*3,b=c.createBuffer(1,n,c.sampleRate),d=b.getChannelData(0);for(let i=0;i<n;i++){d[i]=(Math.random()*2-1)*.18;if(Math.random()<.00035)d[i]=(Math.random()<.5?-1:1)*(.5+Math.random()*.5);}
-    const v=c.createBufferSource();v.buffer=b;v.loop=true;const vf=c.createBiquadFilter();vf.type='bandpass';vf.frequency.value=2600;vf.Q.value=.6;const vg=c.createGain();vg.gain.value=.05;v.connect(vf);vf.connect(vg);vg.connect(this.out);v.start();
-    this.noise=snd.buf;this.bpm=72;this.beat=c.currentTime+.3;this.step=0;this.bar=0;this.pickKey();this.pickProg();
+    const v=c.createBufferSource();v.buffer=b;v.loop=true;const vf=c.createBiquadFilter();vf.type='bandpass';vf.frequency.value=2600;vf.Q.value=.6;this.vg=c.createGain();this.vg.gain.value=.05;v.connect(vf);vf.connect(this.vg);this.vg.connect(this.out);v.start();
+    this.noise=snd.buf;this.beat=c.currentTime+.3;this.step=0;this.bar=0;this.tune(settings.station,true);
     this.timer=setInterval(()=>this.tick(),70);this.setVol();},
   setVol(){if(!this.out)return;const v=(settings.music??.5);this.out.gain.setTargetAtTime(v*.55,snd.ctx.currentTime,.4);},
+  tune(id,quiet){this.st=stationAt(id);const S=this.st,c=snd.ctx;this.bpm=S.bpm;this.bar=0;this.step=0;this.pickKey();this.pickProg();if(!c||!this.lp)return;const t=c.currentTime;
+    this.lp.frequency.setTargetAtTime(S.lp,t,.2);this.wet.gain.setTargetAtTime(S.id==='tide'||S.id==='night'?.28:S.id==='lofi'?.08:0,t,.3);this.vg.gain.setTargetAtTime(S.id==='lofi'?.05:S.id==='jazz'?.035:.012,t,.3);
+    this.dly.delayTime.setTargetAtTime(60/S.bpm*.75,t,.1);
+    if(!quiet&&(settings.music??.5)>0&&settings.sound){// between stations: a short burst of tuning static
+      const s=c.createBufferSource();s.buffer=this.noise;const f=c.createBiquadFilter();f.type='bandpass';f.Q.value=1.4;f.frequency.setValueAtTime(900,t);f.frequency.exponentialRampToValueAtTime(3200,t+.35);
+      const g=c.createGain();g.gain.setValueAtTime(.0,t);g.gain.linearRampToValueAtTime(.12*(settings.music??.5)*2,t+.04);g.gain.exponentialRampToValueAtTime(.001,t+.45);s.connect(f);f.connect(g);g.connect(snd.master);s.start(t,Math.random());s.stop(t+.5);
+      this.bus.gain.setValueAtTime(0,t);this.bus.gain.setTargetAtTime(1,t+.35,.15);this.beat=t+.4;}},
   pickKey(){this.key=[0,2,3,5,7,8,10][(Math.random()*7)|0]-2;},
   PROGS:[[[5,'M9'],[4,'m7'],[2,'m9'],[0,'M7']],[[2,'m9'],[7,'13'],[0,'M9'],[9,'m9']],[[9,'m9'],[5,'M7'],[0,'M9'],[7,'6']],[[0,'M9'],[9,'m7'],[2,'m9'],[7,'9sus']],[[4,'m7'],[9,'m7'],[2,'m9'],[7,'13']]],
+  BRIGHT:[[[0,'M7'],[5,'M7'],[7,'9sus'],[0,'6']],[[0,'6'],[9,'m7'],[5,'M9'],[7,'13']],[[5,'M7'],[7,'6'],[0,'M9'],[0,'M9']]],
+  MINOR:[[[0,'m9'],[8,'M7'],[3,'M9'],[10,'9sus']],[[0,'m9'],[5,'m7'],[8,'M9'],[7,'m7']],[[0,'m7'],[0,'m9'],[8,'M7'],[10,'6']]],
   Q:{M7:[0,4,7,11],M9:[0,4,11,14],m7:[0,3,7,10],m9:[0,3,10,14],'13':[0,4,10,21],'6':[0,4,9,14],'9sus':[0,5,10,14]},
-  pickProg(){this.prog=this.PROGS[(Math.random()*this.PROGS.length)|0];},
+  pickProg(){const id=this.st?this.st.id:'lofi',L=id==='bounce'?this.BRIGHT:id==='night'?this.MINOR:this.PROGS;this.prog=L[(Math.random()*L.length)|0];},
   hz(m){return 440*Math.pow(2,(m-69)/12);},
   tick(){const c=snd.ctx;if(!c||!this.out)return;const on=(settings.music??.5)>0&&settings.sound;
-    const sp=60/this.bpm/4;while(this.beat<c.currentTime+.35){if(on)this.play(this.step,this.beat);
-      this.beat+=sp*(this.step%2?.84:1.16);this.step++;if(this.step>=16){this.step=0;this.bar++;if(this.bar%8===0)this.pickProg();if(this.bar%32===0)this.pickKey();}}},
-  play(st,t){const ch=this.prog[this.bar%4],root=48+this.key+ch[0],iv=this.Q[ch[1]];
-    if(st===0){iv.forEach((x,i)=>this.keys(root+12+x,t+i*.018+Math.random()*.01,60/this.bpm*3.7,.07));this.bass(root-12,t,.9);}
-    if(st===10&&Math.random()<.7)this.bass(root-12+(Math.random()<.5?7:12),t,.4);
-    if(st===8&&Math.random()<.35)iv.slice(1).forEach((x,i)=>this.keys(root+12+x,t+i*.02,60/this.bpm*1.6,.035));
-    if(st===0||st===7&&Math.random()<.5||st===10)this.kick(t);
-    if(st===4||st===12)this.snare(t);
-    if(st%2===0&&Math.random()<.9)this.hat(t,st%4===0?.05:.028);
-    if(st%2===0&&Math.random()<.16){const pent=[0,2,4,7,9,12,14,16];this.lead(60+this.key+pent[(Math.random()*pent.length)|0]+(Math.random()<.3?12:0),t,.5);}},
+    const sp=60/this.bpm/4,sw=this.st.sw;while(this.beat<c.currentTime+.35){if(on)this.play(this.step,this.beat);
+      this.beat+=sp*(this.step%2?1-sw:1+sw);this.step++;if(this.step>=16){this.step=0;this.bar++;if(this.bar%8===0)this.pickProg();if(this.bar%32===0)this.pickKey();}}},
+  play(st,t){const ch=this.prog[this.bar%4],root=48+this.key+ch[0],iv=this.Q[ch[1]],beat=60/this.bpm,R=Math.random,id=this.st.id,pent=[0,2,4,7,9,12,14,16];
+    if(id==='lofi'){
+      if(st===0){iv.forEach((x,i)=>this.keys(root+12+x,t+i*.018+R()*.01,beat*3.7,.07));this.bass(root-12,t,.9);}
+      if(st===10&&R()<.7)this.bass(root-12+(R()<.5?7:12),t,.4);
+      if(st===8&&R()<.35)iv.slice(1).forEach((x,i)=>this.keys(root+12+x,t+i*.02,beat*1.6,.035));
+      if(st===0||st===7&&R()<.5||st===10)this.kick(t);
+      if(st===4||st===12)this.snare(t);
+      if(st%2===0&&R()<.9)this.hat(t,st%4===0?.05:.028);
+      if(st%2===0&&R()<.16)this.lead(60+this.key+pent[(R()*pent.length)|0]+(R()<.3?12:0),t,.5);}
+    else if(id==='tide'){
+      if(st===0&&this.bar%2===0){iv.forEach((x,i)=>this.pad(root+12+x,t+i*.15,beat*7.5,.048));this.bass(root-12,t,beat*7,.2);}
+      if(st%4===0&&R()<.22)this.bell(72+this.key+pent[(R()*6)|0],t,.065);
+      if(st===8&&this.bar%2===1&&R()<.5)this.keys(root+24+iv[(R()*4)|0],t,beat*3,.03);}
+    else if(id==='jazz'){
+      if(st%4===0){const walk=[0,iv[1],iv[2],iv[2]+2][st/4],app=st===12?(R()<.5?11:13):walk;this.bass(root-12+app%24,t,beat*.9,.2);}
+      if(st===6||st===14||(st===0&&R()<.4))iv.forEach((x,i)=>this.keys(root+12+x,t+i*.008,beat*(R()<.5?.45:1.2),.05));
+      if(st%4===0||st%4===3&&R()<.7)this.ride(t,st%8===4?.06:.04);
+      if(st===4||st===12)this.hat(t,.035);
+      if(st%2===0&&R()<.5)this.brush(t,.03+R()*.03);
+      if(st===0&&R()<.5)this.kick(t,.25);
+      if(st%2===0&&R()<.22)this.lead(62+this.key+[0,2,3,4,7,9,10,12,14][(R()*9)|0],t,.32);}
+    else if(id==='bounce'){
+      if(st===0||st===6||st===10)this.bass(root-12+(st===6?7:st===10?12:0),t,.22,.22);
+      if(st%4===2)iv.slice(0,3).forEach((x,i)=>this.pluck(root+12+x,t+i*.006,.12,.05));
+      if(st===0||st===8)this.kick(t,.4);
+      if(st===4||st===12)this.rim(t,.08);
+      this.shaker(t,st%2?.018:.03);
+      if(R()<(st%2?.12:.38))this.steel(72+this.key+pent[(R()*pent.length)|0],t,.075);}
+    else if(id==='night'){
+      if(st===0&&this.bar%2===0){iv.forEach((x,i)=>this.pad(root+x,t+i*.08,beat*7.6,.03));}
+      if(st===0||st===10&&R()<.6)this.bass(root-24,t,beat*(st?1.5:2.6),.26);
+      if(st===0)this.kick(t,.45);if(st===3&&R()<.6)this.kick(t,.25);
+      if(st===8)this.rim(t,.05);
+      if(st%2===0&&R()<.5)this.hat(t,.018);
+      if(st%2===0&&R()<.18)this.vibe(72+this.key+[0,3,5,7,10,12,15][(R()*7)|0],t,.05);}},
   env(g,t,a,peak,dec,sus,len){g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(peak,t+a);g.gain.setTargetAtTime(peak*sus,t+a,dec);g.gain.setTargetAtTime(0,t+len,.12);},
   keys(m,t,len,v){const c=snd.ctx,o=c.createOscillator(),o2=c.createOscillator(),g=c.createGain(),g2=c.createGain(),f=this.hz(m);o.type='sine';o.frequency.value=f;o2.type='triangle';o2.frequency.value=f*2;g2.gain.value=.12;
     this.wowG.connect(o.detune);this.wowG.connect(o2.detune);o.connect(g);o2.connect(g2);g2.connect(g);g.connect(this.bus);this.env(g,t,.012,v,.5,.35,len);o.start(t);o2.start(t);o.stop(t+len+.8);o2.stop(t+len+.8);},
+  pad(m,t,len,v){const c=snd.ctx,g=c.createGain(),f=c.createBiquadFilter();f.type='lowpass';f.frequency.value=900;f.Q.value=.3;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v,t+len*.35);g.gain.setTargetAtTime(0,t+len*.7,len*.15);
+    for(const dt_ of [-7,6]){const o=c.createOscillator();o.type='sawtooth';o.frequency.value=this.hz(m);o.detune.value=dt_;this.wowG.connect(o.detune);o.connect(f);o.start(t);o.stop(t+len*1.4);}f.connect(g);g.connect(this.bus);},
+  bell(m,t,v){const c=snd.ctx;for(const [k,a,d] of [[1,1,1.6],[2.76,.35,.6],[5.4,.12,.3]]){const o=c.createOscillator(),g=c.createGain();o.type='sine';o.frequency.value=this.hz(m)*k;g.gain.setValueAtTime(v*a,t);g.gain.exponentialRampToValueAtTime(.0005,t+d);o.connect(g);g.connect(this.bus);o.start(t);o.stop(t+d+.05);}},
+  vibe(m,t,v){const c=snd.ctx,o=c.createOscillator(),g=c.createGain(),tr=c.createOscillator(),tg=c.createGain();o.type='sine';o.frequency.value=this.hz(m);tr.frequency.value=5.5;tg.gain.value=v*.35;tr.connect(tg);tg.connect(g.gain);
+    g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.0005,t+1.4);o.connect(g);g.connect(this.bus);o.start(t);tr.start(t);o.stop(t+1.5);tr.stop(t+1.5);},
+  steel(m,t,v){const c=snd.ctx;for(const [k,a,d] of [[1,1,.5],[2,.45,.25],[3.02,.15,.12]]){const o=c.createOscillator(),g=c.createGain();o.type='sine';o.frequency.value=this.hz(m)*k;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v*a,t+.004);g.gain.exponentialRampToValueAtTime(.0005,t+d);o.connect(g);g.connect(this.bus);o.start(t);o.stop(t+d+.05);}},
+  pluck(m,t,len,v){const c=snd.ctx,o=c.createOscillator(),g=c.createGain(),f=c.createBiquadFilter();o.type='square';o.frequency.value=this.hz(m);f.type='lowpass';f.frequency.setValueAtTime(2600,t);f.frequency.exponentialRampToValueAtTime(500,t+len);
+    g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.0005,t+len+.05);o.connect(f);f.connect(g);g.connect(this.bus);o.start(t);o.stop(t+len+.1);},
   lead(m,t,len){const c=snd.ctx,o=c.createOscillator(),g=c.createGain();o.type='triangle';o.frequency.value=this.hz(m);this.wowG.connect(o.detune);o.connect(g);g.connect(this.bus);this.env(g,t,.03,.035,.25,.4,len);o.start(t);o.stop(t+len+.8);},
-  bass(m,t,len){const c=snd.ctx,o=c.createOscillator(),g=c.createGain();o.type='sine';o.frequency.value=this.hz(m);o.connect(g);g.connect(this.bus);this.env(g,t,.01,.22,.3,.5,len);o.start(t);o.stop(t+len+.6);},
-  kick(t){const c=snd.ctx,o=c.createOscillator(),g=c.createGain();o.frequency.setValueAtTime(110,t);o.frequency.exponentialRampToValueAtTime(42,t+.12);g.gain.setValueAtTime(.5,t);g.gain.exponentialRampToValueAtTime(.001,t+.32);o.connect(g);g.connect(this.bus);o.start(t);o.stop(t+.35);},
-  snare(t){const c=snd.ctx,s=c.createBufferSource();s.buffer=this.noise;const f=c.createBiquadFilter();f.type='bandpass';f.frequency.value=1700;f.Q.value=.7;const g=c.createGain();g.gain.setValueAtTime(.16,t);g.gain.exponentialRampToValueAtTime(.001,t+.22);
-    s.connect(f);f.connect(g);g.connect(this.bus);s.start(t,Math.random());s.stop(t+.25);},
-  hat(t,v){const c=snd.ctx,s=c.createBufferSource();s.buffer=this.noise;const f=c.createBiquadFilter();f.type='highpass';f.frequency.value=6500;const g=c.createGain();g.gain.setValueAtTime(v*(.6+Math.random()*.5),t);g.gain.exponentialRampToValueAtTime(.001,t+.045);
-    s.connect(f);f.connect(g);g.connect(this.bus);s.start(t,Math.random());s.stop(t+.06);}};
+  bass(m,t,len,v=.22){const c=snd.ctx,o=c.createOscillator(),g=c.createGain();o.type='sine';o.frequency.value=this.hz(m);o.connect(g);g.connect(this.bus);this.env(g,t,.01,v,.3,.5,len);o.start(t);o.stop(t+len+.6);},
+  kick(t,v=.5){const c=snd.ctx,o=c.createOscillator(),g=c.createGain();o.frequency.setValueAtTime(110,t);o.frequency.exponentialRampToValueAtTime(42,t+.12);g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+.32);o.connect(g);g.connect(this.bus);o.start(t);o.stop(t+.35);},
+  nz(t,type,fq,q,v,dur){const c=snd.ctx,s=c.createBufferSource();s.buffer=this.noise;const f=c.createBiquadFilter();f.type=type;f.frequency.value=fq;f.Q.value=q;const g=c.createGain();g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+dur);
+    s.connect(f);f.connect(g);g.connect(this.bus);s.start(t,Math.random());s.stop(t+dur+.03);},
+  snare(t){this.nz(t,'bandpass',1700,.7,.16,.22);},
+  hat(t,v){this.nz(t,'highpass',6500,.7,v*(.6+Math.random()*.5),.045);},
+  ride(t,v){this.nz(t,'bandpass',7800,2.5,v,.38);},
+  brush(t,v){this.nz(t,'bandpass',3200,.5,v,.16);},
+  rim(t,v){this.nz(t,'bandpass',2900,9,v*2.2,.05);},
+  shaker(t,v){this.nz(t,'highpass',8500,.7,v*(.7+Math.random()*.6),.05);}};
+/* the dial: a little knob next to the time-of-day button. Tap to turn to the next station; the last stop is OFF. */
+const DIAL=[...STATIONS.map(s=>s.id),'off'];
+function dialPic(i){const c=document.createElement('canvas');c.width=c.height=32;const x=c.getContext('2d'),P=(col,a,b,w=1,h=1)=>{x.fillStyle=col;x.fillRect(a,b,w,h);};
+  const cx=16,cy=17;for(let yy=0;yy<32;yy++)for(let xx=0;xx<32;xx++){const d=Math.hypot(xx+.5-cx,yy+.5-cy);if(d<11.5)P(d>10.3?'#241c2e':d<7?'#e3cda4':'#5a4a63',xx,yy);}
+  for(let yy=0;yy<32;yy++)for(let xx=0;xx<32;xx++){const d=Math.hypot(xx+.5-cx,yy+.5-cy);if(d<7&&d>5.8)P('#b89a6a',xx,yy);}
+  DIAL.forEach((_,k)=>{const a=(-130+k*260/(DIAL.length-1))*DEG,on=k===i;const px=Math.round(cx+Math.sin(a)*14-.5),py=Math.round(cy-Math.cos(a)*14-.5);P(on?(k===DIAL.length-1?'#e5483b':'#ffd36b'):'#f5e8cf',px,py,on?2:1,on?2:1);});
+  const a=(-130+i*260/(DIAL.length-1))*DEG;for(let r=1;r<10;r++)P('#241c2e',Math.round(cx+Math.sin(a)*r-.5),Math.round(cy-Math.cos(a)*r-.5),2,2);
+  for(let r=2;r<9;r++)P(i===DIAL.length-1?'#e5483b':'#e2703f',Math.round(cx+Math.sin(a)*r-.5),Math.round(cy-Math.cos(a)*r-.5));
+  return c.toDataURL();}
+const DIAL_PICS=DIAL.map((_,i)=>dialPic(i));
+function dialIndex(){return (settings.music??.5)<=0?DIAL.length-1:Math.max(0,DIAL.indexOf(settings.station));}
+function updRadioBtn(){const b=$('radioBtn');if(!b)return;const i=dialIndex(),S=i<STATIONS.length?STATIONS[i]:null;b.innerHTML=`<img src="${DIAL_PICS[i]}" alt="Radio">`;b.title=S?`${S.fq} ${S.name}`:'Radio off';}
+function setStation(id,quiet){if(id==='off'){if((settings.music??.5)>0)settings.lastMusic=settings.music;settings.music=0;saveS();music.setVol();if(!quiet)toast('Radio off.',1.4);updRadioBtn();return;}
+  const wasOff=(settings.music??.5)<=0;settings.station=id;if(wasOff)settings.music=settings.lastMusic||.5;saveS();snd.init();music.start();music.tune(id,quiet);music.setVol();updRadioBtn();
+  const S=stationAt(id);if(!quiet)toast(`RADIO ${S.fq} · ${S.name}\n${S.desc}${settings.sound?'':'\n(Sound is off in Settings.)'}`,2.2);}
+function turnDial(){const i=dialIndex();setStation(DIAL[(i+1)%DIAL.length]);snd.click();}
 /* ---------- maps ---------- */
 const MAPW=SIZE,mapBase=(()=>{const N=512,c=document.createElement('canvas');c.width=c.height=N;const x=c.getContext('2d'),img=x.createImageData(N,N);
   for(let j=0;j<N;j++)for(let i=0;i<N;i++){const wx=-MAPW/2+(i+.5)*MAPW/N,wz=-MAPW/2+(j+.5)*MAPW/N,h=groundH(wx,wz);let r,g,b;
@@ -759,13 +837,14 @@ function drawMiniMap(dt){mapT-=dt;if(mapT>0)return;mapT=.08;const W=96,x=mctx;x.
   x.fillStyle='#1d2a44';x.fillRect(0,0,W,W);x.save();x.translate(W/2,cy);x.rotate(-hdg);x.scale(k,k);x.translate(-ac.pos.x,-ac.pos.z);
   x.drawImage(mapBase,-MAPW/2,-MAPW/2,MAPW,MAPW);drawStripsOn(x,k,dest);
   x.fillStyle='#ffb02e';for(const [k_,v] of Object.entries(sights))if(log.sights[k_])x.fillRect(v.x-2/k,v.z-2/k,4/k,4/k);x.fillStyle='#8ff0e8';for(const g of FLYGATES)if(log.gates[g.id])x.fillRect(g.x-2/k,g.z-2/k,4/k,4/k);
+  for(const d of DROPS){x.strokeStyle=log.drops[d.id]?'#ffd36b':'#e5483b';x.lineWidth=1.6/k;x.beginPath();x.arc(d.x,d.z,3.2/k,0,TAU);x.stroke();x.fillStyle=x.strokeStyle;x.fillRect(d.x-.8/k,d.z-.8/k,1.6/k,1.6/k);}
   if(dest){x.fillStyle='#8ff0e8';x.beginPath();x.arc(dest.x,dest.z,3.5/k,0,TAU);x.fill();}
   x.restore();
   x.fillStyle='#fff8ec';x.strokeStyle='#241c2e';x.lineWidth=1;x.beginPath();x.moveTo(W/2,cy-6);x.lineTo(W/2-4,cy+4);x.lineTo(W/2,cy+2);x.lineTo(W/2+4,cy+4);x.closePath();x.fill();x.stroke();
   const na=-hdg;x.fillStyle='#ffb02e';x.font='13px VT323, monospace';x.textAlign='center';x.textBaseline='middle';x.fillText('N',clamp(W/2+Math.sin(na)*40,6,W-6),clamp(cy-Math.cos(na)*40,6,W-6));
   if(dest&&near>R*.9){const brg=Math.atan2(dest.x-ac.pos.x,-(dest.z-ac.pos.z))-hdg;x.fillStyle='#8ff0e8';x.beginPath();x.arc(clamp(W/2+Math.sin(brg)*44,4,W-4),clamp(cy-Math.cos(brg)*44,4,W-4),3,0,TAU);x.fill();}}
 function bigMap(){
-  showCard(`<h2>Bea's chart</h2><div class="sub">★ ${log.score.toLocaleString()} · ${Object.keys(sights).filter(q=>log.sights[q]).length}/${Object.keys(sights).length} LANDMARKS (ORANGE) · ${FLYGATES.filter(g=>log.gates[g.id]).length}/${FLYGATES.length} GAPS FLOWN (CYAN)${activeErrands().length?' · ERRANDS: '+activeErrands().map(errLine).join(', ').toUpperCase():''}</div><canvas id="bigmap" width="512" height="384"></canvas>`,[['Back to flying',()=>{hideModal();mode='fly';},true]]);
+  showCard(`<h2>Bea's chart</h2><div class="sub">★ ${log.score.toLocaleString()} · ${Object.keys(sights).filter(q=>log.sights[q]).length}/${Object.keys(sights).length} LANDMARKS (ORANGE) · ${FLYGATES.filter(g=>log.gates[g.id]).length}/${FLYGATES.length} GAPS FLOWN (CYAN) · ${DROPS.filter(d=>log.drops[d.id]).length}/${DROPS.length} DROPS (RED RINGS)${activeErrands().length?' · ERRANDS: '+activeErrands().map(errLine).join(', ').toUpperCase():''}</div><canvas id="bigmap" width="512" height="384"></canvas>`,[['Back to flying',()=>{hideModal();mode='fly';},true]]);
   $('cardBody').parentElement.querySelector('.card').classList.add('wide');
   const c=$('bigmap'),x=c.getContext('2d');x.imageSmoothingEnabled=false;const k=384/19400,CX=150,CZ=250;x.fillStyle='#1d2a44';x.fillRect(0,0,512,384);x.save();x.translate(256-CX*k,192-CZ*k);x.scale(k,k);
   x.drawImage(mapBase,-MAPW/2,-MAPW/2,MAPW,MAPW);drawStripsOn(x,k,dest);
@@ -775,6 +854,7 @@ function bigMap(){
   x.font='13px VT323, monospace';
   for(const [k_,v] of Object.entries(sights)){if(!log.sights[k_])continue;const [a,b]=P(v.x,v.z);x.fillStyle='#241c2e';x.fillRect(a-3,b-3,6,6);x.fillStyle='#ffb02e';x.fillRect(a-2,b-2,4,4);}
   for(const g of FLYGATES){if(!log.gates[g.id])continue;const [a,b]=P(g.x,g.z);x.fillStyle='#8ff0e8';x.beginPath();x.moveTo(a,b-4);x.lineTo(a+4,b);x.lineTo(a,b+4);x.lineTo(a-4,b);x.closePath();x.fill();}
+  for(const d of DROPS){const [a,b]=P(d.x,d.z),c=log.drops[d.id]?'#ffd36b':'#e5483b';x.strokeStyle='#241c2e';x.lineWidth=3;x.beginPath();x.arc(a,b,4,0,TAU);x.stroke();x.strokeStyle=c;x.lineWidth=1.5;x.beginPath();x.arc(a,b,4,0,TAU);x.stroke();x.fillStyle=c;x.fillRect(a-1,b-1,2,2);}
   for(const I of Object.values(ISLES))label(I.name.toUpperCase(),I.x,I.z+(I.r?Math.min(I.r*.6,600)+260:1500),'#ffd890',0);
   if(dest)label(dest.name.toUpperCase(),dest.x,dest.z,'#8ff0e8',-11);
   const [px,pz]=P(ac.pos.x,ac.pos.z);axes();const hdg=ac.ground?-ac.gYaw:Math.atan2(_f.x,-_f.z);x.save();x.translate(px,pz);x.rotate(hdg);x.fillStyle='#fff8ec';x.strokeStyle='#241c2e';x.lineWidth=1.5;x.beginPath();x.moveTo(0,-9);x.lineTo(-6,6);x.lineTo(0,3);x.lineTo(6,6);x.closePath();x.fill();x.stroke();x.restore();
@@ -796,6 +876,7 @@ const BEA=[
   {t:'Before-landing checklist',h:`<p>I did this every single landing for forty years. Four things:</p><table><tr><td>CARB HEAT</td><td>ON. Low power on approach is when carb ice forms.</td></tr><tr><td>MIXTURE</td><td>RICH, so full power is there if you need to go around.</td></tr><tr><td>FLAPS</td><td>1 or 2.</td></tr><tr><td>LANDING LIGHT</td><td>ON at sunset, blue hour and night.</td></tr></table><p>The checklist box shows up on approach. Land with all of it done and Mabel adds a bonus stamp.</p>`},
   {t:'Carb heat and mixture',h:`<p><b>Carb ice.</b> The carburetor mixes fuel and air, and it gets cold inside, cold enough to freeze damp air. At low power it can ice up and the engine runs rough and weak. CARB HEAT warms the air going in and melts it, at the cost of a little power. Running rough on a long descent? Carb heat on.</p><p><b>Mixture.</b> Higher up the air is thinner, so the engine wants less fuel. Leaning (MIX LEAN) above 2,000 ft gives a little more power. Down low, lean means too little fuel: keep it RICH.</p>`},
   {t:'Flying by the gauges',h:`<p>In cloud or fog you can't trust your body; it will swear you're level when you're turning. Trust the attitude gauge.</p><ul><li>Keep the orange wings level on the horizon line.</li><li>On approach, the <b>line-up meter</b> at the top: the diamond is where the path is. Fly gently toward it until it sits in the ring.</li></ul>`},
+  {t:'Air drops',h:`<p>Some folk live too far from a runway for the mail. For them we drop parcels on little parachutes.</p><ul><li>Look for <b>orange smoke</b>. Under it is a painted <b>bullseye</b> and someone waiting. Red rings on the chart.</li><li>Fly over it low and steady, 300 to 400 ft up. Tap <b>LOOK DOWN</b> on the right: you see straight below, and the <b>crosshair is where a parcel would land</b> if you let go now.</li><li>Steer the crosshair onto the bullseye and tap <b>DROP</b>.</li><li>The chute opens and the wind carries it a little, so let go slightly upwind.</li></ul><p>Within 5 m is a bullseye. You carry three parcels; Mabel loads three more every time you land at a field.</p>`},
   {t:'Night flying',h:`<ul><li>Runways have edge lights at night. Amber ones mark the ends.</li><li>Turn on your landing light on approach: it lights the runway in front of you.</li><li>The approach lights work just the same at night, so trust them over your eyes.</li></ul>`},
 ];
 function bea(i){if(mode==='fly')mode='paused';const p=BEA[i];
@@ -855,12 +936,14 @@ function settingsCard(){
   const px=['chunky','classic','fine'].map(k=>`<button data-px="${k}" class="${settings.pixels===k?'primary':''}">${k.toUpperCase()}</button>`).join('');
   const ev=[['OFF',0],['HUSH',.5],['SOFT',1],['FULL',2]].map(([n,v])=>`<button data-ev="${v}" class="${settings.engVol==v?'primary':''}">${n}</button>`).join('');
   const mv=[['OFF',0],['SOFT',.5],['ON',1]].map(([n,v])=>`<button data-mv="${v}" class="${(settings.music??.5)==v?'primary':''}">${n}</button>`).join('');
+  const st=STATIONS.map(S=>`<button data-st="${S.id}" class="${settings.station===S.id?'primary':''}">${S.fq} ${S.name.toUpperCase()}</button>`).join('');
   const lt=Object.keys(TOD).map(k=>`<button data-lt="${k}" class="${settings.light===k?'primary':''}">${TOD[k].name.toUpperCase()}</button>`).join('');
-  showCard(`<h2>Settings</h2><div class="sub">ASSISTS · TURN THEM OFF ONE AT A TIME AS YOU IMPROVE</div>${rows}<h3>ENGINE VOLUME</h3><div class="btns">${ev}</div><h3>LO-FI RADIO</h3><div class="btns">${mv}</div><h3>TIME OF DAY</h3><div class="btns">${lt}</div><h3>PIXELS</h3><div class="btns">${px}</div><div class="sub" style="margin-top:14px">BUILD __BUILD__</div>`,[['Back',back,true]]);
+  showCard(`<h2>Settings</h2><div class="sub">ASSISTS · TURN THEM OFF ONE AT A TIME AS YOU IMPROVE</div>${rows}<h3>ENGINE VOLUME</h3><div class="btns">${ev}</div><h3>RADIO VOLUME</h3><div class="btns">${mv}</div><h3>RADIO STATION · OR TAP THE DIAL UP TOP WHILE FLYING</h3><div class="btns">${st}</div><h3>TIME OF DAY</h3><div class="btns">${lt}</div><h3>PIXELS</h3><div class="btns">${px}</div><div class="sub" style="margin-top:14px">BUILD __BUILD__</div>`,[['Back',back,true]]);
   const cb=$('cardBody');
   cb.querySelectorAll('[data-k]').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.k;if(k==='tilt'){if(!settings.tilt){settings.tilt=true;saveS();enableTilt().then(()=>{updTiltUI();settingsCard();});}else{settings.tilt=false;saveS();disableTilt();updTiltUI();settingsCard();}return;}settings[k]=!settings[k];saveS();if(k==='sound')snd.setOn(settings.sound);if(k==='fps'){$('fps').hidden=!settings.fps;$('fps').textContent='FPS: measuring…';fpsN=fpsT=0;fpsLast=0;}if(k==='sound')music.setVol();settingsCard();}));
   cb.querySelectorAll('[data-px]').forEach(b=>b.addEventListener('click',()=>{settings.pixels=b.dataset.px;pixMode=settings.pixels;saveS();resize();settingsCard();}));
-  cb.querySelectorAll('[data-mv]').forEach(b=>b.addEventListener('click',()=>{settings.music=+b.dataset.mv;saveS();snd.init();music.start();music.setVol();settingsCard();}));
+  cb.querySelectorAll('[data-mv]').forEach(b=>b.addEventListener('click',()=>{settings.music=+b.dataset.mv;saveS();snd.init();music.start();music.setVol();updRadioBtn();settingsCard();}));
+  cb.querySelectorAll('[data-st]').forEach(b=>b.addEventListener('click',()=>{setStation(b.dataset.st);settingsCard();}));
   cb.querySelectorAll('[data-ev]').forEach(b=>b.addEventListener('click',()=>{settings.engVol=+b.dataset.ev;saveS();settingsCard();}));
   cb.querySelectorAll('[data-lt]').forEach(b=>b.addEventListener('click',()=>{settings.light=b.dataset.lt;saveS();setTOD(settings.light);updTodBtn();settingsCard();}));}
 function showHowTo(){mode='card';
@@ -928,6 +1011,7 @@ function drawHUD(dt){
     if(dest){const d=Math.hypot(dest.x-ac.pos.x,dest.z-ac.pos.z);$('destTxt').textContent=`${dest.name} ${d<1000?Math.round(d/10)*10+' m':(d/1000).toFixed(1)+' km'}`;$('arr').style.transform=`rotate(${brg-hdg}deg)`;}}
   $('stallBan').hidden=!(ac.stallWarn&&mode==='fly');
   if(mode==='fly')drawMiniMap(dt);
+  if(lookDown&&(mode==='fly'||mode==='paused')){pb.clear();drawDropSight(dt);pb.flush();hudWasDrawn=true;return;}
   if(camMode==='chase'||mode==='title'){pb.clear();if(mode==='fly'&&approachMeter()){pb.flush();hudWasDrawn=true;}else if(hudWasDrawn){pb.flush();hudWasDrawn=false;}return;}
   hudWasDrawn=true;const bank=Math.atan2(-_r.y,_u.y),pitch=Math.asin(clamp(_f.y,-1,1));
   drawCockpit({kt,bank,pitch,ft,turn:turnRate,slip:clamp(ac.beta*4,-1,1),hdg,brg,fpm,extra:()=>drawExtras()});
@@ -978,6 +1062,7 @@ let camLow=0;const camPos=new V3(),_c1=new V3(),_c2=new V3(),_c3=new V3(),tiltQ=
 function updateCam(dt,t){
   axes();
   if(mode==='title'){const a=t*.1,p=ac.pos;camera.position.set(p.x+Math.cos(a)*24,p.y+4.5,p.z+Math.sin(a)*24);camera.up.set(0,1,0);camera.lookAt(p.x,p.y+.5,p.z);return;}
+  if(lookDown&&mode!=='crashed'){lookDownCam();return;}
   const outside=camMode==='chase'||mode==='crashed';
   if(outside){
     const bf=_c1.copy(_f);bf.y*=.4;if(bf.lengthSq()<.01)bf.set(0,0,-1);bf.normalize();
@@ -1018,8 +1103,8 @@ function updateVisuals(dt,t){
     blob.material.opacity=(settings.shadows?.42:.55)*(1-smooth(4,200,agl))+(ac.ground?.08:0);}
   if(dest){beacon.visible=mode==='fly'||mode==='paused';beacon.position.set(dest.x,dest.elev,dest.z);const d=Math.hypot(dest.x-ac.pos.x,dest.z-ac.pos.z);beacon.material.opacity=.13*smooth(500,1600,d);}
   spot.intensity=ac.light&&mode!=='title'?(TOD[tod].lights>0?1.35:.3):0;
-  updPAPI();updGates();updWind(dt);updFog();updDog(dt,t);updSpark(dt,t);
-  {const fb=(camMode==='chase'?58:70)+(ac.bst||0)*6;if(Math.abs(camera.fov-fb)>.05){camera.fov=fb;camera.updateProjectionMatrix();}}
+  updPAPI();updGates();updWind(dt);updFog();updDrops(dt);updDog(dt,t);updSpark(dt,t);
+  {const fb=(lookDown?64:camMode==='chase'?58:70)+(ac.bst||0)*6;if(Math.abs(camera.fov-fb)>.05){camera.fov=fb;camera.updateProjectionMatrix();}}
   sunL.castShadow=settings.shadows;const fo=mode==='title'?ac.pos:camera.position;
   axes();_sc.set(fo.x+_f.x*SHADOW_HALF*.5,surfH(fo.x,fo.z),fo.z+_f.z*SHADOW_HALF*.5);snapShadow(_sc);sunL.target.position.copy(_sc);sunL.position.copy(_sc).addScaledVector(sunDir,1500);
   if(mode==='crashed'){crashT+=dt;smokeBurst.forEach(m=>{m.position.y+=dt*m.userData.v*1.5;m.scale.setScalar(Math.min(.5+crashT*m.userData.v*1.5,6));});}
@@ -1051,5 +1136,5 @@ function loop(now){
 }
 addEventListener('resize',()=>{resize();setThrottleUI();placeRingIdle();checkRotate();});
 $('wind').addEventListener('click',e=>{e.stopPropagation();useWind();});pixMode=settings.pixels;resize();setTOD(settings.light);toTitle();placeRingIdle();checkRotate();refreshBag();
-updScore();updErrandUI();updTodBtn();const ld=$('load');if(ld)ld.hidden=true;$('fps').hidden=!settings.fps;$('fps').textContent='FPS: measuring…';
+updScore();updErrandUI();updTodBtn();updRadioBtn();$('lookBtn').addEventListener('click',e=>{e.stopPropagation();toggleLook();});$('dropBtn').addEventListener('click',e=>{e.stopPropagation();doDrop();});updParcelUI();$('radioBtn').addEventListener('click',e=>{e.stopPropagation();turnDial();});const ld=$('load');if(ld)ld.hidden=true;$('fps').hidden=!settings.fps;$('fps').textContent='FPS: measuring…';
 requestAnimationFrame(loop);

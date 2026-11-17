@@ -118,7 +118,8 @@ function askBiscuit(){if(mode!=='fly'||barkCD>0)return;barkCD=1.5;const P=ac.pos
       if(st.found.length===FINDS[e.set].length)pick({x:home.x,z:home.z,d:dist(home.x,home.z)+5000,say:`${g.name.split(' ')[0]} at ${home.name}, waiting for your report`});}
     else{const v=sights[e.sight];if(!log.sights[e.sight])pick({x:v.x,z:v.z,d:dist(v.x,v.z),say:e.what});else pick({x:home.x,z:home.z,d:dist(home.x,home.z)+5000,say:`${g.name.split(' ')[0]} at ${home.name}, waiting for your report`});}}
   if(!best){for(const [k,v] of Object.entries(sights))if(!log.sights[k]&&dist(v.x,v.z)<3500)pick({x:v.x,z:v.z,d:dist(v.x,v.z),say:'something down there worth a look'});
-    for(const g of FLYGATES)if(!log.gates[g.id]&&dist(g.x,g.z)<3500)pick({x:g.x,z:g.z,d:dist(g.x,g.z),say:`a gap to fly through: ${g.name}`});}
+    for(const g of FLYGATES)if(!log.gates[g.id]&&dist(g.x,g.z)<3500)pick({x:g.x,z:g.z,d:dist(g.x,g.z),say:`a gap to fly through: ${g.name}`});
+    if(parcelsLeft)for(const d of DROPS)if(!log.drops[d.id]&&dist(d.x,d.z)<3500)pick({x:d.x,z:d.z,d:dist(d.x,d.z),say:`a drop target with orange smoke: ${d.name}`});}
   if(!best&&dest)best={x:dest.x,z:dest.z,d:dist(dest.x,dest.z),say:`${dest.name}, your next stop`};
   dog.bark=1.6;snd.woof();if(!best){toast('Biscuit sniffs about and wags. Nothing new around here.',2.4);dogTarget=null;return;}
   dogTarget=best;const d=dist(best.x,best.z),how=d<350?', right below':d<1000?`, about ${Math.round(d/100)*100} m`:`, about ${(d/1000).toFixed(1)} km`;
@@ -130,9 +131,10 @@ function dogAuto(dt){autoCD-=dt;autoT+=dt;if(autoT<1)return;autoT=0;if(!settings
   const P=ac.pos,cand=[];
   for(const [k,v] of Object.entries(sights))if(!log.sights[k]&&!barked['s'+k]&&Math.hypot(P.x-v.x,P.z-v.z)<1100&&P.y-v.y<900)cand.push({key:'s'+k,x:v.x,z:v.z,say:'something down there worth a look'});
   for(const g of FLYGATES)if(!log.gates[g.id]&&!barked['g'+g.id]&&Math.hypot(P.x-g.x,P.z-g.z)<1000)cand.push({key:'g'+g.id,x:g.x,z:g.z,say:`a gap to fly through: ${g.name}`});
+  for(const d of DROPS)if(!log.drops[d.id]&&!barked['d'+d.id]&&Math.hypot(P.x-d.x,P.z-d.z)<1300)cand.push({key:'d'+d.id,x:d.x,z:d.z,say:`orange smoke, a drop target: ${d.name}`});
   if(!cand.length)return;const best=cand.reduce((a,c)=>Math.hypot(P.x-c.x,P.z-c.z)<Math.hypot(P.x-a.x,P.z-a.z)?c:a);
   barked[best.key]=1;autoCD=30;dogTarget=best;dog.bark=1.6;snd.woof();toast(`Woof! Biscuit's nose points ${dirWord(best.x,best.z)}: ${best.say}.`,3.2);}
-function updDog(dt,t){const U=plane.userData,cock=!U.bodyM.visible&&mode!=='crashed';dog.bark=Math.max(0,dog.bark-dt);const b=dog.bark>0?1:0;
+function updDog(dt,t){if(lookDown){dog.root.visible=false;return;}const U=plane.userData,cock=!U.bodyM.visible&&mode!=='crashed';dog.bark=Math.max(0,dog.bark-dt);const b=dog.bark>0?1:0;
   let yaw=0;if(b&&dogTarget){const lp=plane.worldToLocal(_c1.set(dogTarget.x,ac.pos.y,dogTarget.z));yaw=clamp(Math.atan2(-lp.x,-lp.z),-.8,.8);}
   dog.yaw=lerp(dog.yaw,yaw,1-Math.exp(-dt*6));
   if(cock){/* in the cockpit he sits in the right seat, bottom-right of the view: head, collar and chest above the dash */
