@@ -34,6 +34,7 @@ button:focus-visible{outline:2px solid #fff;outline-offset:2px}
 #dest{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;font-size:11px;padding:8px 10px;color:var(--paper);background:var(--glass);border:2px solid var(--line);box-shadow:none}
 #dest .arr{display:inline-block;width:12px;text-align:center;color:#6fe0e0;margin-right:4px}
 .sp{flex:1}
+#todBtn{pointer-events:auto;padding:3px 5px;line-height:0}#todBtn img{width:32px;height:32px;image-rendering:pixelated;display:block}
 #view,#pause,#center{pointer-events:auto;font-family:var(--mono);font-size:15px;padding:8px 10px}
 #stallBan{position:fixed;left:50%;top:calc(var(--st) + 44px);transform:translateX(-50%);font-family:var(--mono);font-size:20px;background:var(--bad);color:#fff;padding:5px 12px;letter-spacing:.1em;pointer-events:none}
 #toast{white-space:pre-line;position:fixed;left:50%;bottom:calc(var(--sb) + 10px);transform:translateX(-50%);max-width:min(520px,52vw);background:var(--paper);color:var(--ink);padding:9px 13px;font-size:15px;line-height:1.3;
@@ -133,6 +134,7 @@ h3{font-family:var(--mono);font-size:15px;letter-spacing:.08em;color:var(--ink2)
     <div class="sp"></div>
     <div class="pill" id="alt">0<small>FT</small><span id="vsi"></span></div>
     <button id="center" aria-label="Recenter tilt" hidden>CENTER</button>
+    <button id="todBtn" aria-label="Time of day"></button>
     <button id="view" aria-label="Change view">CHASE</button>
     <button id="pause" aria-label="Pause">II</button>
   </div>

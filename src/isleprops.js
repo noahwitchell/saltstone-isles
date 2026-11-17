@@ -47,7 +47,7 @@ function spireAt(it,x,z,y0,top,r0,r1,seed){const n=7;let px=x,pz=z;
    flyGate('bridge','Under the Rope Bridge',b.x,b.z,-4,by-14,yw,40,'Beneath the rope bridge across the Cleft.');
    mark('bridge',b.x,b.z,by-40,'The Cleft Bridge','Seventy-six planks and a lot of rope. Tam crosses it twice a day with a goat under each arm.');
    FINDS.goats=[];for(let k=0;k<5;k++){const u=-700+k*330+(rnd()-.5)*80,side=k%2?1:-1;let best=null;for(let d=70;d<200;d+=8){const p=fromUV(I,u,cl(u)+side*d),h=groundH(p.x,p.z);if(slopeAt(p.x,p.z)<.6&&h>60){best={x:p.x,z:p.z,h};break;}}
-     if(!best)continue;const ry=rnd()*6;it.push({geo:BOX(1.2,1.1,2.2),m:M([best.x,best.h+1.3,best.z],[0,ry,0],[1.6,1.6,1.6]),color:0xf4f0e6});it.push({geo:BOX(.8,.9,1),m:M([best.x+Math.sin(ry)*1.8,best.h+2.6,best.z+Math.cos(ry)*1.8],[0,ry,0],[1.6,1.6,1.6]),color:0xe8e0d0});
+     if(!best)continue;const ry=rnd()*6;it.push({geo:BOX(1.2,1.1,2.2),m:M([best.x,best.h+2.4,best.z],[0,ry,0],[3.2,3.2,3.2]),color:0xffffff});it.push({geo:BOX(.8,.9,1),m:M([best.x+Math.sin(ry)*3.6,best.h+5,best.z+Math.cos(ry)*3.6],[0,ry,0],[3.2,3.2,3.2]),color:0x2c2833});
      FINDS.goats.push({x:best.x,y:best.h,z:best.z});}
    const S=stripOf('cleft'),h=toWorld(S,-S.len/2+90,-(S.wid/2+24));hutAt(it,rf,h.x,h.z,-S.hdg*DEG,7,5,3.2,0xd8c4a8,0xb8704a,2);}
   /* ---- Kettle Rock: dive through the crater (below the rim) ---- */
@@ -64,7 +64,7 @@ function spireAt(it,x,z,y0,top,r0,r1,seed){const n=7;let px=x,pz=z;
      for(let k=0;k<4;k++)it.push({geo:new THREE.CylinderGeometry(1.8,1.8,2.6,8).rotateZ(Math.PI/2),m:M([c.x+Math.cos(.3)*(-14),y+1.3,c.z-Math.sin(.3)*(-14)+(k-1.5)*3.2],[0,.3,0]),color:0x8a6a4a});
      lit.push([c.x,y+5,c.z,0xffc25a]);mark('cider',c.x,c.z,y,'The Cider Barn','Red barn, four barrels outside, and a smell you can follow from the air in autumn.');}
    FINDS.kites=[];const kc=[0xd2493c,0x3f8fc0,0xe8a33a,0x7a4ab8,0x3f8f5a,0xff7a2e];for(let k=0;k<6;k++){const p=onIsle('apple',(x,z,h)=>orchardAt(x,z)&&clearOf(x,z,60),()=>rnd());if(!p)continue;
-     const g=new THREE.Group(),y=p.h+18+rnd()*10;g.add(new THREE.Mesh(merge([{geo:BOX(3.4,4.6,.15),m:M([0,0,0],[0,0,Math.PI/4],[1,1,1]),color:kc[k]},{geo:BOX(.12,7,.12),m:M([0,-5.5,0]),color:0xf4efe2},
+     const g=new THREE.Group(),y=p.h+28+rnd()*12;g.scale.setScalar(2.4);g.add(new THREE.Mesh(merge([{geo:BOX(3.4,4.6,.15),m:M([0,0,0],[0,0,Math.PI/4],[1,1,1]),color:kc[k]},{geo:BOX(.12,7,.12),m:M([0,-5.5,0]),color:0xf4efe2},
        ...[0,1,2].map(i=>({geo:BOX(.9,.5,.1),m:M([0,-3.5-i*1.8,0],[0,0,.6]),color:kc[(k+2)%6]}))]),toon({},false)));g.position.set(p.x,y,p.z);scene.add(g);
      const ph=rnd()*6;anims.push(t=>{g.rotation.y=t*.2+ph;g.rotation.z=Math.sin(t*1.3+ph)*.25;g.position.y=y+Math.sin(t*.9+ph)*1.5;});FINDS.kites.push({x:p.x,y,z:p.z});}}
   /* ---- the Saltpans: salt heaps, a windpump, and a meteorite ---- */
@@ -72,8 +72,8 @@ function spireAt(it,x,z,y0,top,r0,r1,seed){const n=7;let px=x,pz=z;
    const wp=toWorld(S,S.len/2+40,S.wid/2+30),wy=groundH(wp.x,wp.z);for(const [a,b] of [[-1,-1],[1,-1],[-1,1],[1,1]])beam(it,new V3(wp.x+a*2.4,wy,wp.z+b*2.4),new V3(wp.x+a*.5,wy+14,wp.z+b*.5),.2,0x8a8a92);
    const pump=new THREE.Mesh(merge([...Array(12)].map((_,i)=>({geo:BOX(.5,3.4,.08),m:M([Math.cos(i/12*TAU)*2,Math.sin(i/12*TAU)*2,0],[0,0,i/12*TAU]),color:0xe8e4dc}))),toon({},false));pump.position.set(wp.x,wy+14.5,wp.z);scene.add(pump);anims.push(t=>{pump.rotation.z=t*1.6;});
    const p=onIsle('salt',(x,z,h)=>h>1.5&&clearOf(x,z,120)&&saltPan(x,z)<0,(x,z,h)=>Math.hypot(x-S.x,z-S.z));
-   if(p){for(let k=0;k<14;k++){const a=k/14*TAU;it.push({geo:new THREE.DodecahedronGeometry(1,0),m:M([p.x+Math.cos(a)*11,p.h,p.z+Math.sin(a)*11],[k,k,0],[2.2,1.4,2]),color:0x6a5a50});}
-     it.push({geo:new THREE.DodecahedronGeometry(2.6,0),m:M([p.x,p.h+1,p.z],[.4,.2,0]),color:0x2c2833});mark('meteor',p.x,p.z,p.h,'The Fallen Star','A black stone in a ring of scorched earth. It came down the night Desmond was born.');}}
+   if(p){for(let k=0;k<14;k++){const a=k/14*TAU;it.push({geo:new THREE.DodecahedronGeometry(1,0),m:M([p.x+Math.cos(a)*16,p.h,p.z+Math.sin(a)*16],[k,k,0],[3.4,2,3]),color:k%2?0xff7a2e:0xd2493c});}
+     it.push({geo:new THREE.DodecahedronGeometry(4,0),m:M([p.x,p.h+2,p.z],[.4,.2,0]),color:0x2c2833});lit.push([p.x,p.h+5,p.z,0xff7a2e]);mark('meteor',p.x,p.z,p.h,'The Fallen Star','A black stone in a ring of scorched earth. It came down the night Desmond was born.');}}
   /* ---- Looking-Glass Isle: the lake, the painter's cottage, a rowboat ---- */
   {const I=ISLES.mirror,lx=I.x-180,lz=I.z+40;const ph=scanTo(lx,lz,1,0,h=>h>1.2,500,6);if(ph)hutAt(it,rf,ph.x+16,ph.z,0,7,6,3.6,0xf4ece0,0x6a8ab8,2);
    const boat=new THREE.Mesh(merge([{geo:BOX(1.6,.7,4.2),m:M([0,.25,0]),color:0xd2493c},{geo:BOX(1.7,.25,4.3),m:M([0,-.1,0]),color:0xf4efe4}]),toon());scene.add(boat);
@@ -105,8 +105,8 @@ function spireAt(it,x,z,y0,top,r0,r1,seed){const n=7;let px=x,pz=z;
      const top=fromUV(I,lip.u,gv(lip.u));mark('falls',top.x,top.z,foot.h,'Cascade Falls','Two hundred metres of white water. Kit says the hut shakes when it rains.');}
    const S=stripOf('cascade'),h=toWorld(S,-S.len/2+80,S.wid/2+26);hutAt(it,rf,h.x,h.z,-S.hdg*DEG,7,6,3.4,0x8a6a4a,0x3f6b3a,2);
    FINDS.cairns=[];for(let k=0;k<6;k++){const p=onIsle('cascade',(x,z,h)=>h>200&&slopeAt(x,z)<.3&&clearOf(x,z,30),()=>rnd());if(!p)continue;
-     for(let j=0;j<4;j++)it.push({geo:new THREE.DodecahedronGeometry(1,0),m:M([p.x,p.h+j*1.5+.6,p.z],[j,j*2,0],[2.4-j*.45,1,2.2-j*.4]),color:j%2?0x9a968c:0xc8c4bc});
-     it.push({geo:BOX(.2,3,.2),m:M([p.x,p.h+7,p.z]),color:0x6e5240});it.push({geo:BOX(1.8,1,.1),m:M([p.x+.9,p.h+8,p.z]),color:0xff7a2e});FINDS.cairns.push({x:p.x,y:p.h,z:p.z});}}
+     for(let j=0;j<5;j++)it.push({geo:new THREE.DodecahedronGeometry(1,0),m:M([p.x,p.h+j*3+1,p.z],[j,j*2,0],[5.2-j*.8,2,4.8-j*.7]),color:j%2?0xd8d4cc:0xf4f0e8});
+     it.push({geo:BOX(.5,9,.5),m:M([p.x,p.h+18,p.z]),color:0x2c2833});it.push({geo:BOX(6,3.4,.2),m:M([p.x+3,p.h+20.5,p.z]),color:0xff6a1e});FINDS.cairns.push({x:p.x,y:p.h,z:p.z});}}
   /* ---- Lantern Key: houses on stilts round the shore, strings of lanterns, and lanterns adrift ---- */
   {const I=ISLES.lantern,lc=[0xff9a3a,0xffd36b,0xd2493c,0xff7a8a];let prev=null;
    for(let k=0;k<20;k++){const a=k/20*TAU,ux=Math.cos(a),uz=Math.sin(a);const sh=scanTo(I.x,I.z,ux,uz,h=>h<0,1200,6);if(!sh)continue;const x=sh.x+ux*9,z=sh.z+uz*9;if(nearStrip(x,z,40)){prev=null;continue;}
@@ -118,7 +118,7 @@ function spireAt(it,x,z,y0,top,r0,r1,seed){const n=7;let px=x,pz=z;
    if(T){const y=T.h;for(let j=0;j<5;j++)it.push({geo:new THREE.CylinderGeometry(3.2-j*.4,3.4-j*.4,3.4,8),m:M([T.x,y+1.7+j*3.6,T.z]),color:j%2?0xd2493c:0xf4e4c0});lit.push([T.x,y+17,T.z,0xffb05a]);
      mark('lanterntower',T.x,T.z,y,'The Lantern Tower','Five paper storeys. Lit every night for the boats, and on festival night for everyone.');}
    FINDS.lanterns=[];const lm=new THREE.MeshBasicMaterial({color:0xffb050,fog:false});for(let k=0;k<7;k++){const a=k/7*TAU+.3,r=700+rnd()*500,cx=I.x+Math.cos(a)*r,cz=I.z+Math.sin(a)*r,cy=50+rnd()*70;
-     const m=new THREE.Mesh(new THREE.BoxGeometry(2.4,3,2.4),lm);scene.add(m);const o={x:cx,y:cy,z:cz};const ph=rnd()*6;
+     const m=new THREE.Mesh(new THREE.BoxGeometry(5.5,7,5.5),lm);scene.add(m);const o={x:cx,y:cy,z:cz};const ph=rnd()*6;
      anims.push(t=>{o.x=cx+Math.sin(t*.03+ph)*60;o.z=cz+Math.cos(t*.025+ph)*60;o.y=cy+Math.sin(t*.2+ph)*4;m.position.set(o.x,o.y,o.z);m.rotation.y=t*.3;});FINDS.lanterns.push(o);}}
   /* ---- Greystone: a crane over the terraced pit, and the stone sheds ---- */
   {const I=ISLES.quarry,c=fromUV(I,120,-40),rimP=fromUV(I,120,-40+250),ry=groundH(rimP.x,rimP.z);
@@ -136,24 +136,24 @@ function spireAt(it,x,z,y0,top,r0,r1,seed){const n=7;let px=x,pz=z;
    anims.push(t=>{mills.forEach((s,i)=>{s.rotation.z=t*.9+i;});});
    const c=fromUV(I,0,-70);mark('mills',c.x,c.z,groundH(c.x,c.z),'The Seven Mills','They grind flour for half the islands. Agnes knows each one by its creak.');
    FINDS.sheep=[];for(let k=0;k<6;k++){const p=onIsle('windward',(x,z,h)=>h>8&&slopeAt(x,z)<.3&&clearOf(x,z,40),()=>rnd());if(!p)continue;const ry=rnd()*6;
-     it.push({geo:BOX(2.2,1.8,3.2),m:M([p.x,p.h+1.4,p.z],[0,ry,0]),color:0xc2453a});it.push({geo:BOX(1,1,1.2),m:M([p.x+Math.sin(ry)*2,p.h+2,p.z+Math.cos(ry)*2],[0,ry,0]),color:0x2c2833});FINDS.sheep.push({x:p.x,y:p.h,z:p.z});}}
+     it.push({geo:BOX(2.2,1.8,3.2),m:M([p.x,p.h+3,p.z],[0,ry,0],[2.6,2.6,2.6]),color:0xff3a2a});it.push({geo:BOX(1,1,1.2),m:M([p.x+Math.sin(ry)*5,p.h+4.6,p.z+Math.cos(ry)*5],[0,ry,0],[2.6,2.6,2.6]),color:0x2c2833});FINDS.sheep.push({x:p.x,y:p.h,z:p.z});}}
   /* ---- Bell Rock ---- */
   {const I=ISLES.bell,y=groundH(I.x,I.z);it.push({geo:BOX(5,16,5),m:M([I.x,y+7,I.z]),color:0xe8e2d6});for(const [a,b] of [[-1,-1],[1,-1],[-1,1],[1,1]])it.push({geo:BOX(.8,4,.8),m:M([I.x+a*2.1,y+17,I.z+b*2.1]),color:0xe8e2d6});
    it.push({geo:new THREE.ConeGeometry(4,4,4).rotateY(Math.PI/4),m:M([I.x,y+21,I.z]),color:0x3f6f8f});it.push({geo:new THREE.CylinderGeometry(.6,1.3,1.6,8),m:M([I.x,y+16.4,I.z]),color:0xd8a040});solidCyl(I.x,I.z,y-2,y+23,4,3);
    mark('bell',I.x,I.z,y,'Bell Rock','A bell tower on a rock in the fog lane. It rings by itself when the swell is up.');}
   /* ---- Tern Bars: a wreck and some seals ---- */
-  {const I=ISLES.tern,w=fromUV(I,60,10),y=.6;const W=new THREE.Mesh(merge([{geo:BOX(7,4,26),m:M([0,1,0]),color:0x5a4438},{geo:BOX(7.2,1,26.2),m:M([0,-1,0]),color:0x3a3036},{geo:BOX(4,3,6),m:M([0,4,-4]),color:0x8a7a6a},
+  {const I=ISLES.tern,w=fromUV(I,60,10),y=.6;const W=new THREE.Mesh(merge([{geo:BOX(7,4,26),m:M([0,1,0]),color:0xc2553f},{geo:BOX(7.2,1,26.2),m:M([0,-1,0]),color:0x2c2833},{geo:BOX(4,3,6),m:M([0,4,-4]),color:0xf4efe4},
      {geo:new THREE.CylinderGeometry(.35,.4,11,5),m:M([0,8,3],[0,0,.3]),color:0x6e5240}]),toon());W.position.set(w.x,y,w.z);W.rotation.set(.05,.8,.22);scene.add(W);
    mark('wreck',w.x,w.z,0,'The Wreck of the Merrow','A coaster that ran onto the bars in a storm. The terns moved in the next morning.');
    for(const [du,dv] of TERN)for(let k=0;k<3;k++){const p=fromUV(I,du+(rnd()-.5)*80,dv+(rnd()-.5)*20),h=groundH(p.x,p.z);if(h<.3)continue;it.push({geo:new THREE.SphereGeometry(1,6,4),m:M([p.x,h+.4,p.z],[0,rnd()*3,0],[1,.6,2]),color:0x8a8890});}}
   /* ---- Marram: Ollie's dad's lobster-pot buoys, scattered by the storm ---- */
   {const I=ISLES.marram;FINDS.buoys=[];for(let k=0;k<6;k++){const a=k/6*TAU+.4,r=1100+rnd()*700,x=I.x+Math.cos(a)*r,z=I.z+Math.sin(a)*r;if(groundH(x,z)>-1)continue;
-     const m=new THREE.Mesh(merge([{geo:new THREE.SphereGeometry(1.4,8,6),m:M([0,0,0]),color:0xff7a2e},{geo:BOX(.12,4,.12),m:M([0,2.4,0]),color:0x2c2833},{geo:BOX(1.6,1,.1),m:M([.8,3.8,0]),color:0xff7a2e}]),toon({},false));
+     const m=new THREE.Mesh(merge([{geo:new THREE.SphereGeometry(4,10,7),m:M([0,0,0]),color:0xff6a1e},{geo:BOX(4.2,1.2,4.2),m:M([0,0,0]),color:0xffffff},{geo:BOX(.4,12,.4),m:M([0,7,0]),color:0x2c2833},{geo:BOX(5,3,.2),m:M([2.5,11.5,0]),color:0xffd34a}]),toon({},false));
      m.position.set(x,0,z);scene.add(m);const ph=rnd()*6;anims.push(t=>{m.position.y=Math.sin(t*1.3+ph)*.3;m.rotation.z=Math.sin(t+ph)*.15;});FINDS.buoys.push({x,y:0,z});}}
   /* ---- Tallpine: osprey nests on dead snags ---- */
   {FINDS.nests=[];for(let k=0;k<6;k++){const p=findSpot(1100,-200,1500,(x,z,h)=>isleAt(x,z)==='tall'&&h>60&&h<380&&slopeAt(x,z)<.35&&clearOf(x,z,40),()=>rnd());if(!p)continue;
-     beam(it,new V3(p.x,p.h-1,p.z),new V3(p.x+.6,p.h+26,p.z+.3),.7,0xb8a890);it.push({geo:new THREE.CylinderGeometry(2.4,1.4,1.4,8),m:M([p.x+.6,p.h+26.6,p.z+.3]),color:0x8a6a4a});
-     it.push({geo:BOX(.9,.9,1.6),m:M([p.x+.6,p.h+27.8,p.z+.3]),color:0xf4f0e6});FINDS.nests.push({x:p.x,y:p.h+20,z:p.z});}}
+     beam(it,new V3(p.x,p.h-1,p.z),new V3(p.x+.6,p.h+36,p.z+.3),1.4,0xf4efe4);for(const a of [0,2.2,4.1])beam(it,new V3(p.x+.4,p.h+24+a,p.z+.2),new V3(p.x+Math.cos(a)*7,p.h+30+a,p.z+Math.sin(a)*7),.5,0xf4efe4);
+     it.push({geo:new THREE.CylinderGeometry(6,3.5,3.2,9),m:M([p.x+.6,p.h+37.4,p.z+.3]),color:0xf0c050});it.push({geo:BOX(2.4,2.4,4),m:M([p.x+.6,p.h+40,p.z+.3]),color:0xffffff});it.push({geo:BOX(1,1,1.4),m:M([p.x+.6,p.h+41,p.z-1.8]),color:0x2c2833});FINDS.nests.push({x:p.x,y:p.h+30,z:p.z});}}
   /* a hut and windsock-side shed for each new airstrip */
   for(const s of ARCH_STRIPS){if(['sisters','cleft','cascade'].includes(s.id))continue;const S=stripOf(s.id),p=toWorld(S,S.len/2-60,-(S.wid/2+22));if(groundH(p.x,p.z)<2)continue;hutAt(it,rf,p.x,p.z,-S.hdg*DEG,6,5,3,0xe8dcc8,0x3f6f8f,1);}
   scene.add(shadowy(new THREE.Mesh(merge(it),toon())));scene.add(shadowy(new THREE.Mesh(merge(rf),toon())));for(const [x,y,z,c] of lit)addLight(x,y,z,c);

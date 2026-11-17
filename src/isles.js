@@ -83,6 +83,6 @@ const ARCH_COL={
   windward(h,sl,n1,n2){if(h<3&&sl<.3)return tc.setHex(COL.sand);if(sl>.45)return tc.setHex(COL.rock);return tc.setHex(0x7eab4e).lerp(tc2.setHex(0xa8b860),n1*.5+.5).lerp(tc2.setHex(0x8f9a5a),smooth(60,150,h)*.6);},
   bell(h,sl){return sl>.4||h<4?tc.setHex(0x7a7270):tc.setHex(0x8a9a6a);},
   tern(h){return tc.setHex(h<.8?0xd8c49a:0xeedcb0);},
-  heart(h,sl,n1,n2){if(h<1.2)return tc.setHex(0xead8a8);return tc.setHex(0x8cc05a).lerp(tc2.setHex(0xe890a8),n2>.35?.6:0);},
+  heart(h,sl,n1,n2){if(h<1.2)return tc.setHex(0xf4e0b0);return tc.setHex(0xf0a0b8).lerp(tc2.setHex(0x8cc05a),n2>.4?.5:0);},
 };
 const orchardAt=(x,z)=>{const I=ISLES.apple;if((x-I.x)**2+(z-I.z)**2>1500*1500)return false;const h=naturalH(x,z);return h>14&&h<90&&fbm(x*.0018,z*.0018,3,237)>.02;};

@@ -85,13 +85,21 @@ function dogBark(dt){barkCD-=dt;barkT+=dt;if(barkT<1)return;barkT=0;if(!settings
   const dir=Math.abs(rel)<25?'dead ahead':Math.abs(rel)>150?'behind you':rel<0?(rel<-70?'off to the left':'ahead and to the left'):(rel>70?'off to the right':'ahead and to the right');
   const km=Math.hypot(P.x-best.x,P.z-best.z);tip('dog','That\'s Biscuit. He barks when he smells something worth seeing. Follow his nose.',4);
   toast(`Woof! Biscuit's nose points ${dir}${km<350?', right below':''}: ${best.say}.`,2.8);}
-function updDog(dt,t){const U=plane.userData;dog.g.visible=U.bodyM.visible;if(!dog.g.visible)return;const sp=Math.min(ac.ias/45,1.3);
-  dog.bark=Math.max(0,dog.bark-dt);const b=dog.bark>0?1:0;
+let peekClock=12,peekDur=0;
+function updDog(dt,t){const U=plane.userData,cock=!U.bodyM.visible&&mode!=='crashed';dog.bark=Math.max(0,dog.bark-dt);const b=dog.bark>0?1:0;
+  let yaw=0;if(b&&dogTarget){const lp=plane.worldToLocal(_c1.set(dogTarget.x,ac.pos.y,dogTarget.z));yaw=clamp(Math.atan2(-lp.x,-lp.z),-.8,.8);}
+  dog.yaw=lerp(dog.yaw,yaw,1-Math.exp(-dt*6));
+  if(cock){/* in the cockpit he sits in the right seat and pops his head up now and then for a look */
+    peekClock-=dt;if(peekClock<=0){peekClock=18+Math.random()*16;peekDur=3.5+Math.random()*2;}if(b)peekDur=Math.max(peekDur,1.2);peekDur-=dt;
+    dog.peek=lerp(dog.peek||0,peekDur>0?1:0,1-Math.exp(-dt*(peekDur>0?3.5:2.5)));dog.g.visible=dog.peek>.02;if(!dog.g.visible)return;
+    dog.g.scale.setScalar(.75);dog.g.position.set(.6,-.85+dog.peek*.36+Math.sin(t*2.2)*.01,-2.1);
+    const look=.7+Math.sin(t*.7)*.45+(peekDur<1.2&&!b?.8*(1-peekDur/1.2):0);dog.g.rotation.set(.1-(b?Math.abs(Math.sin(t*14))*.2:0),b?dog.yaw:look,Math.sin(t*1.6)*.08);
+    dog.eL.rotation.x=dog.eR.rotation.x=-.1+Math.sin(t*3)*.05;dog.eL.rotation.z=-.15;dog.eR.rotation.z=.15;dog.tongue.rotation.x=Math.sin(t*9)*.15;return;}
+  dog.g.visible=U.bodyM.visible;if(!dog.g.visible)return;dog.g.scale.setScalar(1.8);const sp=Math.min(ac.ias/45,1.3);
   dog.eL.rotation.x=dog.eR.rotation.x=-sp*1.1+Math.sin(t*22)*.18*sp;dog.eL.rotation.z=-.3*sp-Math.sin(t*17)*.12*sp;dog.eR.rotation.z=.3*sp+Math.sin(t*19)*.12*sp;
   dog.tongue.rotation.x=-sp*.9+Math.sin(t*25)*.2;
-  let yaw=0;if(b&&dogTarget){const lp=plane.worldToLocal(_c1.set(dogTarget.x,ac.pos.y,dogTarget.z));yaw=clamp(Math.atan2(-lp.x,-lp.z),-.8,.8);}
-  dog.yaw=lerp(dog.yaw,yaw,1-Math.exp(-dt*6));dog.g.rotation.set(Math.sin(t*3)*.05-(b?Math.abs(Math.sin(t*14))*.25:0),dog.yaw,Math.sin(t*2.1)*.06);
-  dog.g.position.x=.8+(b?.12:0)+Math.sin(t*1.3)*.02;dog.g.position.y=.6+(b?.06:0);}
+  dog.g.rotation.set(Math.sin(t*3)*.05-(b?Math.abs(Math.sin(t*14))*.25:0),dog.yaw,Math.sin(t*2.1)*.06);
+  dog.g.position.set(.8+(b?.12:0)+Math.sin(t*1.3)*.02,.6+(b?.06:0),-1.5);}
 function playChecks(dt){checkGates();checkFinds(dt);dogBark(dt);dogPopTick(dt);}
 /* Biscuit's pixel portrait pops up beside the message when he barks */
 const dogPic=(()=>{const c=document.createElement('canvas');c.width=c.height=32;const x=c.getContext('2d'),P=(col,a,b,w=1,h=1)=>{x.fillStyle=col;x.fillRect(a,b,w,h);};
@@ -103,3 +111,32 @@ const dogPic=(()=>{const c=document.createElement('canvas');c.width=c.height=32;
   const st=document.createElement('style');st.textContent='#dogpop{position:fixed;right:calc(var(--sr) + 8px);bottom:calc(var(--sb) + 150px);display:flex;align-items:center;gap:6px;background:var(--paper);color:var(--ink);padding:4px 10px 4px 4px;box-shadow:4px 4px 0 #0008;font-family:var(--mono);font-size:20px;pointer-events:none;animation:pop .4s}#dogpop img{width:44px;height:44px;image-rendering:pixelated}';document.head.appendChild(st);})();
 let dogPopT=0;
 function dogPopTick(dt){if(dog.bark>1.5&&dogPopT<=0){dogPopT=2.2;$('dogpop').hidden=false;}if(dogPopT>0){dogPopT-=dt;if(dogPopT<=0)$('dogpop').hidden=true;}}
+
+/* time of day: a little button in the top bar that steps noon → golden → sunset → blue hour → night → noon */
+const TOD_ICON=(()=>{const out={},I='#241c2e';
+  const draw=(k,fn)=>{const c=document.createElement('canvas');c.width=c.height=16;const x=c.getContext('2d'),P=(col,a,b,w=1,h=1)=>{x.fillStyle=col;x.fillRect(a,b,w,h);};
+    const disc=(cx,cy,r,col)=>{for(let j=-r;j<=r;j++)for(let i=-r;i<=r;i++)if(i*i+j*j<=r*r+r*.6)P(col,cx+i,cy+j);};fn(P,disc);out[k]=c.toDataURL();};
+  draw('noon',(P,d)=>{P('#7fb8e8',0,0,16,16);for(const [a,b] of [[7,0],[7,14],[0,7],[14,7],[2,2],[12,2],[2,12],[12,12]])P('#ffe07a',a,b,2,2);d(8,8,4,'#ffd34a');d(7,7,1,'#fff4c0');});
+  draw('golden',(P,d)=>{for(let y=0;y<16;y++)P(y<6?'#9c94d8':y<10?'#f0a868':'#ffc48a',0,y,16,1);d(8,10,4,'#ffe07a');P('#3d7ea0',0,12,16,4);P('#a8d8e0',3,13,10,1);});
+  draw('sunset',(P,d)=>{for(let y=0;y<16;y++)P(y<5?'#7d68b4':y<9?'#e2703f':'#ff9a5a',0,y,16,1);d(8,11,4,'#ffb04a');P('#283a74',0,11,16,5);P('#ffa060',4,12,8,1);P('#ffa060',6,14,4,1);});
+  draw('dusk',(P,d)=>{for(let y=0;y<16;y++)P(y<7?'#3a3a78':y<11?'#6b6aa8':'#c88aa8',0,y,16,1);P('#1d3560',0,12,16,4);P('#ffffff',3,3);P('#ffffff',11,2);P('#ffc8a8',4,12,8,1);});
+  draw('night',(P,d)=>{P('#151a38',0,0,16,16);d(8,7,5,'#f4ecd0');d(10,5,4,'#151a38');for(const [a,b] of [[2,2],[13,3],[3,12],[12,12],[14,8]])P('#ffffff',a,b);});
+  return out;})();
+function updTodBtn(){const b=$('todBtn');if(!b)return;b.innerHTML=`<img src="${TOD_ICON[tod]||TOD_ICON.noon}" alt="${(TOD[tod]||{}).name||''}">`;b.title=(TOD[tod]||{}).name||'';}
+$('todBtn').addEventListener('click',e=>{e.stopPropagation();const ks=Object.keys(TOD),k=ks[(ks.indexOf(tod)+1)%ks.length];settings.light=k;saveS();setTOD(k);updTodBtn();toast(TOD[k].name,1.2);});
+
+/* twinkles: a small blinking star over every landmark you haven't found yet (gold), and over each item an active errand still needs (white).
+   Only within a couple of kilometres, hidden behind hills, and gone once found. */
+const spark=(()=>{const MAX=80,g=new THREE.BufferGeometry(),pos=new Float32Array(MAX*3).fill(-1e5),col=new Float32Array(MAX*3);
+  g.setAttribute('position',new THREE.BufferAttribute(pos,3));g.setAttribute('color',new THREE.BufferAttribute(col,3));
+  const m=new THREE.Points(g,new THREE.PointsMaterial({size:4,sizeAttenuation:false,vertexColors:true,fog:false}));m.frustumCulled=false;scene.add(m);return {g,pos,col,MAX,list:[],t:0};})();
+function updSpark(dt,t){spark.t-=dt;const P=camera.position;
+  if(spark.t<=0){spark.t=.4;const L=[];const far=(x,z)=>Math.hypot(P.x-x,P.z-z)>2800;
+    for(const [k,v] of Object.entries(sights)){if(log.sights[k]||far(v.x,v.z))continue;L.push({x:v.x,y:Math.max(v.y,groundH(v.x,v.z),0)+30,z:v.z,c:[1,.82,.35],ph:hash2(k.length,k.charCodeAt(0),7)});}
+    for(const id of activeErrands()){const e=ERRANDS[id];if(!e.set)continue;FINDS[e.set].forEach((p,i)=>{if(errState(id).found.includes(i))return;if(!far(p.x,p.z))L.push({o:p,dy:22,c:[.75,1,1],ph:i*.37,fast:1});});}
+    spark.list=L.slice(0,spark.MAX);}
+  const show=mode!=='title';
+  for(let i=0;i<spark.MAX;i++){const L=spark.list[i],j=i*3;if(!L||!show){spark.pos[j+1]=-1e5;continue;}
+    const ph=(t*(L.fast?1.3:.8)+L.ph)%1,on=true;const x=L.o?L.o.x:L.x,y=L.o?L.o.y+L.dy:L.y,z=L.o?L.o.z:L.z;
+    spark.pos[j]=x;spark.pos[j+1]=on?y:-1e5;spark.pos[j+2]=z;const k=ph<.3?1.15-ph/.3*.3:.45;spark.col[j]=L.c[0]*k;spark.col[j+1]=L.c[1]*k;spark.col[j+2]=L.c[2]*k;}
+  spark.g.attributes.position.needsUpdate=true;spark.g.attributes.color.needsUpdate=true;}

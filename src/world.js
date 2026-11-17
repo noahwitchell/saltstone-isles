@@ -585,9 +585,9 @@ function mark(id,x,z,y,name,desc){sights[id]={x,z,y,name,desc};farmSpots.push({x
 (function landmarks(){const it=[],lit=[];
   // Ferrow: standing stones on the highest open ground
   {const p=findSpot(-1150,500,1000,(x,z,h)=>h>20&&isleAt(x,z)==='ferrow'&&slopeAt(x,z)<.14&&clearOf(x,z,150)&&Math.hypot(x-villageC.x,z-villageC.z)>400,(x,z,h)=>h);
-   if(p){for(let k=0;k<11;k++){const a=k/11*TAU,x=p.x+Math.cos(a)*14,z=p.z+Math.sin(a)*14,h=groundH(x,z);it.push({geo:BOX(2.2,5.5+hash2(k,1,31)*2.5,1.3),m:M([x,h+2.2,z],[0,-a,(hash2(k,2,31)-.5)*.12]),color:rockC[k%4]});}
-     for(const a of [0,2.1,4.2]){it.push({geo:BOX(5.4,1.1,1.5),m:M([p.x+Math.cos(a+.29)*13.8,groundH(p.x,p.z)+8.2,p.z+Math.sin(a+.29)*13.8],[0,-a-.29-Math.PI/2,0]),color:rockC[2]});}
-     it.push({geo:BOX(3,1.2,2),m:M([p.x,p.h+.4,p.z],[0,.4,0]),color:rockC[3]});
+   if(p){for(let k=0;k<11;k++){const a=k/11*TAU,x=p.x+Math.cos(a)*14,z=p.z+Math.sin(a)*14,h=groundH(x,z);it.push({geo:BOX(3,7.5+hash2(k,1,31)*3,1.8),m:M([x,h+3,z],[0,-a,(hash2(k,2,31)-.5)*.12]),color:k%2?0xf0e8d4:0xe0d8c4});}
+     for(const a of [0,2.1,4.2]){it.push({geo:BOX(5.4,1.1,1.5),m:M([p.x+Math.cos(a+.29)*13.8,groundH(p.x,p.z)+10.5,p.z+Math.sin(a+.29)*13.8],[0,-a-.29-Math.PI/2,0]),color:0xe0d8c4});}
+     it.push({geo:BOX(3,1.2,2),m:M([p.x,p.h+.4,p.z],[0,.4,0]),color:0xd8d0bc});
      mark('stones',p.x,p.z,p.h,'The Old Stones','A ring of standing stones older than anyone on Ferrow.');}}
   // Ferrow: chapel with a spire at the top of the village street
   {const vc=villageC,dx=STRIPS[0].fx,dz=STRIPS[0].fz;let p=null;for(const d of [160,185,140,210,120]){for(const sd of [1,-1]){const x=vc.x+dx*d*sd,z=vc.z+dz*d*sd;if(groundH(x,z)>4&&slopeAt(x,z)<.2&&!nearStrip(x,z,40)){p={x,z};break;}}if(p)break;}
@@ -612,8 +612,8 @@ function mark(id,x,z,y,name,desc){sights[id]={x,z,y,name,desc};farmSpots.push({x
   // Tallpine: rusted biplane in a clearing (Bea's old engine)
   {const p=findSpot(1500,300,1000,(x,z,h)=>h>30&&h<220&&isleAt(x,z)==='tall'&&slopeAt(x,z)<.18&&clearOf(x,z,150),(x,z,h)=>rnd());
    if(p){const y=p.h,ry=.7;const W=(dx,dy,dz)=>[p.x+Math.cos(ry)*dx+Math.sin(ry)*dz,y+dy,p.z-Math.sin(ry)*dx+Math.cos(ry)*dz];
-     it.push({geo:BOX(1.4,1.4,7),m:M(W(0,.9,0),[.06,ry,.15]),color:0x8a5a3a});it.push({geo:BOX(10,.2,1.6),m:M(W(0,1.5,-1),[0,ry,.15]),color:0xa8743e});
-     it.push({geo:BOX(6,.2,1.6),m:M(W(-1.6,3.2,-1.1),[0,ry,.4]),color:0x9a6a3a});it.push({geo:BOX(3,.2,1),m:M(W(0,1.3,3.4),[0,ry,0]),color:0x8a5a3a});
+     it.push({geo:BOX(1.4,1.4,7),m:M(W(0,.9,0),[.06,ry,.15]),color:0xd2493c});it.push({geo:BOX(10,.2,1.6),m:M(W(0,1.5,-1),[0,ry,.15]),color:0xf3e7cf});
+     it.push({geo:BOX(6,.2,1.6),m:M(W(-1.6,3.2,-1.1),[0,ry,.4]),color:0xf3e7cf});it.push({geo:BOX(3,.2,1),m:M(W(0,1.3,3.4),[0,ry,0]),color:0xd2493c});
      it.push({geo:BOX(.2,1.4,1),m:M(W(0,2,3.5),[0,ry,0]),color:0xc2553f});
      mark('biplane',p.x,p.z,y,'Rusted Biplane','A cream-and-red wreck in the trees. The tail number matches one in Bea\'s logbook.');}}
   // Gull Point: sea stacks off the north cliffs, white with seabirds
@@ -636,8 +636,8 @@ function mark(id,x,z,y,name,desc){sights[id]={x,z,y,name,desc};farmSpots.push({x
      mark('whale',p.x,p.z,p.h,'Whale Bones','Washed up before Ollie was born. He has named every rib.');}}
   // Farhold: castle ruin on the eastern headland
   {const f=ISLES.farhold;let p=null;for(let r=200;r<1600;r+=10){const x=f.x+Math.cos(.55)*r,z=f.z+Math.sin(.55)*r,h=groundH(x,z);if(h<14){p={x:f.x+Math.cos(.55)*(r-70),z:f.z+Math.sin(.55)*(r-70)};break;}}
-   if(p){const y=groundH(p.x,p.z),st=0x9a968c;for(const [dx,dz,w,d,hh] of [[0,-14,28,2.4,9],[-14,0,2.4,28,7],[14,2,2.4,22,5],[4,14,18,2.4,8]])it.push({geo:BOX(w,hh,d),m:M([p.x+dx,y+hh/2-1,p.z+dz]),color:st});
-     it.push({geo:new THREE.CylinderGeometry(5,5.6,20,8),m:M([p.x-14,y+9,p.z-14]),color:0xa8a49c});
+   if(p){const y=groundH(p.x,p.z),st=0xd8d0c0;for(const [dx,dz,w,d,hh] of [[0,-14,28,2.4,9],[-14,0,2.4,28,7],[14,2,2.4,22,5],[4,14,18,2.4,8]])it.push({geo:BOX(w,hh,d),m:M([p.x+dx,y+hh/2-1,p.z+dz]),color:st});
+     it.push({geo:new THREE.CylinderGeometry(5,5.6,20,8),m:M([p.x-14,y+9,p.z-14]),color:0xe0d8c8});it.push({geo:BOX(.3,8,.3),m:M([p.x-14,y+25,p.z-14]),color:0x2c2833});it.push({geo:BOX(5,3,.2),m:M([p.x-11.5,y+27.5,p.z-14]),color:0xd2493c});
      for(let k=0;k<8;k++){const a=k/8*TAU;it.push({geo:BOX(1.6,1.6,1.6),m:M([p.x-14+Math.cos(a)*4.6,y+19.8,p.z-14+Math.sin(a)*4.6],[0,-a,0]),color:0xa8a49c});}
      for(let k=0;k<6;k++)it.push({geo:new THREE.DodecahedronGeometry(1,0),m:M([p.x+(rnd()-.5)*36,y,p.z+(rnd()-.5)*36],[rnd(),rnd(),0],[1+rnd()*2,.8+rnd(),1+rnd()*2]),color:st});
      mark('castle',p.x,p.z,y,'Calder Keep','A broken tower on the headland. Ivy\'s family built it, or so she says.');}}
@@ -807,7 +807,8 @@ U:['101','101','101','101','111'],I:['111','010','010','010','111'],G:['011','10
 D:['110','101','101','101','110'],B:['110','101','110','101','110'],V:['101','101','101','101','010'],Y:['101','101','010','010','010'],'-':['000','000','111','000','000'],'+':['000','010','111','010','000'],' ':['000','000','000','000','000']};
 let pb, frameLayer=null, gaugeLayout=[], panelLayout=[];
 const C={bezel:rgba(0x1b1720),face:rgba(0x2b2734),tick:rgba(0xeae2cf),dim:rgba(0x8d8597),needle:rgba(0xfff6e2),orange:rgba(0xffb02e),
-  white:rgba(0xf3f0e6),green:rgba(0x5fbf5a),yellow:rgba(0xf1c84a),red:rgba(0xe5483b),sky:rgba(0x6fb2e6),gnd:rgba(0xa8743f),panel:rgba(0x3b3442),panelHi:rgba(0x5a5262),panelLo:rgba(0x27222d),post:rgba(0x2a2531),cyan:rgba(0x6fe0e0)};
+  white:rgba(0xf3f0e6),green:rgba(0x5fbf5a),yellow:rgba(0xf1c84a),red:rgba(0xe5483b),sky:rgba(0x6fb2e6),gnd:rgba(0xa8743f),panel:rgba(0x3b3442),panelHi:rgba(0x5a5262),panelLo:rgba(0x27222d),post:rgba(0x2a2531),cyan:rgba(0x6fe0e0),
+  gPanel:rgba(0x3b3442,46),gHi:rgba(0xd8cfe0,150),gLo:rgba(0x1b1720,70),gPost:rgba(0x2a2531,40)};
 function buildFrame(){
   // Two low dash pods in the bottom corners, one row of three gauges each, thin windshield posts leaning in. Middle stays open.
   const w=LW,h=LH,f=new PixBuf(w,h),k=(window.devicePixelRatio||1)/PS;
@@ -821,12 +822,12 @@ function buildFrame(){
   gaugeLayout=[L[0],L[1],Rt[0],null,L[2],Rt[1]];tachCock=Rt[2];glideCock=null;
   const y0=cy-R-8,sl=.42,le=L[2].x+L[2].r+7,rsx=Rt[0].x-Rt[0].r-7,rad=6;
   for(let y=y0;y<h;y++){const dy=y-y0;let ins=0;if(dy<rad){const q=rad-dy;ins=Math.round(rad-Math.sqrt(Math.max(0,rad*rad-q*q)));}
-    const c=dy<2?C.panelHi:C.panel,ex=Math.round(dy*sl)-ins;
+    const c=dy<2?C.gHi:C.gPanel,ex=Math.round(dy*sl)-ins;
     f.rect(0,y,le+ex,1,c);f.rect(rsx-ex,y,w-(rsx-ex),1,c);}
-  f.rect(0,y0+2,le-rad,1,C.panelLo);f.rect(rsx+rad,y0+2,w-rsx-rad,1,C.panelLo);
+  f.rect(0,y0+2,le-rad,1,C.gLo);f.rect(rsx+rad,y0+2,w-rsx-rad,1,C.gLo);
   // windshield posts: from the pod top near the outer edge, leaning in toward the top of the screen
   const pw=Math.max(2,Math.round(w*.006));
-  const post=(xb,xt)=>{for(let y=0;y<=y0;y++){const t=y/y0,xx=Math.round(lerp(xt,xb,t));f.rect(xx-pw,y,1,1,C.panelHi);f.rect(xx-pw+1,y,pw*2-2,1,C.post);f.rect(xx+pw-1,y,1,1,C.panelLo);}};
+  const post=(xb,xt)=>{for(let y=0;y<=y0;y++){const t=y/y0,xx=Math.round(lerp(xt,xb,t));f.rect(xx-pw,y,1,1,C.gHi);f.rect(xx-pw+1,y,pw*2-2,1,C.gPost);f.rect(xx+pw-1,y,1,1,C.gHi);}};
   post(Math.round(w*.075),Math.round(w*.17));post(Math.round(w*.925),Math.round(w*.83));
   frameLayer=f.d.slice();
 }
