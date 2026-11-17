@@ -128,15 +128,25 @@ function honk(){if(mode!=='fly'||(honkT>=0&&honkT<.6))return;snd.honk();honkT=0;
   for(const o of (window.FOLK||[])){o.updateMatrixWorld();const w=o.getWorldPosition(_so);if(near(w.x,w.y,w.z))honkers.push({o,mv:true,ph:Math.random()*.35});}
   for(const set of ['goats','sheep'])for(const f of (FINDS[set]||[]))if(f.obj&&near(f.x,f.y,f.z))honkers.push({o:f.obj,mv:false,y0:f.obj.position.y,ph:Math.random()*.35});
   for(const [d,s] of SITES)if(s.react<0&&near(d.x,d.y,d.z))honkers.push({o:s.man,mv:false,y0:s.man.position.y,ph:.1});
-  const n=honkers.length;
-  if(n)toast(n===1?'Honk honk! Someone down there jumps and looks up.':`Honk honk! ${n} down there jump and look up.`,2);
+  const people=honkers.length;let sheep=0,flocks=0;
+  const SH=window.SHEEP;if(SH)SH.list.forEach((sp,i)=>{if(near(sp.x,sp.h,sp.z)){honkers.push({sheep:i,ph:Math.random()*.4});sheep++;}});
+  for(const e of SCARE)if(Math.hypot(e.x-P.x,e.z-P.z)<520&&P.y-e.y<350){e.at=animNow+Math.random()*.15;flocks++;}
+  const who=[people&&(people===1?'someone':people+' people'),sheep&&(sheep===1?'a sheep':sheep+' sheep')].filter(Boolean),n=people+sheep;
+  const ground=who.length?who.join(' and ')+(n===1?' jumps':' jump'):'',air=flocks?(flocks===1?'a flock of birds scatters':flocks+' flocks of birds scatter'):'';
+  const line=[ground,air].filter(Boolean).join(', and ');if(line)toast('Honk honk! '+line[0].toUpperCase()+line.slice(1)+'.',2.2);
   setTimeout(()=>{if(mode==='fly'&&settings.dog!==false){dog.bark=1.3;snd.woof();}},520);
   if(n>=3)goal('honk',true);}
 function updHonk(dt){if(honkT<0)return;honkT+=dt;
   for(const h of honkers){const t=honkT-h.ph,hop=t>0&&t<1.8?Math.abs(Math.sin(t*7.5))*1.4*(1-t/1.8):0;
+    if(h.sheep!=null){sheepPose(h.sheep,hop,t>0&&t<1.8);continue;}
     if(h.mv)h.o.position.y+=hop;else h.o.position.y=h.y0+hop;
     if(t>0&&t<1.8){const w=h.o.getWorldPosition(_so);h.o.rotation.y=Math.atan2(ac.pos.x-w.x,ac.pos.z-w.z);}}
-  if(honkT>2.4){for(const h of honkers)if(!h.mv)h.o.position.y=h.y0;honkers.length=0;honkT=-1;}}
+  const SH=window.SHEEP;if(SH&&honkers.some(h=>h.sheep!=null)){SH.body.instanceMatrix.needsUpdate=true;SH.head.instanceMatrix.needsUpdate=true;}
+  if(honkT>2.4){for(const h of honkers){if(h.sheep!=null)sheepPose(h.sheep,0,false);else if(!h.mv)h.o.position.y=h.y0;}if(SH){SH.body.instanceMatrix.needsUpdate=true;SH.head.instanceMatrix.needsUpdate=true;}honkers.length=0;honkT=-1;}}
+/* a sheep hops and swings round to look up at you, then goes back to grazing the way it was */
+const _shm=new THREE.Matrix4(),_shq=new THREE.Quaternion(),_she=new THREE.Euler(),_one=new V3(1,1,1);
+function sheepPose(i,hop,look){const SH=window.SHEEP,sp=SH.list[i],r=look?Math.atan2(sp.x-ac.pos.x,sp.z-ac.pos.z):sp.r;_shq.setFromEuler(_she.set(0,r,0));
+  SH.body.setMatrixAt(i,_shm.compose(_so.set(sp.x,sp.h+.7+hop,sp.z),_shq,_one));SH.head.setMatrixAt(i,_shm.compose(_so.set(sp.x-Math.sin(r)*1.2,sp.h+1+hop+(look?.2:0),sp.z-Math.cos(r)*1.2),_shq,_one));}
 $('hornBtn').addEventListener('pointerdown',e=>{e.preventDefault();honk();});
 function resetSwitches(){smokeOn=false;floatsOn=false;ac.floats=0;floatG.visible=false;micBusy=false;updFunUI();}
 function updSwitchesFx(dt){updHonk(dt);updRunwayLights(dt);updSmoke(dt);updSearch(dt);updFloats(dt);}

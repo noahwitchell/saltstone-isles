@@ -390,6 +390,10 @@ const parked=buildPlane({body:0xe9eef0,trim:0x3f7f8f}); scene.add(parked);
 
 /* ---------------- props: village, lighthouse, sights ---------------- */
 const anims=[];
+/* things the horn startles: each flock registers a spot; honk() stamps its time and the flock's animation reads scareOf() */
+const SCARE=[];let animNow=0;anims.push(t=>{animNow=t;});
+function scareSpot(x,y,z){const e={x,y,z,at:-1e9};SCARE.push(e);return e;}
+function scareOf(e,t){const s=t-e.at;if(s<0||s>6)return 0;return Math.min(1,s/.35)*(1-s/6)**2;}
 var harbor={x:0,z:0}, smokeSpots=[], villageC={x:0,z:0}, farmSpots=[];
 const H=STRIPS[0];
 function scanTo(x,z,dx,dz,cond,max=4000,step=10){for(let d=0;d<max;d+=step){const px=x+dx*d,pz=z+dz*d;if(cond(groundH(px,pz)))return {x:px,z:pz,d};}return null;}
@@ -475,7 +479,7 @@ function scanTo(x,z,dx,dz,cond,max=4000,step=10){for(let d=0;d<max;d+=step){cons
   const head=new THREE.InstancedMesh(BOX(.6,.6,.7),new THREE.MeshToonMaterial({color:0x2c2833,gradientMap:gradTex,flatShading:true}),sheep.length);
   const mm=new THREE.Matrix4(),q=new Q();sheep.forEach((sp,i)=>{q.setFromEuler(new THREE.Euler(0,sp.r,0));mm.compose(new V3(sp.x,sp.h+.7,sp.z),q,new V3(1,1,1));body.setMatrixAt(i,mm);
     mm.compose(new V3(sp.x-Math.sin(sp.r)*1.2,sp.h+1,sp.z-Math.cos(sp.r)*1.2),q,new V3(1,1,1));head.setMatrixAt(i,mm);});
-  body.castShadow=true;scene.add(body,head);
+  body.castShadow=true;scene.add(body,head);window.SHEEP={list:sheep,body,head};
 })();
 
 /* ---- sights, life, post, pixel HUD ---- */
@@ -784,12 +788,12 @@ function cloudMist(p){let m=0;const gx=cloudGroup.position.x,gz=cloudGroup.posit
 (function birds(){
   const mat=new THREE.MeshBasicMaterial({color:0x2c2833,side:THREE.DoubleSide});
   const flocks=[{x:sights.lighthouse.x+60,z:sights.lighthouse.z,y:sights.lighthouse.y+40,r:70},{x:sights.arch.x,z:sights.arch.z,y:60,r:90},{x:H.x+200,z:H.z+300,y:70,r:120}];
-  for(const f of flocks){for(let k=0;k<7;k++){
+  for(const f of flocks){const sc=scareSpot(f.x,f.y,f.z);for(let k=0;k<7;k++){
     const g=new THREE.Group();const wl=new THREE.Mesh(new THREE.PlaneGeometry(2.2,.7).translate(-1.1,0,0),mat),wr=new THREE.Mesh(new THREE.PlaneGeometry(2.2,.7).translate(1.1,0,0),mat);
     wl.rotation.x=wr.rotation.x=-Math.PI/2;const wlP=new THREE.Group(),wrP=new THREE.Group();wlP.add(wl);wrP.add(wr);g.add(wlP,wrP);scene.add(g);
     const ph=k*.9,rr=f.r*(.7+hash2(k,1,4)*.6),sp=.25+hash2(k,3,4)*.1;
-    anims.push(t=>{const a=ph+t*sp;g.position.set(f.x+Math.cos(a)*rr,f.y+Math.sin(t*.7+k)*6,f.z+Math.sin(a)*rr);g.rotation.y=-a;
-      const fl=Math.sin(t*9+k*2)*.5;wlP.rotation.z=fl;wrP.rotation.z=-fl;});
+    const da=k/7*TAU;anims.push(t=>{const a=ph+t*sp,s=scareOf(sc,t);g.position.set(f.x+Math.cos(a)*rr+Math.cos(da)*s*70,f.y+Math.sin(t*.7+k)*6+s*45,f.z+Math.sin(a)*rr+Math.sin(da)*s*70);g.rotation.y=-a;
+      const fl=Math.sin(t*(9+16*s)+k*2)*.5;wlP.rotation.z=fl;wrP.rotation.z=-fl;});
   }}
 })();
 (function smoke(){

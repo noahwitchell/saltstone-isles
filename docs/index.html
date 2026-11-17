@@ -804,6 +804,10 @@ const parked=buildPlane({body:0xe9eef0,trim:0x3f7f8f}); scene.add(parked);
 
 /* ---------------- props: village, lighthouse, sights ---------------- */
 const anims=[];
+/* things the horn startles: each flock registers a spot; honk() stamps its time and the flock's animation reads scareOf() */
+const SCARE=[];let animNow=0;anims.push(t=>{animNow=t;});
+function scareSpot(x,y,z){const e={x,y,z,at:-1e9};SCARE.push(e);return e;}
+function scareOf(e,t){const s=t-e.at;if(s<0||s>6)return 0;return Math.min(1,s/.35)*(1-s/6)**2;}
 var harbor={x:0,z:0}, smokeSpots=[], villageC={x:0,z:0}, farmSpots=[];
 const H=STRIPS[0];
 function scanTo(x,z,dx,dz,cond,max=4000,step=10){for(let d=0;d<max;d+=step){const px=x+dx*d,pz=z+dz*d;if(cond(groundH(px,pz)))return {x:px,z:pz,d};}return null;}
@@ -889,7 +893,7 @@ function scanTo(x,z,dx,dz,cond,max=4000,step=10){for(let d=0;d<max;d+=step){cons
   const head=new THREE.InstancedMesh(BOX(.6,.6,.7),new THREE.MeshToonMaterial({color:0x2c2833,gradientMap:gradTex,flatShading:true}),sheep.length);
   const mm=new THREE.Matrix4(),q=new Q();sheep.forEach((sp,i)=>{q.setFromEuler(new THREE.Euler(0,sp.r,0));mm.compose(new V3(sp.x,sp.h+.7,sp.z),q,new V3(1,1,1));body.setMatrixAt(i,mm);
     mm.compose(new V3(sp.x-Math.sin(sp.r)*1.2,sp.h+1,sp.z-Math.cos(sp.r)*1.2),q,new V3(1,1,1));head.setMatrixAt(i,mm);});
-  body.castShadow=true;scene.add(body,head);
+  body.castShadow=true;scene.add(body,head);window.SHEEP={list:sheep,body,head};
 })();
 
 /* ---- sights, life, post, pixel HUD ---- */
@@ -1046,8 +1050,8 @@ var townSpots=[];
       const b=new THREE.Mesh(merge([{geo:BOX(3.4,1.6,10),m:M([0,.5,0]),color:[0xd2493c,0x3f6f8f,0x3f8f5a,0xe8a33a][f%4]},{geo:BOX(3.5,.4,10.1),m:M([0,-.2,0]),color:0x2c2833},{geo:BOX(2.4,2.2,3),m:M([0,2.2,2]),color:0xf8f4ee},{geo:BOX(2.5,.3,3.1),m:M([0,3.4,2]),color:0x3f6f8f},
         {geo:BOX(.2,7,.2),m:M([0,4.5,-2.4]),color:0xe8e4dc},{geo:BOX(.15,.15,7),m:M([0,7.2,-5]),color:0xe8e4dc,},{geo:BOX(1.2,.8,1.2),m:M([.6,1.7,-3]),color:0xe8a33a}]),toon({},false));b.scale.setScalar(1.3);b.position.set(x,0,z);const ry=rnd()*TAU;b.rotation.y=ry;scene.add(b);
       anims.push(t=>{b.position.y=Math.sin(t*1.2+f)*.18;b.rotation.z=Math.sin(t*.9+f)*.05;b.rotation.x=Math.sin(t*.7+f*2)*.03;});addLight(x,4.4,z,0xffe0a0);
-      for(let k=0;k<4;k++){const gg=new THREE.Group(),wl=new THREE.Group(),wr=new THREE.Group();wl.add(new THREE.Mesh(new THREE.PlaneGeometry(2,.7).translate(-1,0,0).rotateX(-Math.PI/2),gm));wr.add(new THREE.Mesh(new THREE.PlaneGeometry(2,.7).translate(1,0,0).rotateX(-Math.PI/2),gm));gg.add(wl,wr);scene.add(gg);
-        const rr=10+k*5,ph=k*1.6,hy=12+k*3;anims.push(t=>{const q=ph+t*.4*(k%2?1:-1);gg.position.set(x+Math.cos(q)*rr,hy+Math.sin(t+k)*2,z+Math.sin(q)*rr);gg.rotation.y=-q;const fl=Math.sin(t*7+k)*.5;wl.rotation.z=fl;wr.rotation.z=-fl;});}
+      const gsc=scareSpot(x,12,z);for(let k=0;k<4;k++){const gg=new THREE.Group(),wl=new THREE.Group(),wr=new THREE.Group();wl.add(new THREE.Mesh(new THREE.PlaneGeometry(2,.7).translate(-1,0,0).rotateX(-Math.PI/2),gm));wr.add(new THREE.Mesh(new THREE.PlaneGeometry(2,.7).translate(1,0,0).rotateX(-Math.PI/2),gm));gg.add(wl,wr);scene.add(gg);
+        const rr=10+k*5,ph=k*1.6,hy=12+k*3;anims.push(t=>{const q=ph+t*.4*(k%2?1:-1),s=scareOf(gsc,t),da=k*1.57+.4;gg.position.set(x+Math.cos(q)*rr+Math.cos(da)*s*40,hy+Math.sin(t+k)*2+s*30,z+Math.sin(q)*rr+Math.sin(da)*s*40);gg.rotation.y=-q;const fl=Math.sin(t*(7+16*s)+k)*.5;wl.rotation.z=fl;wr.rotation.z=-fl;});}
       break;}}
   // whales: they surface every so often, blow, and roll back under
   let w=0;for(let k=0;k<400&&w<3;k++){const x=(rnd()-.5)*20000,z=(rnd()-.5)*18000;if(!ringSea(x,z,260)||!isSea(x,z,-25))continue;w++;
@@ -1796,12 +1800,12 @@ function cloudMist(p){let m=0;const gx=cloudGroup.position.x,gz=cloudGroup.posit
 (function birds(){
   const mat=new THREE.MeshBasicMaterial({color:0x2c2833,side:THREE.DoubleSide});
   const flocks=[{x:sights.lighthouse.x+60,z:sights.lighthouse.z,y:sights.lighthouse.y+40,r:70},{x:sights.arch.x,z:sights.arch.z,y:60,r:90},{x:H.x+200,z:H.z+300,y:70,r:120}];
-  for(const f of flocks){for(let k=0;k<7;k++){
+  for(const f of flocks){const sc=scareSpot(f.x,f.y,f.z);for(let k=0;k<7;k++){
     const g=new THREE.Group();const wl=new THREE.Mesh(new THREE.PlaneGeometry(2.2,.7).translate(-1.1,0,0),mat),wr=new THREE.Mesh(new THREE.PlaneGeometry(2.2,.7).translate(1.1,0,0),mat);
     wl.rotation.x=wr.rotation.x=-Math.PI/2;const wlP=new THREE.Group(),wrP=new THREE.Group();wlP.add(wl);wrP.add(wr);g.add(wlP,wrP);scene.add(g);
     const ph=k*.9,rr=f.r*(.7+hash2(k,1,4)*.6),sp=.25+hash2(k,3,4)*.1;
-    anims.push(t=>{const a=ph+t*sp;g.position.set(f.x+Math.cos(a)*rr,f.y+Math.sin(t*.7+k)*6,f.z+Math.sin(a)*rr);g.rotation.y=-a;
-      const fl=Math.sin(t*9+k*2)*.5;wlP.rotation.z=fl;wrP.rotation.z=-fl;});
+    const da=k/7*TAU;anims.push(t=>{const a=ph+t*sp,s=scareOf(sc,t);g.position.set(f.x+Math.cos(a)*rr+Math.cos(da)*s*70,f.y+Math.sin(t*.7+k)*6+s*45,f.z+Math.sin(a)*rr+Math.sin(da)*s*70);g.rotation.y=-a;
+      const fl=Math.sin(t*(9+16*s)+k*2)*.5;wlP.rotation.z=fl;wrP.rotation.z=-fl;});
   }}
 })();
 (function smoke(){
@@ -2921,7 +2925,7 @@ function settingsCard(){
   const mv=[['OFF',0],['SOFT',.5],['ON',1]].map(([n,v])=>`<button data-mv="${v}" class="${(settings.music??.5)==v?'primary':''}">${n}</button>`).join('');
   const st=STATIONS.map(S=>`<button data-st="${S.id}" class="${settings.station===S.id?'primary':''}">${S.fq} ${S.name.toUpperCase()}</button>`).join('');
   const lt=Object.keys(TOD).map(k=>`<button data-lt="${k}" class="${settings.light===k?'primary':''}">${TOD[k].name.toUpperCase()}</button>`).join('');
-  showCard(`<h2>Settings</h2><div class="sub">ASSISTS · TURN THEM OFF ONE AT A TIME AS YOU IMPROVE</div>${rows}<h3>ENGINE VOLUME</h3><div class="btns">${ev}</div><h3>RADIO VOLUME</h3><div class="btns">${mv}</div><h3>RADIO STATION · OR TAP THE DIAL UP TOP WHILE FLYING</h3><div class="btns">${st}</div><h3>TIME OF DAY</h3><div class="btns">${lt}</div><h3>PIXELS</h3><div class="btns">${px}</div><div class="sub" style="margin-top:14px">BUILD d050a2e</div>`,[['Back',back,true]]);
+  showCard(`<h2>Settings</h2><div class="sub">ASSISTS · TURN THEM OFF ONE AT A TIME AS YOU IMPROVE</div>${rows}<h3>ENGINE VOLUME</h3><div class="btns">${ev}</div><h3>RADIO VOLUME</h3><div class="btns">${mv}</div><h3>RADIO STATION · OR TAP THE DIAL UP TOP WHILE FLYING</h3><div class="btns">${st}</div><h3>TIME OF DAY</h3><div class="btns">${lt}</div><h3>PIXELS</h3><div class="btns">${px}</div><div class="sub" style="margin-top:14px">BUILD af34e05</div>`,[['Back',back,true]]);
   const cb=$('cardBody');
   cb.querySelectorAll('[data-k]').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.k;if(k==='tilt'){if(!settings.tilt){settings.tilt=true;saveS();enableTilt().then(()=>{updTiltUI();settingsCard();});}else{settings.tilt=false;saveS();disableTilt();updTiltUI();settingsCard();}return;}settings[k]=!settings[k];saveS();if(k==='sound')snd.setOn(settings.sound);if(k==='fps'){$('fps').hidden=!settings.fps;$('fps').textContent='FPS: measuring…';fpsN=fpsT=0;fpsLast=0;}if(k==='sound')music.setVol();settingsCard();}));
   cb.querySelectorAll('[data-px]').forEach(b=>b.addEventListener('click',()=>{settings.pixels=b.dataset.px;pixMode=settings.pixels;saveS();resize();settingsCard();}));
@@ -3618,15 +3622,25 @@ function honk(){if(mode!=='fly'||(honkT>=0&&honkT<.6))return;snd.honk();honkT=0;
   for(const o of (window.FOLK||[])){o.updateMatrixWorld();const w=o.getWorldPosition(_so);if(near(w.x,w.y,w.z))honkers.push({o,mv:true,ph:Math.random()*.35});}
   for(const set of ['goats','sheep'])for(const f of (FINDS[set]||[]))if(f.obj&&near(f.x,f.y,f.z))honkers.push({o:f.obj,mv:false,y0:f.obj.position.y,ph:Math.random()*.35});
   for(const [d,s] of SITES)if(s.react<0&&near(d.x,d.y,d.z))honkers.push({o:s.man,mv:false,y0:s.man.position.y,ph:.1});
-  const n=honkers.length;
-  if(n)toast(n===1?'Honk honk! Someone down there jumps and looks up.':`Honk honk! ${n} down there jump and look up.`,2);
+  const people=honkers.length;let sheep=0,flocks=0;
+  const SH=window.SHEEP;if(SH)SH.list.forEach((sp,i)=>{if(near(sp.x,sp.h,sp.z)){honkers.push({sheep:i,ph:Math.random()*.4});sheep++;}});
+  for(const e of SCARE)if(Math.hypot(e.x-P.x,e.z-P.z)<520&&P.y-e.y<350){e.at=animNow+Math.random()*.15;flocks++;}
+  const who=[people&&(people===1?'someone':people+' people'),sheep&&(sheep===1?'a sheep':sheep+' sheep')].filter(Boolean),n=people+sheep;
+  const ground=who.length?who.join(' and ')+(n===1?' jumps':' jump'):'',air=flocks?(flocks===1?'a flock of birds scatters':flocks+' flocks of birds scatter'):'';
+  const line=[ground,air].filter(Boolean).join(', and ');if(line)toast('Honk honk! '+line[0].toUpperCase()+line.slice(1)+'.',2.2);
   setTimeout(()=>{if(mode==='fly'&&settings.dog!==false){dog.bark=1.3;snd.woof();}},520);
   if(n>=3)goal('honk',true);}
 function updHonk(dt){if(honkT<0)return;honkT+=dt;
   for(const h of honkers){const t=honkT-h.ph,hop=t>0&&t<1.8?Math.abs(Math.sin(t*7.5))*1.4*(1-t/1.8):0;
+    if(h.sheep!=null){sheepPose(h.sheep,hop,t>0&&t<1.8);continue;}
     if(h.mv)h.o.position.y+=hop;else h.o.position.y=h.y0+hop;
     if(t>0&&t<1.8){const w=h.o.getWorldPosition(_so);h.o.rotation.y=Math.atan2(ac.pos.x-w.x,ac.pos.z-w.z);}}
-  if(honkT>2.4){for(const h of honkers)if(!h.mv)h.o.position.y=h.y0;honkers.length=0;honkT=-1;}}
+  const SH=window.SHEEP;if(SH&&honkers.some(h=>h.sheep!=null)){SH.body.instanceMatrix.needsUpdate=true;SH.head.instanceMatrix.needsUpdate=true;}
+  if(honkT>2.4){for(const h of honkers){if(h.sheep!=null)sheepPose(h.sheep,0,false);else if(!h.mv)h.o.position.y=h.y0;}if(SH){SH.body.instanceMatrix.needsUpdate=true;SH.head.instanceMatrix.needsUpdate=true;}honkers.length=0;honkT=-1;}}
+/* a sheep hops and swings round to look up at you, then goes back to grazing the way it was */
+const _shm=new THREE.Matrix4(),_shq=new THREE.Quaternion(),_she=new THREE.Euler(),_one=new V3(1,1,1);
+function sheepPose(i,hop,look){const SH=window.SHEEP,sp=SH.list[i],r=look?Math.atan2(sp.x-ac.pos.x,sp.z-ac.pos.z):sp.r;_shq.setFromEuler(_she.set(0,r,0));
+  SH.body.setMatrixAt(i,_shm.compose(_so.set(sp.x,sp.h+.7+hop,sp.z),_shq,_one));SH.head.setMatrixAt(i,_shm.compose(_so.set(sp.x-Math.sin(r)*1.2,sp.h+1+hop+(look?.2:0),sp.z-Math.cos(r)*1.2),_shq,_one));}
 $('hornBtn').addEventListener('pointerdown',e=>{e.preventDefault();honk();});
 function resetSwitches(){smokeOn=false;floatsOn=false;ac.floats=0;floatG.visible=false;micBusy=false;updFunUI();}
 function updSwitchesFx(dt){updHonk(dt);updRunwayLights(dt);updSmoke(dt);updSearch(dt);updFloats(dt);}

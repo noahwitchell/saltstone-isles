@@ -150,8 +150,8 @@ var townSpots=[];
       const b=new THREE.Mesh(merge([{geo:BOX(3.4,1.6,10),m:M([0,.5,0]),color:[0xd2493c,0x3f6f8f,0x3f8f5a,0xe8a33a][f%4]},{geo:BOX(3.5,.4,10.1),m:M([0,-.2,0]),color:0x2c2833},{geo:BOX(2.4,2.2,3),m:M([0,2.2,2]),color:0xf8f4ee},{geo:BOX(2.5,.3,3.1),m:M([0,3.4,2]),color:0x3f6f8f},
         {geo:BOX(.2,7,.2),m:M([0,4.5,-2.4]),color:0xe8e4dc},{geo:BOX(.15,.15,7),m:M([0,7.2,-5]),color:0xe8e4dc,},{geo:BOX(1.2,.8,1.2),m:M([.6,1.7,-3]),color:0xe8a33a}]),toon({},false));b.scale.setScalar(1.3);b.position.set(x,0,z);const ry=rnd()*TAU;b.rotation.y=ry;scene.add(b);
       anims.push(t=>{b.position.y=Math.sin(t*1.2+f)*.18;b.rotation.z=Math.sin(t*.9+f)*.05;b.rotation.x=Math.sin(t*.7+f*2)*.03;});addLight(x,4.4,z,0xffe0a0);
-      for(let k=0;k<4;k++){const gg=new THREE.Group(),wl=new THREE.Group(),wr=new THREE.Group();wl.add(new THREE.Mesh(new THREE.PlaneGeometry(2,.7).translate(-1,0,0).rotateX(-Math.PI/2),gm));wr.add(new THREE.Mesh(new THREE.PlaneGeometry(2,.7).translate(1,0,0).rotateX(-Math.PI/2),gm));gg.add(wl,wr);scene.add(gg);
-        const rr=10+k*5,ph=k*1.6,hy=12+k*3;anims.push(t=>{const q=ph+t*.4*(k%2?1:-1);gg.position.set(x+Math.cos(q)*rr,hy+Math.sin(t+k)*2,z+Math.sin(q)*rr);gg.rotation.y=-q;const fl=Math.sin(t*7+k)*.5;wl.rotation.z=fl;wr.rotation.z=-fl;});}
+      const gsc=scareSpot(x,12,z);for(let k=0;k<4;k++){const gg=new THREE.Group(),wl=new THREE.Group(),wr=new THREE.Group();wl.add(new THREE.Mesh(new THREE.PlaneGeometry(2,.7).translate(-1,0,0).rotateX(-Math.PI/2),gm));wr.add(new THREE.Mesh(new THREE.PlaneGeometry(2,.7).translate(1,0,0).rotateX(-Math.PI/2),gm));gg.add(wl,wr);scene.add(gg);
+        const rr=10+k*5,ph=k*1.6,hy=12+k*3;anims.push(t=>{const q=ph+t*.4*(k%2?1:-1),s=scareOf(gsc,t),da=k*1.57+.4;gg.position.set(x+Math.cos(q)*rr+Math.cos(da)*s*40,hy+Math.sin(t+k)*2+s*30,z+Math.sin(q)*rr+Math.sin(da)*s*40);gg.rotation.y=-q;const fl=Math.sin(t*(7+16*s)+k)*.5;wl.rotation.z=fl;wr.rotation.z=-fl;});}
       break;}}
   // whales: they surface every so often, blow, and roll back under
   let w=0;for(let k=0;k<400&&w<3;k++){const x=(rnd()-.5)*20000,z=(rnd()-.5)*18000;if(!ringSea(x,z,260)||!isSea(x,z,-25))continue;w++;
