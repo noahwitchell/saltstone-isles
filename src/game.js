@@ -1020,7 +1020,7 @@ function gameChecks(dt){
   if(!ac.ground&&Math.abs(bank)>20*DEG&&ac.vel.y<-1.5)tip('turn','In a turn, hold the stick a little down (back) to keep from sinking.');
   if(airT>45)tip('pitchpower','Good to know: the stick mostly sets your speed. Power decides whether you climb or descend.');
   let showCheck=false;
-  if(!ac.ground&&dest&&airT>8&&Math.hypot(dest.x-ac.pos.x,dest.z-ac.pos.z)>3500)tip('tailwind','Long way to go? Tap the wind button on the left for a short gust that carries you fast and level. Tap again while it blows to stack gusts and go faster. Charges come back one every 5 seconds once the wind dies down.',.5);
+  if(!ac.ground&&dest&&airT>8&&Math.hypot(dest.x-ac.pos.x,dest.z-ac.pos.z)>3500)tip('tailwind','Long way to go? Tap the wind button under the throttle for a short gust that carries you fast and level. Tap again while it blows to stack gusts and go faster. Charges come back one every 5 seconds once the wind dies down.',.5);
   if(dest){const gl=glide(dest);if(!ac.ground&&Math.hypot(dest.x-ac.pos.x,dest.z-ac.pos.z)<5500)tip('gates','See the cyan gates? They show the way in. Start lining up at the first one, 2 km out and about 450 ft up.');
     if(gl.active&&gl.along<3200){showCheck=true;tip('approach','Fly through the three cyan gates. Keep the diamond in the ring at the top of the screen. Flaps down, power back, about 55 knots.');
       if(gl.along<1800)tip('papi','The four lights beside the runway: two white and two red means you\'re on the glide path. All white is too high, all red too low.',3);}

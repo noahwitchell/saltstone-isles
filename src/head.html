@@ -43,7 +43,7 @@ button:focus-visible{outline:2px solid #fff;outline-offset:2px}
 
 /* controls: an analog panel. Throttle quadrant lever on the left, a rail of little toggle buttons beside it, and
    panels (map, today's jobs, landing controls, air drop) that fold away so you can just look at the view */
-#thr{position:fixed;left:var(--sl);top:calc(var(--st) + 50px);bottom:var(--sb);width:58px;touch-action:none;z-index:2;
+#thr{position:fixed;left:var(--sl);top:calc(var(--st) + 50px);bottom:calc(var(--sb) + 54px);width:58px;touch-action:none;z-index:2;
   background:linear-gradient(90deg,#3b3542,#2c2733 45%,#24202b);border:2px solid #15121a;box-shadow:inset 2px 2px 0 #4d4656,inset -2px -2px 0 #1a161f}
 #thr .lab{position:absolute;left:0;right:0;top:4px;text-align:center;font:9px/1 var(--mono);letter-spacing:.08em;color:#cfc4b2}
 #thrSlot{position:absolute;left:50%;top:22px;bottom:36px;width:8px;margin-left:-4px;background:#0d0b10;box-shadow:inset 2px 0 0 #000,1px 0 0 #4d4656}
@@ -53,11 +53,14 @@ button:focus-visible{outline:2px solid #fff;outline-offset:2px}
 #thrKnob::after{content:'';position:absolute;left:6px;right:6px;top:9px;height:2px;background:#e2703f}
 #thrPct{position:absolute;left:0;right:0;bottom:6px;text-align:center;font-family:var(--mono);font-size:14px;color:#ffd36b}
 #rail{position:fixed;left:calc(var(--sl) + 64px);top:calc(var(--st) + 50px);display:flex;flex-direction:column;gap:4px;z-index:2}
-.rb{width:34px;height:34px;padding:2px;line-height:0;background:#2c2733;box-shadow:inset 2px 2px 0 #4d4656,inset -2px -2px 0 #16131b,0 2px 0 #0008;opacity:.75}
+.rb{width:34px;height:34px;padding:2px;line-height:0;background:rgba(28,24,34,.55);box-shadow:inset 0 0 0 1px #4d4656,0 2px 0 #0006;opacity:.6}
+.rb img{filter:grayscale(1) brightness(.75)}
 .rb img{width:30px;height:30px;image-rendering:pixelated}
-.rb.on{background:#4a4255;opacity:1;box-shadow:inset 2px 2px 0 #6b6276,inset -2px -2px 0 #241f2a,0 2px 0 #0008}
+/* a panel that is showing: bright cream button, full-color icon, gold edge and a little lit dot */
+.rb.on{background:#fff4dc;opacity:1;box-shadow:inset 0 0 0 2px #ffd36b,0 0 8px #ffd36b88,0 2px 0 #0008}.rb.on img{filter:none}
+.rb{position:relative}.rb.on::after{content:"";position:absolute;right:2px;top:2px;width:5px;height:5px;background:#5fd35a;box-shadow:0 0 4px #8fe08a}
 .rb.nudge{animation:nudge 1s infinite}@keyframes nudge{50%{background:#e2703f;opacity:1}}
-#wind{width:34px;height:48px;padding:0;font-family:var(--mono);font-size:10px;line-height:1;color:var(--ink);background:linear-gradient(to top,#ffd36b var(--w,0%),#fff0c4 var(--w,0%));box-shadow:inset -2px -2px 0 #b8902e, 0 2px 0 #0007;pointer-events:auto}
+#wind{position:fixed;left:var(--sl);bottom:var(--sb);z-index:2;width:58px;height:48px;padding:0;font-family:var(--mono);font-size:10px;line-height:1;color:var(--ink);background:linear-gradient(to top,#ffd36b var(--w,0%),#fff0c4 var(--w,0%));box-shadow:inset -2px -2px 0 #b8902e, 0 2px 0 #0007;pointer-events:auto}
 #wind img{width:28px;height:28px;image-rendering:pixelated;display:block;margin:2px auto 1px}
 #wind span{display:block;font-size:10px;color:#a0601e}
 #wind.on{background:#ffd36b}
@@ -187,13 +190,13 @@ h3{font-family:var(--mono);font-size:15px;letter-spacing:.08em;color:var(--ink2)
   <div id="stallBan" hidden>STALL</div>
   <div id="callout" hidden></div>
   <div id="thr" aria-label="Throttle lever"><b class="lab">THROTTLE</b><div id="thrSlot"></div><div id="thrTicks"></div><div id="thrKnob"></div><span id="thrPct">0%</span></div>
+  <button id="wind" aria-label="Tailwind boost"></button>
   <div id="rail">
     <button class="rb on" id="rMap" aria-label="Show or hide the map"></button>
     <button class="rb on" id="rJob" aria-label="Show or hide today's jobs"></button>
     <button class="rb on" id="rEng" aria-label="Show or hide the landing controls"></button>
     <button class="rb on" id="rFun" aria-label="Show or hide the light, smoke, float and radio switches"></button>
     <button class="rb" id="rDrop" aria-label="Show or hide the air-drop controls" hidden></button>
-    <button id="wind" aria-label="Tailwind boost"></button>
   </div>
   <div id="pcol"><canvas id="mapc" width="96" height="96" aria-label="Map. Tap for the full chart."></canvas>
     <div id="job" aria-label="Today's jobs. Tap for the mail bag."><div class="jh"><span id="jDay">FREE FLIGHT</span><span id="score" aria-label="Score">★ 0</span></div><div id="bag" hidden></div><div id="jDrop" hidden></div><div id="errand" hidden></div></div></div>
