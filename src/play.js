@@ -1,6 +1,5 @@
 /* ---------- score, fly-through gaps, errands, and Biscuit the dog ---------- */
 if(log.score==null)log.score=0;if(!log.gates)log.gates={};if(!log.errands)log.errands={};if(!log.gateHint)log.gateHint={};
-if(settings.dog==null)settings.dog=true;
 function updScore(){const e=$('score');if(e)e.textContent='★ '+log.score.toLocaleString();}
 function addScore(n){log.score+=n;saveL();updScore();const e=$('score');if(e){e.classList.remove('pop');void e.offsetWidth;e.classList.add('pop');}}
 
@@ -53,7 +52,7 @@ function errandBtns(s){const out=[];
 const afterBtns=s=>[['Take off',()=>spawnField(s),true],['Look around first',()=>{hideModal();mode='fly';}]];
 function offerErrand(id,s){const e=ERRANDS[id],c=CHARS[e.giver],meet=!log.met[e.giver];if(meet){log.met[e.giver]=1;saveL();}
   showCard(`<div class="who"><img src="${portrait(e.giver)}" alt=""><div><b>${c.name}</b><span>${c.role}</span></div></div>${meet?`<p class="say">“${MEET[e.giver]}”</p>`:''}<p class="say">“${e.ask}”</p>`,
-    [['I\'ll keep an eye out',()=>{errState(id).st='active';saveL();updErrandUI();toast(`Errand: ${errLine(id)}. Biscuit will help sniff them out.`,3);showCard(`<h2>Errand accepted</h2><p>${e.set?`Find all ${FINDS[e.set].length} ${e.what}`:`Find ${e.what}`}, then land back here and report to ${c.name.split(' ')[0]}. Fly low and slow near them; Biscuit barks when one is close.</p>`,afterBtns(s));},true],
+    [['I\'ll keep an eye out',()=>{errState(id).st='active';saveL();updErrandUI();toast(`Errand: ${errLine(id)}. Stuck? Tap BISCUIT for a clue.`,3);showCard(`<h2>Errand accepted</h2><p>${e.set?`Find all ${FINDS[e.set].length} ${e.what}`:`Find ${e.what}`}, then land back here and report to ${c.name.split(' ')[0]}. Fly low and slow near them. Stuck? Tap the BISCUIT button and he'll point his nose the right way.</p>`,afterBtns(s));},true],
      ['Maybe later',()=>showCard(`<p class="say">“No hurry. It'll keep.”</p>`,afterBtns(s))]]);}
 function reportErrand(id,s){const e=ERRANDS[id],c=CHARS[e.giver],n=errCount(id);
   if(n.n<n.of){showCard(`<div class="who"><img src="${portrait(e.giver)}" alt=""><div><b>${c.name}</b><span>${c.role}</span></div></div><p class="say">“${e.set?`${n.n} of ${n.of} so far? Keep looking, they're out there.`:`Not found it yet? It's out there somewhere.`}”</p>`,afterBtns(s));return;}
@@ -73,18 +72,23 @@ snd.woof=function(){if(!this.ctx||!settings.sound)return;const c=this.ctx,t0=c.c
     f.type='bandpass';f.frequency.value=900;f.Q.value=1.2;n.buffer=this.buf;const ng=c.createGain();ng.gain.value=.5;
     g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.32,t+.012);g.gain.exponentialRampToValueAtTime(.001,t+.16);
     o.connect(f);n.connect(ng);ng.connect(f);f.connect(g);g.connect(this.master);o.start(t);o.stop(t+.2);n.start(t,Math.random());n.stop(t+.2);}};
-const barked={};let barkCD=8,barkT=0,dogTarget=null;
-function dogBark(dt){barkCD-=dt;barkT+=dt;if(barkT<1)return;barkT=0;if(!settings.dog||ac.ground||barkCD>0)return;
-  const cand=[],P=ac.pos,near=(x,z,r)=>Math.hypot(P.x-x,P.z-z)<r;
-  for(const [k,v] of Object.entries(sights))if(!log.sights[k]&&near(v.x,v.z,1150)&&P.y-v.y<900)cand.push({key:'s'+k,x:v.x,z:v.z,y:v.y,say:'something down there worth a look'});
-  for(const g of FLYGATES)if(!log.gates[g.id]&&near(g.x,g.z,1000))cand.push({key:'g'+g.id,x:g.x,z:g.z,y:(g.y0+g.y1)/2,say:'a gap you could fly through'});
-  for(const id of activeErrands()){const e=ERRANDS[id];if(!e.set)continue;FINDS[e.set].forEach((p,i)=>{if(!errState(id).found.includes(i)&&near(p.x,p.z,900))cand.push({key:'f'+id+i,x:p.x,z:p.z,y:p.y,say:e.one,hot:1});});}
-  let best=null,bd=1e9;for(const c of cand){if(simT-(barked[c.key]||-1e9)<(c.hot?45:150))continue;const d=Math.hypot(P.x-c.x,P.z-c.z)-(c.hot?400:0);if(d<bd){bd=d;best=c;}}
-  if(!best)return;barked[best.key]=simT;barkCD=best.hot?10:22;dogTarget=best;dog.bark=1.6;snd.woof();
-  axes();const hdg=Math.atan2(_f.x,-_f.z),brg=Math.atan2(best.x-P.x,-(best.z-P.z));let rel=((brg-hdg)/DEG+540)%360-180;
-  const dir=Math.abs(rel)<25?'dead ahead':Math.abs(rel)>150?'behind you':rel<0?(rel<-70?'off to the left':'ahead and to the left'):(rel>70?'off to the right':'ahead and to the right');
-  const km=Math.hypot(P.x-best.x,P.z-best.z);tip('dog','That\'s Biscuit. He barks when he smells something worth seeing. Follow his nose.',4);
-  toast(`Woof! Biscuit's nose points ${dir}${km<350?', right below':''}: ${best.say}.`,2.8);}
+let barkCD=0,dogTarget=null;
+/* Biscuit only barks when asked: tap his button for a clue and he points his nose at whatever you're after.
+   Errand items first, then the nearest landmark or gap you haven't found, then your next airfield. */
+function dirWord(x,z){const P=ac.pos;axes();const hdg=ac.ground?-ac.gYaw:Math.atan2(_f.x,-_f.z),brg=Math.atan2(x-P.x,-(z-P.z));const rel=((brg-hdg)/DEG+540)%360-180;
+  return Math.abs(rel)<20?'dead ahead':Math.abs(rel)>155?'right behind you':rel<0?(rel<-70?'off to the left':'ahead and to the left'):(rel>70?'off to the right':'ahead and to the right');}
+function askBiscuit(){if(mode!=='fly'||barkCD>0)return;barkCD=1.5;const P=ac.pos,dist=(x,z)=>Math.hypot(P.x-x,P.z-z);let best=null;
+  const pick=c=>{if(!best||c.d<best.d)best=c;};
+  for(const id of activeErrands()){const e=ERRANDS[id],st=errState(id),g=CHARS[e.giver],home=stripById(g.home);
+    if(e.set){FINDS[e.set].forEach((p,i)=>{if(!st.found.includes(i))pick({x:p.x,z:p.z,d:dist(p.x,p.z),say:e.one});});
+      if(st.found.length===FINDS[e.set].length)pick({x:home.x,z:home.z,d:dist(home.x,home.z)+5000,say:`${g.name.split(' ')[0]} at ${home.name}, waiting for your report`});}
+    else{const v=sights[e.sight];if(!log.sights[e.sight])pick({x:v.x,z:v.z,d:dist(v.x,v.z),say:e.what});else pick({x:home.x,z:home.z,d:dist(home.x,home.z)+5000,say:`${g.name.split(' ')[0]} at ${home.name}, waiting for your report`});}}
+  if(!best){for(const [k,v] of Object.entries(sights))if(!log.sights[k]&&dist(v.x,v.z)<3500)pick({x:v.x,z:v.z,d:dist(v.x,v.z),say:'something down there worth a look'});
+    for(const g of FLYGATES)if(!log.gates[g.id]&&dist(g.x,g.z)<3500)pick({x:g.x,z:g.z,d:dist(g.x,g.z),say:`a gap to fly through: ${g.name}`});}
+  if(!best&&dest)best={x:dest.x,z:dest.z,d:dist(dest.x,dest.z),say:`${dest.name}, your next stop`};
+  dog.bark=1.6;snd.woof();if(!best){toast('Biscuit sniffs about and wags. Nothing new around here.',2.4);dogTarget=null;return;}
+  dogTarget=best;const d=dist(best.x,best.z),how=d<350?', right below':d<1000?`, about ${Math.round(d/100)*100} m`:`, about ${(d/1000).toFixed(1)} km`;
+  toast(`Woof! Biscuit's nose points ${dirWord(best.x,best.z)}${how}: ${best.say}.`,3.5);}
 let peekClock=12,peekDur=0;
 function updDog(dt,t){const U=plane.userData,cock=!U.bodyM.visible&&mode!=='crashed';dog.bark=Math.max(0,dog.bark-dt);const b=dog.bark>0?1:0;
   let yaw=0;if(b&&dogTarget){const lp=plane.worldToLocal(_c1.set(dogTarget.x,ac.pos.y,dogTarget.z));yaw=clamp(Math.atan2(-lp.x,-lp.z),-.8,.8);}
@@ -100,7 +104,7 @@ function updDog(dt,t){const U=plane.userData,cock=!U.bodyM.visible&&mode!=='cras
   dog.tongue.rotation.x=-sp*.9+Math.sin(t*25)*.2;
   dog.g.rotation.set(Math.sin(t*3)*.05-(b?Math.abs(Math.sin(t*14))*.25:0),dog.yaw,Math.sin(t*2.1)*.06);
   dog.g.position.set(.8+(b?.12:0)+Math.sin(t*1.3)*.02,.6+(b?.06:0),-1.5);}
-function playChecks(dt){checkGates();checkFinds(dt);dogBark(dt);dogPopTick(dt);}
+function playChecks(dt){checkGates();checkFinds(dt);barkCD-=dt;dogPopTick(dt);}
 /* Biscuit's pixel portrait pops up beside the message when he barks */
 const dogPic=(()=>{const c=document.createElement('canvas');c.width=c.height=32;const x=c.getContext('2d'),P=(col,a,b,w=1,h=1)=>{x.fillStyle=col;x.fillRect(a,b,w,h);};
   P('#9cc3e6',0,0,32,32);P('#86b0d8',0,24,32,8);const fur='#e8a850',dk='#b87a38',lt='#f6e6c8';
@@ -108,7 +112,9 @@ const dogPic=(()=>{const c=document.createElement('canvas');c.width=c.height=32;
   P(lt,14,8,4,8);P(lt,11,17,10,7);P('#2a2230',14,17,4,3);P('#2a2230',11,13,2,2);P('#2a2230',19,13,2,2);P('#ffffff',11,13,1,1);P('#ffffff',19,13,1,1);
   P('#2a2230',13,22,6,1);P('#e86a7a',16,23,3,4);P('#c84a5a',17,26,1,1);P('#c2453a',9,25,14,2);P('#ffd36b',15,26,2,2);return c.toDataURL();})();
 (function(){const d=document.createElement('div');d.id='dogpop';d.hidden=true;d.innerHTML=`<img src="${dogPic}" alt=""><b>WOOF!</b>`;$('flightUI').appendChild(d);
-  const st=document.createElement('style');st.textContent='#dogpop{position:fixed;right:calc(var(--sr) + 8px);bottom:calc(var(--sb) + 150px);display:flex;align-items:center;gap:6px;background:var(--paper);color:var(--ink);padding:4px 10px 4px 4px;box-shadow:4px 4px 0 #0008;font-family:var(--mono);font-size:20px;pointer-events:none;animation:pop .4s}#dogpop img{width:44px;height:44px;image-rendering:pixelated}';document.head.appendChild(st);})();
+  const bt=document.createElement('button');bt.id='dogBtn';bt.setAttribute('aria-label','Ask Biscuit for a clue');bt.innerHTML=`<img src="${dogPic}" alt="">BISCUIT`;$('lcol').appendChild(bt);
+  bt.addEventListener('click',e=>{e.stopPropagation();askBiscuit();});
+  const st=document.createElement('style');st.textContent='#dogBtn{pointer-events:auto;display:flex;align-items:center;justify-content:center;gap:6px;font-family:var(--mono);font-size:14px;padding:3px 0;background:#fff0c4;box-shadow:inset -2px -2px 0 #b8902e, 0 2px 0 #0007}#dogBtn img{width:24px;height:24px;image-rendering:pixelated}#dogpop{position:fixed;right:calc(var(--sr) + 8px);bottom:calc(var(--sb) + 150px);display:flex;align-items:center;gap:6px;background:var(--paper);color:var(--ink);padding:4px 10px 4px 4px;box-shadow:4px 4px 0 #0008;font-family:var(--mono);font-size:20px;pointer-events:none;animation:pop .4s}#dogpop img{width:44px;height:44px;image-rendering:pixelated}';document.head.appendChild(st);})();
 let dogPopT=0;
 function dogPopTick(dt){if(dog.bark>1.5&&dogPopT<=0){dogPopT=2.2;$('dogpop').hidden=false;}if(dogPopT>0){dogPopT-=dt;if(dogPopT<=0)$('dogpop').hidden=true;}}
 
