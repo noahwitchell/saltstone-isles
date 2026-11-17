@@ -40,9 +40,34 @@ function updErrandUI(){const b=$('errand');if(!b)return;const a=activeErrands();
 let findT=0;
 function checkFinds(dt){findT+=dt;if(findT<.3)return;findT=0;
   for(const id of activeErrands()){const e=ERRANDS[id],s=errState(id);
-    if(e.set){FINDS[e.set].forEach((p,i)=>{if(s.found.includes(i))return;if(Math.hypot(ac.pos.x-p.x,ac.pos.z-p.z)<140&&ac.pos.y-p.y<300){s.found.push(i);addScore(50);snd.beep(1320);
+    if(e.set){FINDS[e.set].forEach((p,i)=>{if(s.found.includes(i))return;if(Math.hypot(ac.pos.x-p.x,ac.pos.z-p.z)<140&&ac.pos.y-p.y<300){s.found.push(i);addScore(50);snd.beep(1320);celebrate(p);
         const c=errCount(id),g=CHARS[e.giver];toast(c.n<c.of?`Found ${e.one}! ${c.n} of ${c.of} · +50`:`That's all ${c.of} ${e.what}! · +50\nFly back to ${g.name.split(' ')[0]} at ${stripById(g.home).name} to report.`,c.n<c.of?2.2:4);updErrandUI();}});}
     else if(log.sights[e.sight]&&!s.told){s.told=1;saveL();const g=CHARS[e.giver];toast(`That's ${e.what}! Fly back to ${g.name.split(' ')[0]} at ${stripById(g.home).name} to tell them.`,4);updErrandUI();}}}
+/* when you find an errand item it does its thing: goats and sheep hop, kites loop, the osprey takes off, lanterns rise,
+   buoys ring, cairn flags run up the pole. Plus a puff of confetti so you can see it from the cockpit. */
+const celebs=[],CONF=[0xff3a2a,0xffd34a,0x3fb8ff,0x7ae05a,0xf8f4ee,0xff7ae0];
+function celebrate(p){const o=p.obj,c=o?o.getWorldPosition(new V3()):new V3(p.x,p.y,p.z);celebs.push({p,e:0});
+  const N=70,g=new THREE.BufferGeometry(),P=new Float32Array(N*3),C=new Float32Array(N*3),Vv=[],col=new THREE.Color();
+  for(let i=0;i<N;i++){P.set([c.x,c.y+4,c.z],i*3);col.setHex(CONF[i%6]);C.set([col.r,col.g,col.b],i*3);const a=Math.random()*TAU,u=Math.random();Vv.push(Math.cos(a)*(8+u*14),14+Math.random()*16,Math.sin(a)*(8+u*14));}
+  g.setAttribute('position',new THREE.BufferAttribute(P,3));g.setAttribute('color',new THREE.BufferAttribute(C,3));
+  const pts=new THREE.Points(g,new THREE.PointsMaterial({size:3,sizeAttenuation:false,vertexColors:true,fog:false,transparent:true}));pts.frustumCulled=false;scene.add(pts);celebs.push({pts,Vv,e:0});}
+if(log.errands)for(const id of Object.keys(ERRANDS)){const e=ERRANDS[id];if(!e.set||!log.errands[id])continue;for(const i of log.errands[id].found||[]){const p=FINDS[e.set][i];if(!p)continue;if(p.kind==='fly')p.flying=1;if(p.kind==='flag')p.up=1;}}
+let celT=-1;anims.push(t=>{const dt=celT<0?0:clamp(t-celT,0,.1);celT=t;
+  for(const set of [FINDS.nests||[],FINDS.cairns||[]])for(const p of set){
+    if(p.kind==='fly'&&p.flying){p.fa=(p.fa||0)+dt;const k=Math.min(p.fa/3,1),a=p.fa*.32+p.x,r=8+k*30;p.obj.position.set(p.home.x+Math.cos(a)*r,p.home.y+k*(18+Math.sin(p.fa*.5)*4),p.home.z+Math.sin(a)*r);
+      p.obj.rotation.set(0,-a+Math.PI,k*.35);const fl=p.fa<4||Math.sin(p.fa*.4)>.6?Math.sin(p.fa*12)*.7:.12;p.wL.rotation.z=-fl;p.wR.rotation.z=fl;}
+    if(p.kind==='flag'){p.fy=lerp(p.fy??(p.up?5:0),p.up?5:0,1-Math.exp(-dt*1.5));p.obj.position.y=p.y+19+p.fy;p.obj.rotation.y=Math.sin(t*(p.up?5:1.6)+p.x)*(p.up?.35:.15);}}
+  for(let i=celebs.length-1;i>=0;i--){const c=celebs[i];c.e+=dt;
+    if(c.pts){const P=c.pts.geometry.attributes.position.array;for(let j=0;j<c.Vv.length/3;j++){c.Vv[j*3+1]-=22*dt;for(let k=0;k<3;k++)P[j*3+k]+=c.Vv[j*3+k]*dt*(k===1?1:Math.exp(-c.e));}
+      c.pts.geometry.attributes.position.needsUpdate=true;c.pts.material.opacity=Math.max(0,1-c.e/2.4);if(c.e>2.4){scene.remove(c.pts);c.pts.geometry.dispose();celebs.splice(i,1);}continue;}
+    const p=c.p,o=p.obj,e=c.e;if(!o){celebs.splice(i,1);continue;}
+    if(p.kind==='hop'){o.position.y=p.y+Math.abs(Math.sin(e*Math.PI*2.2))*7*Math.max(0,1-e/2.6);o.rotation.y+=dt*4*Math.max(0,1-e/2.6);if(e>2.6){o.position.y=p.y;celebs.splice(i,1);}}
+    else if(p.kind==='loop'){p.busy=1;const a=Math.min(e/2.6,1)*TAU*2;o.position.y=p.y+(1-Math.cos(a))*10;o.rotation.x=a;o.rotation.z=Math.sin(e*8)*.3;if(e>2.6){o.rotation.x=0;p.busy=0;celebs.splice(i,1);}}
+    else if(p.kind==='fly'){p.flying=1;celebs.splice(i,1);}
+    else if(p.kind==='flag'){p.up=1;celebs.splice(i,1);}
+    else if(p.kind==='rise'){const k=Math.min(e/3,1);p.base.cy+=dt*(e<3?9:0);o.scale.setScalar(1+Math.sin(e*10)*.25*(1-k));if(e>3){o.scale.setScalar(1);celebs.splice(i,1);}}
+    else if(p.kind==='ring'){p.ring=Math.max(0,1-e/3);if(e>3){p.ring=0;celebs.splice(i,1);}}
+    else celebs.splice(i,1);}});
 /* buttons for a landing card: report back, or a new favour from someone who lives here */
 function errandBtns(s){const out=[];
   for(const id of activeErrands()){const e=ERRANDS[id];if(CHARS[e.giver].home!==s.id)continue;const c=errCount(id);out.push([`Report to ${CHARS[e.giver].name.split(' ')[0]} (${e.set?c.n+'/'+c.of:c.n?'found':'not yet'})`,()=>reportErrand(id,s)]);}
@@ -52,7 +77,7 @@ function errandBtns(s){const out=[];
 const afterBtns=s=>[['Take off',()=>spawnField(s),true],['Look around first',()=>{hideModal();mode='fly';}]];
 function offerErrand(id,s){const e=ERRANDS[id],c=CHARS[e.giver],meet=!log.met[e.giver];if(meet){log.met[e.giver]=1;saveL();}
   showCard(`<div class="who"><img src="${portrait(e.giver)}" alt=""><div><b>${c.name}</b><span>${c.role}</span></div></div>${meet?`<p class="say">“${MEET[e.giver]}”</p>`:''}<p class="say">“${e.ask}”</p>`,
-    [['I\'ll keep an eye out',()=>{errState(id).st='active';saveL();updErrandUI();toast(`Errand: ${errLine(id)}. Stuck? Tap BISCUIT for a clue.`,3);showCard(`<h2>Errand accepted</h2><p>${e.set?`Find all ${FINDS[e.set].length} ${e.what}`:`Find ${e.what}`}, then land back here and report to ${c.name.split(' ')[0]}. Fly low and slow near them. Stuck? Tap the BISCUIT button and he'll point his nose the right way.</p>`,afterBtns(s));},true],
+    [['I\'ll keep an eye out',()=>{errState(id).st='active';saveL();updErrandUI();toast(`Errand: ${errLine(id)}. Stuck? Tap Biscuit's button up top for a clue.`,3);showCard(`<h2>Errand accepted</h2><p>${e.set?`Find all ${FINDS[e.set].length} ${e.what}`:`Find ${e.what}`}, then land back here and report to ${c.name.split(' ')[0]}. Fly low and slow near them. Stuck? Tap Biscuit's button at the top of the screen and he'll point his nose the right way.</p>`,afterBtns(s));},true],
      ['Maybe later',()=>showCard(`<p class="say">“No hurry. It'll keep.”</p>`,afterBtns(s))]]);}
 function reportErrand(id,s){const e=ERRANDS[id],c=CHARS[e.giver],n=errCount(id);
   if(n.n<n.of){showCard(`<div class="who"><img src="${portrait(e.giver)}" alt=""><div><b>${c.name}</b><span>${c.role}</span></div></div><p class="say">“${e.set?`${n.n} of ${n.of} so far? Keep looking, they're out there.`:`Not found it yet? It's out there somewhere.`}”</p>`,afterBtns(s));return;}
@@ -89,6 +114,15 @@ function askBiscuit(){if(mode!=='fly'||barkCD>0)return;barkCD=1.5;const P=ac.pos
   dog.bark=1.6;snd.woof();if(!best){toast('Biscuit sniffs about and wags. Nothing new around here.',2.4);dogTarget=null;return;}
   dogTarget=best;const d=dist(best.x,best.z),how=d<350?', right below':d<1000?`, about ${Math.round(d/100)*100} m`:`, about ${(d/1000).toFixed(1)} km`;
   toast(`Woof! Biscuit's nose points ${dirWord(best.x,best.z)}${how}: ${best.say}.`,3.5);}
+/* he does bark on his own at landmarks and gaps you haven't found (Noah likes that), but never at errand items:
+   those are what made him bark nonstop during searches. Once per thing, and at most every 30 s. */
+const barked={};let autoCD=10,autoT=0;
+function dogAuto(dt){autoCD-=dt;autoT+=dt;if(autoT<1)return;autoT=0;if(!settings.dog||mode!=='fly'||ac.ground||autoCD>0||dog.bark>0)return;
+  const P=ac.pos,cand=[];
+  for(const [k,v] of Object.entries(sights))if(!log.sights[k]&&!barked['s'+k]&&Math.hypot(P.x-v.x,P.z-v.z)<1100&&P.y-v.y<900)cand.push({key:'s'+k,x:v.x,z:v.z,say:'something down there worth a look'});
+  for(const g of FLYGATES)if(!log.gates[g.id]&&!barked['g'+g.id]&&Math.hypot(P.x-g.x,P.z-g.z)<1000)cand.push({key:'g'+g.id,x:g.x,z:g.z,say:`a gap to fly through: ${g.name}`});
+  if(!cand.length)return;const best=cand.reduce((a,c)=>Math.hypot(P.x-c.x,P.z-c.z)<Math.hypot(P.x-a.x,P.z-a.z)?c:a);
+  barked[best.key]=1;autoCD=30;dogTarget=best;dog.bark=1.6;snd.woof();toast(`Woof! Biscuit's nose points ${dirWord(best.x,best.z)}: ${best.say}.`,3.2);}
 let peekClock=12,peekDur=0;
 function updDog(dt,t){const U=plane.userData,cock=!U.bodyM.visible&&mode!=='crashed';dog.bark=Math.max(0,dog.bark-dt);const b=dog.bark>0?1:0;
   let yaw=0;if(b&&dogTarget){const lp=plane.worldToLocal(_c1.set(dogTarget.x,ac.pos.y,dogTarget.z));yaw=clamp(Math.atan2(-lp.x,-lp.z),-.8,.8);}
@@ -96,7 +130,10 @@ function updDog(dt,t){const U=plane.userData,cock=!U.bodyM.visible&&mode!=='cras
   if(cock){/* in the cockpit he sits in the right seat and pops his head up now and then for a look */
     peekClock-=dt;if(peekClock<=0){peekClock=18+Math.random()*16;peekDur=3.5+Math.random()*2;}if(b)peekDur=Math.max(peekDur,1.2);peekDur-=dt;
     dog.peek=lerp(dog.peek||0,peekDur>0?1:0,1-Math.exp(-dt*(peekDur>0?3.5:2.5)));dog.g.visible=dog.peek>.02;if(!dog.g.visible)return;
-    dog.g.scale.setScalar(.75);dog.g.position.set(.6,-.85+dog.peek*.36+Math.sin(t*2.2)*.01,-2.1);
+    // pops up from the bottom-right corner of the view, then ducks back down
+    const D=1.5,hh=D*Math.tan(camera.fov*DEG/2),hw=hh*camera.aspect;camera.updateMatrixWorld();
+    _c1.set(hw*.8,-hh*1.4+dog.peek*hh*.98+Math.sin(t*2.2)*.01,-D);camera.localToWorld(_c1);plane.worldToLocal(_c1);
+    dog.g.scale.setScalar(1.15);dog.g.position.copy(_c1);
     const look=.7+Math.sin(t*.7)*.45+(peekDur<1.2&&!b?.8*(1-peekDur/1.2):0);dog.g.rotation.set(.1-(b?Math.abs(Math.sin(t*14))*.2:0),b?dog.yaw:look,Math.sin(t*1.6)*.08);
     dog.eL.rotation.x=dog.eR.rotation.x=-.1+Math.sin(t*3)*.05;dog.eL.rotation.z=-.15;dog.eR.rotation.z=.15;dog.tongue.rotation.x=Math.sin(t*9)*.15;return;}
   dog.g.visible=U.bodyM.visible;if(!dog.g.visible)return;dog.g.scale.setScalar(1.8);const sp=Math.min(ac.ias/45,1.3);
@@ -104,7 +141,7 @@ function updDog(dt,t){const U=plane.userData,cock=!U.bodyM.visible&&mode!=='cras
   dog.tongue.rotation.x=-sp*.9+Math.sin(t*25)*.2;
   dog.g.rotation.set(Math.sin(t*3)*.05-(b?Math.abs(Math.sin(t*14))*.25:0),dog.yaw,Math.sin(t*2.1)*.06);
   dog.g.position.set(.8+(b?.12:0)+Math.sin(t*1.3)*.02,.6+(b?.06:0),-1.5);}
-function playChecks(dt){checkGates();checkFinds(dt);barkCD-=dt;dogPopTick(dt);}
+function playChecks(dt){checkGates();checkFinds(dt);barkCD-=dt;dogAuto(dt);dogPopTick(dt);}
 /* Biscuit's pixel portrait pops up beside the message when he barks */
 const dogPic=(()=>{const c=document.createElement('canvas');c.width=c.height=32;const x=c.getContext('2d'),P=(col,a,b,w=1,h=1)=>{x.fillStyle=col;x.fillRect(a,b,w,h);};
   P('#9cc3e6',0,0,32,32);P('#86b0d8',0,24,32,8);const fur='#e8a850',dk='#b87a38',lt='#f6e6c8';
@@ -112,9 +149,9 @@ const dogPic=(()=>{const c=document.createElement('canvas');c.width=c.height=32;
   P(lt,14,8,4,8);P(lt,11,17,10,7);P('#2a2230',14,17,4,3);P('#2a2230',11,13,2,2);P('#2a2230',19,13,2,2);P('#ffffff',11,13,1,1);P('#ffffff',19,13,1,1);
   P('#2a2230',13,22,6,1);P('#e86a7a',16,23,3,4);P('#c84a5a',17,26,1,1);P('#c2453a',9,25,14,2);P('#ffd36b',15,26,2,2);return c.toDataURL();})();
 (function(){const d=document.createElement('div');d.id='dogpop';d.hidden=true;d.innerHTML=`<img src="${dogPic}" alt=""><b>WOOF!</b>`;$('flightUI').appendChild(d);
-  const bt=document.createElement('button');bt.id='dogBtn';bt.setAttribute('aria-label','Ask Biscuit for a clue');bt.innerHTML=`<img src="${dogPic}" alt="">BISCUIT`;$('lcol').appendChild(bt);
+  const bt=document.createElement('button');bt.id='dogBtn';bt.setAttribute('aria-label','Ask Biscuit for a clue');bt.innerHTML=`<img src="${dogPic}" alt="">`;$('todBtn').before(bt);
   bt.addEventListener('click',e=>{e.stopPropagation();askBiscuit();});
-  const st=document.createElement('style');st.textContent='#dogBtn{pointer-events:auto;display:flex;align-items:center;justify-content:center;gap:6px;font-family:var(--mono);font-size:14px;padding:3px 0;background:#fff0c4;box-shadow:inset -2px -2px 0 #b8902e, 0 2px 0 #0007}#dogBtn img{width:24px;height:24px;image-rendering:pixelated}#dogpop{position:fixed;right:calc(var(--sr) + 8px);bottom:calc(var(--sb) + 150px);display:flex;align-items:center;gap:6px;background:var(--paper);color:var(--ink);padding:4px 10px 4px 4px;box-shadow:4px 4px 0 #0008;font-family:var(--mono);font-size:20px;pointer-events:none;animation:pop .4s}#dogpop img{width:44px;height:44px;image-rendering:pixelated}';document.head.appendChild(st);})();
+  const st=document.createElement('style');st.textContent='#dogBtn{pointer-events:auto;padding:3px 5px;line-height:0;background:#fff0c4;box-shadow:inset -2px -2px 0 #b8902e, 0 2px 0 #0007}#dogBtn img{width:32px;height:32px;image-rendering:pixelated;display:block}#dogpop{position:fixed;right:calc(var(--sr) + 8px);bottom:calc(var(--sb) + 150px);display:flex;align-items:center;gap:6px;background:var(--paper);color:var(--ink);padding:4px 10px 4px 4px;box-shadow:4px 4px 0 #0008;font-family:var(--mono);font-size:20px;pointer-events:none;animation:pop .4s}#dogpop img{width:44px;height:44px;image-rendering:pixelated}';document.head.appendChild(st);})();
 let dogPopT=0;
 function dogPopTick(dt){if(dog.bark>1.5&&dogPopT<=0){dogPopT=2.2;$('dogpop').hidden=false;}if(dogPopT>0){dogPopT-=dt;if(dogPopT<=0)$('dogpop').hidden=true;}}
 
@@ -146,3 +183,34 @@ function updSpark(dt,t){spark.t-=dt;const P=camera.position;
     const ph=(t*(L.fast?1.3:.8)+L.ph)%1,on=true;const x=L.o?L.o.x:L.x,y=L.o?L.o.y+L.dy:L.y,z=L.o?L.o.z:L.z;
     spark.pos[j]=x;spark.pos[j+1]=on?y:-1e5;spark.pos[j+2]=z;const k=ph<.3?1.15-ph/.3*.3:.45;spark.col[j]=L.c[0]*k;spark.col[j+1]=L.c[1]*k;spark.col[j+2]=L.c[2]*k;}
   spark.g.attributes.position.needsUpdate=true;spark.g.attributes.color.needsUpdate=true;}
+/* ---------- save and resume: where you are, so closing the app doesn't lose your flight ---------- */
+const RESUME='tac-resume';
+function saveResume(){if(mode==='crashed'){store.set(RESUME,null);return;}if(!['fly','card','paused'].includes(mode))return;if(!Number.isFinite(ac.pos.x+ac.pos.y+ac.vel.x+ac.q.w))return;
+  store.set(RESUME,{v:1,ts:Date.now(),pos:ac.pos.toArray(),vel:ac.vel.toArray(),q:ac.q.toArray(),ground:ac.ground,gYaw:ac.gYaw,gPitch:ac.gPitch,u:ac.u,throttle:ac.throttle,flaps:ac.flaps,trim:ac.trim,light:ac.light,
+    lastField:ac.lastField,from:ac.from,dest:dest&&dest.id,cam:camMode});}
+let resT=0;anims.push(t=>{if(t-resT>3){resT=t;saveResume();}});
+addEventListener('pagehide',saveResume);document.addEventListener('visibilitychange',()=>{if(document.hidden)saveResume();});
+function resumeFlight(r){resetAc();ac.pos.fromArray(r.pos);ac.vel.fromArray(r.vel);ac.q.fromArray(r.q);ac.ground=!!r.ground;ac.gYaw=r.gYaw||0;ac.gPitch=r.gPitch||0;ac.u=r.u||0;ac.throttle=r.throttle||0;ac.flaps=r.flaps||0;ac.trim=r.trim??.06;ac.light=!!r.light;
+  ac.lastField=stripById(r.lastField)?r.lastField:'harbor';ac.from=r.from==='__approach'?ac.lastField:(r.from||ac.lastField);dest=stripById(r.dest)||null;if(!dest)pickDest(ac.lastField);
+  $('title').hidden=true;startFly();setView(r.cam==='cockpit'?'cockpit':camMode);snapCam=true;toast('Welcome back. Picking up right where you left off.',2.6);}
+(function(){const r=store.get(RESUME,null);if(!r||!r.pos||Date.now()-r.ts>1000*3600*24*60)return;
+  const b=document.createElement('button');b.className='primary';b.id='tResume';b.textContent='Continue where you left off';$('tFly').before(b);$('tFly').classList.remove('primary');
+  b.addEventListener('click',()=>{const r2=store.get(RESUME,null);if(r2)resumeFlight(r2);b.remove();$('tFly').classList.add('primary');});})();
+/* ---------- tailwind streaks: air streaming off the wingtips and the trailing edge while a gust is blowing ---------- */
+const streaks=(()=>{const SRC=[[-5.2,.8,.3,1],[5.2,.8,.3,1],[-5.2,.95,.3,1],[5.2,.95,.3,1],[-2.8,.82,.3,.5],[2.8,.82,.3,.5],[-.9,1.6,2.2,.35],[.9,1.6,2.2,.35]],N=28;
+  const mat=new THREE.ShaderMaterial({transparent:true,depthWrite:false,fog:false,uniforms:{k:{value:0}},
+    vertexShader:'attribute float a;varying float vA;void main(){vA=a;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
+    fragmentShader:'uniform float k;varying float vA;void main(){gl_FragColor=vec4(1.,.99,.94,vA*k);}'});
+  const L=SRC.map(s=>{const g=new THREE.BufferGeometry(),P=new Float32Array(N*3),A=new Float32Array(N);for(let i=0;i<N;i++)A[i]=Math.pow(1-i/(N-1),1.4)*s[3];
+    g.setAttribute('position',new THREE.BufferAttribute(P,3));g.setAttribute('a',new THREE.BufferAttribute(A,1));const l=new THREE.Line(g,mat);l.frustumCulled=false;l.visible=false;scene.add(l);return {l,P,s,fresh:true};});
+  const w=new V3();let k=0,last=-1;
+  anims.push(t=>{const dt=last<0?0:clamp(t-last,0,.1);last=t;const on=mode==='fly'&&!ac.ground&&(ac.bst||0)>.02;k=lerp(k,on?Math.min(ac.bst*1.1,1):0,1-Math.exp(-dt*(on?6:2.5)));mat.uniforms.k.value=k;if(k>=.01)plane.updateMatrixWorld();
+    for(const S of L){if(k<.01){S.l.visible=false;S.fresh=true;continue;}S.l.visible=true;w.set(S.s[0],S.s[1],S.s[2]);plane.localToWorld(w);
+      if(S.fresh){for(let i=0;i<N;i++)S.P.set([w.x,w.y,w.z],i*3);S.fresh=false;}else{S.P.copyWithin(3,0,(N-1)*3);S.P[0]=w.x;S.P[1]=w.y;S.P[2]=w.z;}
+      S.l.geometry.attributes.position.needsUpdate=true;}});
+  // air rushing past the windshield (you can't see the wingtips from the cockpit)
+  const NR=34,RP=new Float32Array(NR*6),RA=new Float32Array(NR*2),rs=[];for(let i=0;i<NR;i++){let x,y;do{x=(Math.random()-.5)*16;y=(Math.random()-.5)*9;}while(Math.hypot(x,y*1.4)<3.2);rs.push({x,y,z:-Math.random()*90,l:3+Math.random()*5});RA[i*2]=.9;RA[i*2+1]=0;}
+  const rg=new THREE.BufferGeometry();rg.setAttribute('position',new THREE.BufferAttribute(RP,3));rg.setAttribute('a',new THREE.BufferAttribute(RA,1));const rush=new THREE.LineSegments(rg,mat);rush.frustumCulled=false;rush.visible=false;plane.add(rush);
+  let rl=-1;anims.push(t=>{const rdt=rl<0?0:clamp(t-rl,0,.1);rl=t;rush.visible=k>.01&&camMode==='cockpit';if(!rush.visible)return;const v=(ac.ias+(ac.bst||0)*22)*1.1*rdt;for(let i=0;i<NR;i++){const r=rs[i];r.z+=v*(1+r.l*.1);if(r.z>4){r.z=-70-Math.random()*30;}
+      RP.set([r.x,r.y,r.z,r.x,r.y,r.z-r.l*(.6+k)],i*6);}rg.attributes.position.needsUpdate=true;});
+  return {L};})();

@@ -15,7 +15,7 @@ function setTOD(k){tod=k;const T=TOD[k];
 
 /* ---------- save data ---------- */
 const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}};
-const settings=Object.assign({steady:true,stallGuard:true,autoTrim:true,tips:true,invert:false,sound:true,engVol:1,music:.5,fps:false,shadows:true,tilt:false,pixels:'classic',light:'golden'},store.get('tac-settings',{}));
+const settings=Object.assign({steady:true,stallGuard:true,autoTrim:true,tips:true,dog:true,invert:false,sound:true,engVol:1,music:.5,fps:false,shadows:true,tilt:false,pixels:'classic',light:'golden'},store.get('tac-settings',{}));
 if(!TOD[settings.light])settings.light='golden';
 const log=Object.assign({fields:{},sights:{},goals:{},trips:0,flights:0,tips:{},howto:false,stamps:0,met:{},mail:{day:1,bag:[],active:false}},store.get('tac-log',{}));
 if(!log.mail)log.mail={day:1,bag:[],active:false};if(!log.met)log.met={};if(log.stamps==null)log.stamps=0;
@@ -848,7 +848,7 @@ function logbook(){
   const done=GOALS.filter(g=>log.goals[g.id]).length;
   showCard(`<h2>Your logbook</h2><div class="sub">${log.flights} FLIGHTS · ${log.trips} TRIPS · ${log.stamps} STAMPS · ${done}/${GOALS.length} GOALS</div><h3>PEOPLE</h3><div class="list">${ppl}</div><h3>FIELDS</h3><div class="list">${f}</div><h3>SIGHTS</h3><div class="list">${si}</div><h3>GOALS</h3><div class="list">${go}</div>`,[['Back',back,true]]);}
 const SET=[['tilt','Tilt to steer','Turn the phone like a steering wheel to bank. Tip it toward you to raise the nose, away to lower it. CENTER resets the level point. The touch stick still works.'],['steady','Steady wings','Levels the wings when you let go, and handles the rudder.'],['stallGuard','Stall guard','Stops you pulling the nose up far enough to stall.'],
-  ['autoTrim','Auto-trim','Holds your current speed when you let go of the stick.'],['tips','Tips','Short pointers the first time things happen.'],
+  ['autoTrim','Auto-trim','Holds your current speed when you let go of the stick.'],['tips','Tips','Short pointers the first time things happen.'],['dog','Biscuit barks at landmarks','He barks when you fly near a landmark or gap you haven\'t found. Never at errand items: tap his button up top for those.'],
   ['invert','Invert pitch','Drag up to raise the nose instead of down.'],['shadows','Shadows','Long shadows from the sun and moon. Turn off if your phone gets warm.'],['sound','Sound','Engine, wind, music and the stall horn.'],['fps','Frame rate','Shows frames per second, the slowest frame, triangles and draw calls in a strip at the top of the screen while you fly. For checking how your phone keeps up.']];
 function settingsCard(){
   const rows=SET.map(([k,n,d])=>`<div class="tog"><div><b>${n}</b><span>${d}</span></div><button data-k="${k}" class="${settings[k]?'on':''}">${settings[k]?'ON':'OFF'}</button></div>`).join('');

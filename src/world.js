@@ -272,9 +272,15 @@ const waterMat=new THREE.ShaderMaterial({
     float wv=fract(uTime*.09-dp*.16);float band=smoothstep(.08,0.,abs(wv-.5)*(1.+dp*.05));
     float foam2=band*smoothstep(fl,fl+1.,dp)*(1.-smoothstep(5.,9.,dp))*smoothstep(.45,.7,vn(vW.xz*.05+vec2(uTime*.03,0.)));
     c=mix(c,vec3(.97,.95,.88),max(foam*.85,foam2*.45));
-    vec3 V=normalize(cameraPosition-vW);vec3 R=reflect(-V,vec3(0.,1.,0.));float g=max(dot(R,sunDir),0.);
-    float sp=hs(floor(vW.xz/3.)+floor(uTime*2.5));
-    c=mix(c,cGlint,step(.985,g)*step(.55,sp)*.9+pow(g,90.)*.6);
+    // sun/moon glint: a small bright core, a pixel-dithered falloff, and a few wave sparkles further out
+    vec3 nW=normalize(vec3(sin(vW.x*.09+uTime*.9+sin(vW.z*.05))*.010,1.,sin(vW.z*.075-uTime*.7)*.014));
+    vec3 V=normalize(cameraPosition-vW);vec3 R=reflect(-V,nW);float g=max(dot(R,sunDir),0.);
+    vec2 bp=floor(gl_FragCoord.xy);vec2 b2=mod(bp,2.),b4=mod(floor(bp*.5),2.);
+    float bay=(mod(b2.x*2.+b2.y*3.,4.)*4.+mod(b4.x*2.+b4.y*3.,4.)+.5)/16.;
+    float core=smoothstep(.99935,.99975,g),halo=smoothstep(.9955,.9993,g);
+    float sp=hs(floor(vW.xz/2.)+floor(uTime*3.));
+    float spark=step(.82,sp)*smoothstep(.985,.996,g);
+    c=mix(c,cGlint,max(max(core,step(bay,halo*.85)*.85),spark*.75));
     float f=smoothstep(fogNear,fogFar,vD);gl_FragColor=vec4(mix(c,fogColor,f),1.);}`});
 const water=new THREE.Mesh(new THREE.PlaneGeometry(40000,40000).rotateX(-Math.PI/2),waterMat);scene.add(water);
 
@@ -385,13 +391,14 @@ function scanTo(x,z,dx,dz,cond,max=4000,step=10){for(let d=0;d<max;d+=step){cons
     items.push({geo:BOX(w,ht,d),m:M([x,base+ht/2,z],[0,ry,0]),color:wc});
     for(const sd of [-1,1]){const ox=Math.sin(ry)*(d/2+.25)*sd,oz=Math.cos(ry)*(d/2+.25)*sd;if(rnd()<.8)addLight(x+ox+Math.cos(ry)*(rnd()-.5)*w*.5,top-hh*.5,z+oz-Math.sin(ry)*(rnd()-.5)*w*.5,rnd()<.2?0xffd9a0:0xffc25a);}
     const roof=new THREE.CylinderGeometry(.01,1,1,3,1).rotateZ(0); // prism via 3-sided cylinder
-    roofs.push({geo:new THREE.CylinderGeometry(w*.62,w*.62,d+.8,3,1).rotateX(-Math.PI/2),m:M([x,top+w*.62*.5-.2,z],[0,ry,0],[1,.62,1]),color:r});
+    roofs.push({geo:new THREE.CylinderGeometry(w*.62,w*.62,d+.8,3,1).rotateX(-Math.PI/2),m:M([x,top+w*.1922-.3,z],[0,ry,0],[1,.62,1]),color:r});
     if(rnd()<.6){const cx=x+Math.cos(ry)*w*.25,cz=z-Math.sin(ry)*w*.25;items.push({geo:BOX(1,3,1),m:M([cx,top+2.2,cz],[0,ry,0]),color:0x8a6a5c});smokeSpots.push(new V3(cx,top+3.8,cz));}
     return true;
   }
   for(let k=-8;k<=8;k++){
     const along=k*15+(rnd()-.5)*3;
     for(const side of [-1,1]){ if(rnd()<.15) continue;
+      if(Math.abs(k)<=1||Math.abs(k)===3||(Math.abs(k)===6&&k*side<0))continue; // the square and the shops (town.js)
       const x=vc.x+dir.x*along+per.x*side*14, z=vc.z+dir.z*along+per.z*side*14; house(x,z,side>0?Math.PI:0);}
     const sx=vc.x+dir.x*along,sz=vc.z+dir.z*along; street.push([sx,sz]);
   }
@@ -427,7 +434,7 @@ function scanTo(x,z,dx,dz,cond,max=4000,step=10){for(let d=0;d<max;d+=step){cons
   const far=(x,z,d)=>farmSpots.every(f=>Math.hypot(f.x-x,f.z-z)>d);
   const house=(x,z,ry,w,d,hh,wall,roof,lights)=>{const g=[groundH(x,z),groundH(x+w/2,z+d/2),groundH(x-w/2,z-d/2)];const base=Math.min(...g)-2,top=Math.max(...g)+hh,ht=top-base;
     walls.push({geo:BOX(w,ht,d),m:M([x,base+ht/2,z],[0,ry,0]),color:wall});
-    roofs.push({geo:new THREE.CylinderGeometry(w*.62,w*.62,d+.8,3,1).rotateX(-Math.PI/2),m:M([x,top+w*.62*.5-.2,z],[0,ry,0],[1,.62,1]),color:roof});
+    roofs.push({geo:new THREE.CylinderGeometry(w*.62,w*.62,d+.8,3,1).rotateX(-Math.PI/2),m:M([x,top+w*.1922-.3,z],[0,ry,0],[1,.62,1]),color:roof});
     for(let i=0;i<lights;i++){const sd=i%2?1:-1;addLight(x+Math.sin(ry)*(d/2+.25)*sd+Math.cos(ry)*(rnd()-.5)*w*.5,top-hh*.5,z+Math.cos(ry)*(d/2+.25)*sd-Math.sin(ry)*(rnd()-.5)*w*.5,0xffc25a);}};
   let tries=0,farmsN=0;
   while(farmsN<34&&tries<6000){tries++;const x=(rnd()-.5)*6000,z=(rnd()-.5)*4200,h=groundH(x,z);const sl=slopeAt(x,z);
@@ -456,6 +463,7 @@ function scanTo(x,z,dx,dz,cond,max=4000,step=10){for(let d=0;d<max;d+=step){cons
 
 /* ---- sights, life, post, pixel HUD ---- */
 const sights={};
+/*@TOWN@*/
 (function lighthouse(){
   const tip=scanTo(-3000,-290,-1,0,h=>h<2)||{x:-3500,z:-290};
   const x=tip.x+40,z=tip.z, y=groundH(x,z);
@@ -511,7 +519,7 @@ const stripOf=id=>STRIPS.find(q=>q.id===id);
 function hutAt(list,roofs,x,z,ry,w,d,hh,wall,roof,lit,roofKind){const g=[groundH(x,z),groundH(x+w/2,z+d/2),groundH(x-w/2,z-d/2)];const base=Math.min(...g)-1.5,top=Math.max(...g)+hh,ht=top-base;
   list.push({geo:BOX(w,ht,d),m:M([x,base+ht/2,z],[0,ry,0]),color:wall});
   if(roofKind==='thatch')roofs.push({geo:new THREE.ConeGeometry(Math.max(w,d)*.82,hh*.9,4).rotateY(Math.PI/4),m:M([x,top+hh*.45-.1,z],[0,ry,0],[w/Math.max(w,d),1,d/Math.max(w,d)]),color:roof});
-  else roofs.push({geo:new THREE.CylinderGeometry(w*.62,w*.62,d+.8,3,1).rotateX(-Math.PI/2),m:M([x,top+w*.62*.5-.2,z],[0,ry,0],[1,.62,1]),color:roof});
+  else roofs.push({geo:new THREE.CylinderGeometry(w*.62,w*.62,d+.8,3,1).rotateX(-Math.PI/2),m:M([x,top+w*.1922-.3,z],[0,ry,0],[1,.62,1]),color:roof});
   for(let i=0;i<lit;i++){const sd=i%2?1:-1;addLight(x+Math.sin(ry)*(d/2+.3)*sd,top-hh*.5,z+Math.cos(ry)*(d/2+.3)*sd,0xffc25a);}
   farmSpots.push({x,z,r:Math.max(w,d)});}
 (function marramProps(){const S=stripOf('marram'),I=ISLES.marram,it=[],rf=[],yaw=-S.hdg*DEG;
@@ -590,9 +598,9 @@ function mark(id,x,z,y,name,desc){sights[id]={x,z,y,name,desc};farmSpots.push({x
      it.push({geo:BOX(3,1.2,2),m:M([p.x,p.h+.4,p.z],[0,.4,0]),color:0xd8d0bc});
      mark('stones',p.x,p.z,p.h,'The Old Stones','A ring of standing stones older than anyone on Ferrow.');}}
   // Ferrow: chapel with a spire at the top of the village street
-  {const vc=villageC,dx=STRIPS[0].fx,dz=STRIPS[0].fz;let p=null;for(const d of [160,185,140,210,120]){for(const sd of [1,-1]){const x=vc.x+dx*d*sd,z=vc.z+dz*d*sd;if(groundH(x,z)>4&&slopeAt(x,z)<.2&&!nearStrip(x,z,40)){p={x,z};break;}}if(p)break;}
+  {const vc=villageC,dx=STRIPS[0].fx,dz=STRIPS[0].fz;let p=null;for(const d of [160,185,140,210,120]){for(const sd of [1,-1]){const x=vc.x+dx*d*sd,z=vc.z+dz*d*sd;if(groundH(x,z)>4&&slopeAt(x,z)<.2&&!nearStrip(x,z,40)&&!townSpots.some(f=>Math.hypot(f.x-x,f.z-z)<f.r+14)){p={x,z};break;}}if(p)break;}
    if(p){const y=groundH(p.x,p.z),ry=-STRIPS[0].hdg*DEG;it.push({geo:BOX(9,8,16),m:M([p.x,y+3,p.z],[0,ry,0]),color:0xf1ece2});
-     it.push({geo:new THREE.CylinderGeometry(6.3,6.3,17,3,1).rotateX(-Math.PI/2),m:M([p.x,y+9.4,p.z],[0,ry,0],[1,.6,1]),color:0x5b6e86});
+     it.push({geo:new THREE.CylinderGeometry(6.3,6.3,17,3,1).rotateX(-Math.PI/2),m:M([p.x,y+8.7,p.z],[0,ry,0],[1,.6,1]),color:0x5b6e86});
      const tx=p.x-Math.sin(ry)*-9,tz=p.z-Math.cos(ry)*-9;it.push({geo:BOX(5,16,5),m:M([tx,y+7,tz],[0,ry,0]),color:0xf1ece2});
      it.push({geo:new THREE.ConeGeometry(3.8,11,4).rotateY(Math.PI/4),m:M([tx,y+20.5,tz],[0,ry,0]),color:0x5b6e86});
      it.push({geo:BOX(2.4,2.4,.3),m:M([tx-Math.sin(ry)*2.6,y+12,tz-Math.cos(ry)*2.6],[0,ry,0]),color:0xffd36b});lit.push([tx,y+12,tz,0xffe0a0]);
@@ -717,6 +725,15 @@ const cloudGroup=new THREE.Group();scene.add(cloudGroup);
   for(let c=0;c<64;c++){const cx=(rnd()-.5)*21000,cz=(rnd()-.5)*19000,cy=620+rnd()*380;const n=5+(rnd()*5|0);
     for(let k=0;k<n;k++){const s=40+rnd()*60;const y=cy+(rnd()-.3)*20;
       it.push({geo:new THREE.IcosahedronGeometry(1,1),m:M([cx+(rnd()-.5)*220,y,cz+(rnd()-.5)*120],[0,rnd()*3,0],[s,s*.55,s*.9]),color:y>cy?0xfff8f0:0xeae2f2});}}
+  // low cumulus: flat bases, stacked tiers of puffs that tower in the middle, and small satellite puffs round the edges
+  let low=0;for(let tries=0;low<72&&tries<900;tries++){const cx=(rnd()-.5)*21000,cz=(rnd()-.5)*19000;
+    if(STRIPS.some(s=>Math.hypot(s.x-cx,s.z-cz)<1100))continue;let gh=0;for(let k=0;k<5;k++)gh=Math.max(gh,groundH(cx+(k-2)*90,cz+((k*7)%5-2)*60));
+    const base=Math.max(230+rnd()*170,gh+150),R=70+rnd()*80,ax=rnd()*TAU,ca=Math.cos(ax),sa=Math.sin(ax),el=.55+rnd()*.35;low++;
+    const P=(u,v,y,s,sy,col)=>it.push({geo:new THREE.IcosahedronGeometry(1,1),m:M([cx+u*ca-v*sa,y,cz+u*sa+v*ca],[rnd()*.4,rnd()*3,rnd()*.4],[s*(.9+rnd()*.25),s*sy,s*(.9+rnd()*.25)]),color:col});
+    const nb=7+(rnd()*5|0);for(let k=0;k<nb;k++){const a=k/nb*TAU+rnd()*.5,d=R*(.35+rnd()*.6);P(Math.cos(a)*d,Math.sin(a)*d*el,base+6,R*(.32+rnd()*.18),.38,0xdcd4e6);}
+    const nm=5+(rnd()*4|0);for(let k=0;k<nm;k++){const a=rnd()*TAU,d=R*rnd()*.5;const s=R*(.38+rnd()*.2);P(Math.cos(a)*d,Math.sin(a)*d*el,base+s*.55+rnd()*10,s,.78,0xf2ecf4);}
+    const nt=2+(rnd()*3|0),tall=rnd();for(let k=0;k<nt;k++){const a=rnd()*TAU,d=R*rnd()*.28;const s=R*(.26+rnd()*.14)*(1+tall*.3);P(Math.cos(a)*d,Math.sin(a)*d*el,base+R*(.55+tall*.35)+k*s*.35,s,.85,0xfffaf2);}
+    const ns=3+(rnd()*4|0);for(let k=0;k<ns;k++){const a=rnd()*TAU,d=R*(1+rnd()*.35);P(Math.cos(a)*d,Math.sin(a)*d*el,base+8+rnd()*14,R*(.1+rnd()*.1),.7,0xf6f0f4);}}
   cloudGroup.add(new THREE.Mesh(merge(it),toon({},false)));
 })();
 
