@@ -652,7 +652,7 @@ thrEl.addEventListener('pointermove',e=>{if(e.pointerId===thrId)thrFromY(e.clien
 thrEl.addEventListener('pointerup',e=>{if(e.pointerId===thrId)thrId=null;});thrEl.addEventListener('pointercancel',()=>thrId=null);
 function setThrottleUI(){$('thrKnob').style.bottom=(THR_B+ac.throttle*thrSpan())+'px';$('thrPct').textContent=Math.round(ac.throttle*100)+'%';}
 /* flap lever: three notches, 0 at the top (up), 2 at the bottom (full). Drag or tap a notch; F steps through them */
-const flapEl=$('flapL'),FLAP_Y=[24,50,76];let flapId=null;
+const flapEl=$("flapL"),FLAP_Y=[20,34,48];let flapId=null;
 function setFlaps(n){n=clamp(n,0,2);if(n===ac.flaps)return;ac.flaps=n;updFlaps();snd.clunk();
   if(n)tip('flaps','Flaps give more lift and more drag, so you can fly slower. 1 for takeoff and approach, 2 for landing. Bea\'s logbook has the details.');}
 function flapFromY(y){const r=flapEl.getBoundingClientRect(),ly=y-r.top;let bi=0;FLAP_Y.forEach((v,i)=>{if(Math.abs(ly-v)<Math.abs(ly-FLAP_Y[bi]))bi=i;});setFlaps(bi);}
