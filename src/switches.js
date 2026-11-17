@@ -82,20 +82,24 @@ function updSmoke(dt){
   if(any)smokeTrail.instanceMatrix.needsUpdate=true;
   const T=TOD[tod],U=smokeMat.uniforms;U.uTint.value=clamp(T.sunI*.55+T.hemiI*.55,.3,1.05);U.fogNear.value=scene.fog.near;U.fogFar.value=scene.fog.far;}
 
-/* ---- searchlight ---- */
-let searchOn=false;
-const sLight=new THREE.SpotLight(0xf4f6ff,0,1100,.075,.35,1);sLight.position.set(0,-.6,-1.5);plane.add(sLight);const sTarget=new THREE.Object3D();scene.add(sTarget);sLight.target=sTarget;
-const beamGeo=new THREE.ConeGeometry(Math.tan(.075),1,14,1,true).translate(0,-.5,0);
-const sBeam=new THREE.Mesh(beamGeo,new THREE.MeshBasicMaterial({color:0xe8eeff,transparent:true,opacity:.08,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide}));sBeam.visible=false;sBeam.renderOrder=5;scene.add(sBeam);
-const _so=new V3(),_sd=new V3(),_sh=new V3(),_srt=new V3(),_down=new V3(0,-1,0);let sweepT=0;
-function updSearch(dt){const on=searchOn&&mode!=='title';sLight.intensity=on?(TOD[tod].lights>0?3.2:.6):0;sBeam.visible=on&&TOD[tod].lights>0;if(!on)return;
-  axes();sweepT+=dt;const bank=ac.ground?0:Math.atan2(-_r.y,_u.y);
-  _sh.set(_f.x,0,_f.z);if(_sh.lengthSq()<1e-4)_sh.set(0,0,-1);_sh.normalize();_srt.set(-_sh.z,0,_sh.x);
-  const side=clamp(bank*2.2,-1.3,1.3)+Math.sin(sweepT*.45)*.3;
-  _sd.copy(_sh).multiplyScalar(1).addScaledVector(_down,ac.ground?.08:.75).addScaledVector(_srt,side).normalize();
-  const o=_so.copy(sLight.position);plane.localToWorld(o);let L=900;for(let d=20;d<900;d+=15){const x=o.x+_sd.x*d,y=o.y+_sd.y*d,z=o.z+_sd.z*d;if(y<surfH(x,z)){L=d;break;}}
-  sTarget.position.copy(o).addScaledVector(_sd,L);sTarget.updateMatrixWorld();
-  sBeam.position.copy(o);sBeam.quaternion.setFromUnitVectors(_down,_sd);sBeam.scale.set(L,L,L);sBeam.material.opacity=.07*TOD[tod].lights;}
+/* ---- searchlight ----
+   A pool of daylight on the ground a little way ahead of the nose: whatever's inside the circle is lit as if it
+   were midday. It points the way you're heading, a fixed angle down, so you aim it just by flying: turn to sweep it,
+   fly lower to bring it closer and make it tighter. Done in the post pass, so it lights land and water alike. */
+let searchOn=false,spotK=0;
+const sBeam=new THREE.Mesh(new THREE.ConeGeometry(1,1,16,1,true).translate(0,-.5,0),new THREE.MeshBasicMaterial({color:0xfff4d8,transparent:true,opacity:.06,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide}));sBeam.visible=false;sBeam.renderOrder=5;scene.add(sBeam);
+const SPOT_DOWN=26*DEG,_sd=new V3(),_sh=new V3(),_down=new V3(0,-1,0),_so=new V3(),spotP=new V3();let spotR=40;
+const DAYNESS={dawn:.9,noon:1,golden:.85,sunset:.55,dusk:.3,night:0};
+function updSearch(dt){const on=searchOn&&mode!=='title';spotK=lerp(spotK,on?1:0,1-Math.exp(-dt*6));if(spotK<.01){sBeam.visible=false;return;}
+  axes();_sh.set(_f.x,0,_f.z);if(_sh.lengthSq()<1e-4)_sh.set(0,0,-1);_sh.normalize();
+  _sd.copy(_sh).multiplyScalar(Math.cos(SPOT_DOWN)).addScaledVector(_down,Math.sin(SPOT_DOWN));
+  const o=_so.copy(ac.pos);o.y-=.8;let L=2200;for(let d=10;d<2200;d+=d<200?8:20){const x=o.x+_sd.x*d,y=o.y+_sd.y*d,z=o.z+_sd.z*d;if(y<surfH(x,z)){L=d;break;}}
+  spotP.copy(o).addScaledVector(_sd,L);spotP.y=surfH(spotP.x,spotP.z);spotR=lerp(spotR,clamp(18+L*.07,22,110),1-Math.exp(-dt*4));
+  const dn=DAYNESS[tod]??1;sBeam.visible=dn<.6;sBeam.position.copy(o);sBeam.quaternion.setFromUnitVectors(_down,_sd);const w=spotR*.8;sBeam.scale.set(w,L,w);sBeam.material.opacity=.07*(1-dn)*spotK;}
+/* called right before each frame is drawn, so the circle uses the very camera that frame is drawn with */
+function spotUniforms(){const U=postMat.uniforms;U.uSpotOn.value=spotK;if(spotK<.01)return;const dn=DAYNESS[tod]??1;
+  U.uSpot.value.copy(spotP);U.uSpotR.value=spotR;U.uSpotK.value.set(1.12+1.7*(1-dn),1.1+1.6*(1-dn),1.06+1.15*(1-dn));
+  U.uInvProj.value.copy(camera.projectionMatrixInverse);U.uCamW.value.copy(camera.matrixWorld);}
 
 /* ---- inflatable floats ---- */
 ac.floats=0;let floatsOn=false;
@@ -116,7 +120,7 @@ function updFloats(dt){const tgt=floatsOn?1:0;if(floatsOn)ac.floats=Math.min(1,a
 
 /* ---- the panel ---- */
 function updFunUI(){$('swSearch').classList.toggle('on',searchOn);$('swSmoke').classList.toggle('on',smokeOn);$('swFloat').classList.toggle('on',floatsOn);updMicUI();}
-$('swSearch').addEventListener('click',()=>{searchOn=!searchOn;snd.flick();updFunUI();if(searchOn)tip('search','Searchlight on. Bank and it swings into the turn, so you can sweep it across the ground. Best after dark.');});
+$('swSearch').addEventListener('click',()=>{searchOn=!searchOn;snd.flick();updFunUI();if(searchOn)tip('search','Searchlight on. It lights up a circle of ground ahead of you, as bright as midday. Turn to sweep it around; fly lower to bring it closer. Best after dark.');});
 $('swSmoke').addEventListener('click',()=>{smokeOn=!smokeOn;snd.flick();if(smokeOn)snd.hiss(.5);updFunUI();if(smokeOn)tip('smoke','Smoke on! It hangs in the air for a while, so you can draw loops and letters in the sky.');});
 $('swFloat').addEventListener('click',()=>{setFloats(!floatsOn);});
 $('micBtn').addEventListener('pointerdown',e=>{e.preventDefault();keyMic();});
@@ -163,3 +167,34 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden){wakeAudio
 addEventListener('pageshow',wakeAudio);addEventListener('focus',wakeAudio);
 for(const ev of ['pointerdown','touchend','keydown'])addEventListener(ev,wakeAudio,{capture:true,passive:true});
 setInterval(()=>{const c=snd.ctx;if(c&&c.onstatechange==null)c.onstatechange=()=>{if(!document.hidden)wakeAudio();};},1000);
+
+/* ---- updraft: like the tailwind but straight up. Three charges; tap again while one is lifting you to stack them.
+   Holding BRAKE in the air calls it off, same as the tailwind ---- */
+const UP_N=3,UP_T=3,UP_V=26,UP_CD=6,UP_STACK=[0,1,1.6,2.1];let upCharges=UP_N,upCD=0,upUiT=0;
+function useUpdraft(){if(mode!=='fly')return;if(ac.ground){toast('Updrafts work once you\'re flying.',1.6);return;}
+  if(upCharges<=0){toast(`The next updraft is gathering. ${Math.ceil(upCD)} s.`,1.3);return;}
+  if(!ac.ups)ac.ups=[];ac.ups.push(UP_T);upCharges--;upCD=UP_CD;const n=ac.ups.length;snd.beep(660+n*120);setTimeout(()=>snd.beep(990+n*160),80);
+  toast(n>1?`Updraft ×${n}!`:'Updraft!',1.1);if(n===3)goal('updraft3',true);tip('updraft','Updraft! It lifts you straight up for a few seconds. Climb high for loops and barrel rolls: they score points. Hold BRAKE to stop it early.',.6);updUpUI();}
+function stepUp(dt){if(!ac.ups)ac.ups=[];if(ac.ground)ac.ups.length=0;
+  if(ac.brakeHeld&&ac.ups.length){ac.ups.length=0;toast('Updraft off.',1);}
+  for(let i=ac.ups.length-1;i>=0;i--){ac.ups[i]-=dt;if(ac.ups[i]<=0)ac.ups.splice(i,1);}
+  const tgt=UP_STACK[ac.ups.length];ac.ust=lerp(ac.ust||0,tgt,1-Math.exp(-dt*(tgt>(ac.ust||0)?3:2)));
+  if(ac.ust>.005){ac.pos.y+=UP_V*ac.ust*dt;if(ac.vel.y<0)ac.vel.y*=1-Math.min(1,dt*3*ac.ust);}
+  trickTick(dt);}
+function updUpUI(){const b=$('updraft');if(!b)return;const n=(ac.ups||[]).length;b.innerHTML=`<img src="${RICON.up}" alt="Updraft">${n>1?'×'+n:''}<span>${'●'.repeat(upCharges)+'○'.repeat(UP_N-upCharges)}</span>`;
+  b.classList.toggle('on',n>0);b.classList.toggle('off',ac.ground||mode!=='fly');b.style.setProperty('--w',upCharges<UP_N&&!n?Math.round((1-upCD/UP_CD)*100)+'%':'0%');}
+function updUpdraft(dt){if(!(ac.ups&&ac.ups.length)&&upCharges<UP_N){upCD-=dt;if(upCD<=0){upCharges++;upCD=UP_CD;}}upUiT-=dt;if(upUiT<=0){upUiT=.1;updUpUI();}}
+RICON.up=railIcon(['................','.......aa.......','......aaaa......','.....aaaaaa.....','....aa.aa.aa....','.......aa.......','.......aa.......','..b....aa....b..','.bbb...aa...bbb.','bbbbb..aa..bbbbb','..b....aa....b..','..b..........b..','..b..........b..','................','................','................'],{a:'#2a6a9a',b:'#7a4a1a'});
+$('updraft').addEventListener('click',e=>{e.stopPropagation();useUpdraft();});
+
+/* ---- stunts: a full barrel roll or a full loop scores, with a logbook entry the first time ---- */
+const TR={roll:0,pitch:0,rq:0,pq:0,cd:0};
+function trickTick(dt){if(ac.ground||mode!=='fly'){TR.roll=TR.pitch=0;return;}TR.cd-=dt;
+  const rr=ac.w.z,pr=ac.w.x;
+  TR.roll+=rr*dt;if(Math.abs(rr)<.5)TR.rq+=dt;else TR.rq=0;if(TR.rq>.7||Math.sign(rr)!==Math.sign(TR.roll)&&Math.abs(rr)>.3)TR.roll=0;
+  TR.pitch+=pr*dt;if(Math.abs(pr)<.08)TR.pq+=dt;else TR.pq=0;if(TR.pq>2.5||Math.sign(pr)!==Math.sign(TR.pitch)&&Math.abs(pr)>.15)TR.pitch=0;
+  if(Math.abs(TR.roll)>=TAU*.95){TR.roll=0;stunt('roll');}
+  if(Math.abs(TR.pitch)>=TAU*.92){TR.pitch=0;TR.roll=0;stunt('loop');}}
+function stunt(k){if(TR.cd>0&&k==='roll')return;TR.cd=1;const S={roll:['Barrel roll!',250],loop:['Loop the loop!',400]}[k];
+  const first=goal(k,true);addScore(S[1]+(first?100:0));if(first)stamp(1);snd.beep(1320);setTimeout(()=>snd.beep(1760),100);setTimeout(()=>snd.beep(2093),200);
+  toast(`${S[0]} +${S[1]+(first?100:0)}${first?' · +1 STAMP':''}`,1.8);}

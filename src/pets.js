@@ -7,9 +7,10 @@ const PET_SPECIES={
   cat:{label:'Cat',name:'Pepper',snd:'meow',cols:[['Ginger','#e88a3a','#f8dcb8','#b8622a'],['Black','#2e2a32','#4a4450','#16141a'],['Tabby','#8e8a90','#d8d2cc','#5e5a62'],['White','#f4f0ea','#ffffff','#e8a8b0'],['Cream','#e8d2a8','#fff4e0','#b89a70']]},
   frog:{label:'Frog',name:'Lily',snd:'ribbit',cols:[['Green','#5fae4a','#c8e07a','#3a7a30'],['Blue','#3f8fd0','#a8d8f0','#24548a'],['Red','#e2503a','#f0a060','#2c2833'],['Yellow','#f0cc3a','#fff0a0','#a8802a']]},
   bird:{label:'Bird',name:'Captain',snd:'tweet',cols:[['Green','#4ca850','#f0e070','#2f7a3a'],['Blue','#3f7fd0','#f0c83a','#2a5a9a'],['Scarlet','#d83a2e','#f2c040','#2a5ab0'],['Cockatiel','#b8b4b0','#f4e06a','#8a8682']]},
+  axolotl:{label:'Axolotl',name:'Noodle',snd:'bloop',cols:[['Pink','#f4b4c4','#fbe0e6','#e2607e'],['Gold','#f0c86a','#fbe8b0','#e8865a'],['Wild','#6a7a54','#a8b48a','#8a4a5e'],['Blue','#8ab0cc','#cfe2ee','#5a74b0'],['Black','#3a3640','#5a5462','#7a4a6a']]},
   bunny:{label:'Bunny',name:'Clover',snd:'squeak',cols:[['White','#f4f0ea','#ffffff','#f0b8c0'],['Brown','#9a6a48','#e8d4b8','#6a4a30'],['Grey','#9a96a0','#e0dce2','#6a666e'],['Black','#3a3438','#ece6e0','#241e22']]},
 };
-const PET_SOUNDS={woof:['Woof','WOOF!'],meow:['Meow','MEOW!'],ribbit:['Ribbit','RIBBIT!'],tweet:['Tweet','TWEET!'],squeak:['Squeak','SQUEAK!'],quack:['Quack','QUACK!']};
+const PET_SOUNDS={bloop:['Bloop','BLOOP!'],woof:['Woof','WOOF!'],meow:['Meow','MEOW!'],ribbit:['Ribbit','RIBBIT!'],tweet:['Tweet','TWEET!'],squeak:['Squeak','SQUEAK!'],quack:['Quack','QUACK!']};
 if(!settings.pet||!PET_SPECIES[settings.pet.sp])settings.pet={sp:'dog',col:0,snd:'woof',name:'Biscuit'};
 const petName=()=>settings.pet.name||PET_SPECIES[settings.pet.sp].name;
 const hx=s=>parseInt(s.slice(1),16);
@@ -36,6 +37,12 @@ function petParts(sp,f,l,d){const dk=0x2c2833,pink=0xe86a7a;
     chest:[{geo:BOX(.26,.42,.26),m:M([0,-.28,.12]),color:f},{geo:BOX(.18,.3,.04),m:M([0,-.3,-.02]),color:l},...[-1,1].map(e=>({geo:BOX(.05,.34,.24),m:M([e*.15,-.32,.18]),color:d}))],
     rest:[{geo:BOX(.24,.24,.28),m:M([0,-.54,.24]),color:f},...[-1,1].map(e=>({geo:BOX(.04,.14,.04),m:M([e*.06,-.7,.14]),color:0x8a8890}))],
     tail:[{geo:BOX(.12,.04,.4).translate(0,0,.2),m:M([0,0,0]),color:d},{geo:BOX(.06,.03,.3).translate(0,0,.15),m:M([0,.02,.05]),color:f}],earY:.13,earX:0,stiff:true};
+  if(sp==='axolotl')return {head:[{geo:BOX(.42,.22,.34),m:M([0,-.02,0]),color:f},{geo:BOX(.38,.06,.3),m:M([0,-.12,-.01]),color:l},{geo:BOX(.3,.015,.02),m:M([0,-.07,-.175]),color:dk},{geo:BOX(.04,.025,.02),m:M([-.14,-.06,-.172]),color:dk},{geo:BOX(.04,.025,.02),m:M([.14,-.06,-.172]),color:dk},
+      {geo:BOX(.045,.045,.02),m:M([-.12,.04,-.172]),color:dk},{geo:BOX(.045,.045,.02),m:M([.12,.04,-.172]),color:dk},{geo:BOX(.36,.2,.26),m:M([0,-.06,.26]),color:f}],
+    ear:[0,1,2].map(k=>({geo:BOX(.03,.2,.05).translate(0,.1,0),m:M([0,-.02+k*.035,.06-k*.06],[-.5-k*.35,0,0]),color:d})).concat([0,1,2].map(k=>({geo:BOX(.034,.06,.06),m:M([0,.16-k*.02,-.02-k*.1],[-.5-k*.35,0,0]),color:d}))),earR:null,tongue:false,
+    chest:[{geo:BOX(.3,.36,.3),m:M([0,-.26,.12]),color:f},{geo:BOX(.2,.26,.04),m:M([0,-.28,-.03]),color:l}],
+    rest:[{geo:BOX(.32,.26,.5),m:M([0,-.52,.36]),color:f},...[-1,1].map(e=>({geo:BOX(.08,.2,.08),m:M([e*.17,-.62,.0]),color:f})),...[-1,1].map(e=>({geo:BOX(.08,.18,.08),m:M([e*.17,-.62,.5]),color:f}))],
+    tail:[{geo:BOX(.08,.2,.5).translate(0,0,.25),m:M([0,0,0]),color:f},{geo:BOX(.03,.32,.46).translate(0,0,.25),m:M([0,0,.04]),color:l}],earY:.0,earX:.2,stiff:true};
   /* bunny */
   return {head:[{geo:BOX(.3,.27,.32),m:M([0,0,0]),color:f},{geo:BOX(.16,.1,.08),m:M([0,-.07,-.17]),color:l},{geo:BOX(.05,.04,.03),m:M([0,-.03,-.215]),color:pink},{geo:BOX(.05,.06,.02),m:M([-.08,.04,-.165]),color:dk},{geo:BOX(.05,.06,.02),m:M([.08,.04,-.165]),color:dk},{geo:BOX(.26,.22,.24),m:M([0,-.06,.24]),color:f}],
     ear:[{geo:BOX(.075,.38,.05).translate(0,.19,0),m:M([0,0,0]),color:f},{geo:BOX(.04,.3,.02).translate(0,.17,-.026),m:M([0,0,0]),color:d}],earR:null,tongue:false,
@@ -67,6 +74,7 @@ snd.petCall=function(kind){if(!this.ctx||!settings.sound)return;kind=kind||setti
   else if(kind==='ribbit'){for(const k of [0,.2])voice(t0+k,160,120,.14,'square',.16,900,[45,60]);}
   else if(kind==='tweet'){for(const k of [0,.13,.26])voice(t0+k,2400,3600,.09,'sine',.14,6000,[30,200]);}
   else if(kind==='squeak'){voice(t0,1300,1900,.08,'triangle',.18,4000);voice(t0+.12,1500,2100,.08,'triangle',.16,4000);}
+  else if(kind==='bloop'){for(const k of [0,.11,.2])voice(t0+k,300+k*900,900+k*1200,.07,'sine',.2,3000);}
   else if(kind==='quack'){for(const k of [0,.24])voice(t0+k,420,300,.17,'sawtooth',.2,1200,[28,40]);}};
 if(!snd._woof)snd._woof=snd.woof;snd.woof=function(){snd.petCall();};
 /* the pixel portrait for the clue button and the pop-up */
@@ -76,6 +84,7 @@ function petPic(){const P=settings.pet,S=PET_SPECIES[P.sp],c=S.cols[P.col]||S.co
   else if(P.sp==='cat'){R(f,8,10,16,14);R(f,9,9,14,1);R(f,8,4,4,6);R(f,20,4,4,6);R(f,9,3,2,1);R(f,21,3,2,1);R(d,9,6,2,3);R(d,21,6,2,3);R(l,12,17,8,6);R('#6ac850',11,13,3,3);R('#6ac850',18,13,3,3);R(K,12,13,1,3);R(K,19,13,1,3);R('#e86a7a',15,18,2,2);R(K,14,20,4,1);R('#e8e0d8',5,18,6,1);R('#e8e0d8',21,18,6,1);}
   else if(P.sp==='frog'){R(f,5,12,22,12);R(f,7,11,18,1);R(f,6,6,7,7);R(f,19,6,7,7);R('#f4f0e0',7,7,5,5);R('#f4f0e0',20,7,5,5);R(K,9,8,2,3);R(K,22,8,2,3);R(l,8,18,16,6);R(K,8,17,16,1);R('#e86a7a',7,15,2,1);R('#e86a7a',23,15,2,1);}
   else if(P.sp==='bird'){R(f,9,8,14,16);R(f,10,7,12,1);R(d,13,3,3,5);R(d,16,4,2,4);R(l,10,15,12,9);R('#f0c040',13,15,6,3);R('#f0c040',14,18,4,2);R('#c08a20',15,19,2,2);R('#fff',10,11,4,4);R('#fff',18,11,4,4);R(K,11,12,2,2);R(K,19,12,2,2);R(d,6,16,3,8);R(d,23,16,3,8);}
+  else if(P.sp==='axolotl'){R(f,6,11,20,13);R(f,7,10,18,1);for(const [a,b] of [[2,7],[1,11],[2,15],[27,7],[28,11],[27,15]])R(d,a,b,4,2);R(d,3,9,2,1);R(d,27,9,2,1);R(l,9,18,14,6);R(K,10,13,2,2);R(K,20,13,2,2);R('#fff',10,13,1,1);R('#fff',20,13,1,1);R(K,11,19,10,1);R(K,10,18,1,1);R(K,21,18,1,1);R('#f08aa0',9,17,2,1);R('#f08aa0',21,17,2,1);}
   else {R(f,8,11,16,13);R(f,9,10,14,1);R(f,10,1,4,10);R(f,18,1,4,10);R(d,11,2,2,8);R(d,19,2,2,8);R(l,12,17,8,6);R(K,11,14,2,2);R(K,19,14,2,2);R('#fff',11,14,1,1);R('#fff',19,14,1,1);R('#e86a7a',15,18,2,2);R(K,15,20,2,1);R('#fff',14,21,2,2);R('#fff',16,21,2,2);}
   R('#c2453a',9,25,14,2);R('#ffd36b',15,26,2,2);return cv.toDataURL();}
 /* the companion section at the top of the Hangar */

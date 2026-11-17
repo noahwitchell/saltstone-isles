@@ -77,7 +77,7 @@ function errandBtns(s){const out=[];
 const afterBtns=s=>[['Take off',()=>spawnField(s),true],['Look around first',()=>{hideModal();mode='fly';}]];
 function offerErrand(id,s){const e=ERRANDS[id],c=CHARS[e.giver],meet=!log.met[e.giver];if(meet){log.met[e.giver]=1;saveL();}
   showCard(`<div class="who"><img src="${portrait(e.giver)}" alt=""><div><b>${c.name}</b><span>${c.role}</span></div></div>${meet?`<p class="say">“${MEET[e.giver]}”</p>`:''}<p class="say">“${e.ask}”</p>`,
-    [['I\'ll keep an eye out',()=>{errState(id).st='active';saveL();updErrandUI();toast(`Errand: ${errLine(id)}. Stuck? Tap Biscuit's button up top for a clue.`,3);showCard(`<h2>Errand accepted</h2><p>${e.set?`Find all ${FINDS[e.set].length} ${e.what}`:`Find ${e.what}`}, then land back here and report to ${c.name.split(' ')[0]}. Fly low and slow near them. Stuck? Tap Biscuit's button at the top of the screen and he'll point his nose the right way.</p>`,afterBtns(s));},true],
+    [['I\'ll keep an eye out',()=>{errState(id).st='active';saveL();updErrandUI();toast(`Errand: ${errLine(id)}. Stuck? Tap Biscuit's button up top for a clue.`,3);showCard(`<h2>Errand accepted</h2><p>${e.set?`Find all ${FINDS[e.set].length} ${e.what}`:`Find ${e.what}`}, then land back here and report to ${c.name.split(' ')[0]}. Fly low and slow near them. Stuck? Tap Biscuit's button at the top of the screen and Biscuit will point the right way.</p>`,afterBtns(s));},true],
      ['Maybe later',()=>showCard(`<p class="say">“No hurry. It'll keep.”</p>`,afterBtns(s))]]);}
 function reportErrand(id,s){const e=ERRANDS[id],c=CHARS[e.giver],n=errCount(id);
   if(n.n<n.of){showCard(`<div class="who"><img src="${portrait(e.giver)}" alt=""><div><b>${c.name}</b><span>${c.role}</span></div></div><p class="say">“${e.set?`${n.n} of ${n.of} so far? Keep looking, they're out there.`:`Not found it yet? It's out there somewhere.`}”</p>`,afterBtns(s));return;}
@@ -169,10 +169,11 @@ const dogPic=(()=>{const c=document.createElement('canvas');c.width=c.height=32;
 let dogPopT=0;
 function dogPopTick(dt){if(dog.bark>1.5&&dogPopT<=0){dogPopT=2.2;$('dogpop').hidden=false;}if(dogPopT>0){dogPopT-=dt;if(dogPopT<=0)$('dogpop').hidden=true;}}
 
-/* time of day: a little button in the top bar that steps noon → golden → sunset → blue hour → night → noon */
+/* time of day: a little button in the top bar that steps sunrise → noon → golden → sunset → blue hour → night → sunrise */
 const TOD_ICON=(()=>{const out={},I='#241c2e';
   const draw=(k,fn)=>{const c=document.createElement('canvas');c.width=c.height=16;const x=c.getContext('2d'),P=(col,a,b,w=1,h=1)=>{x.fillStyle=col;x.fillRect(a,b,w,h);};
     const disc=(cx,cy,r,col)=>{for(let j=-r;j<=r;j++)for(let i=-r;i<=r;i++)if(i*i+j*j<=r*r+r*.6)P(col,cx+i,cy+j);};fn(P,disc);out[k]=c.toDataURL();};
+  draw('dawn',(P,d)=>{for(let y=0;y<16;y++)P(y<6?'#a8c6ea':y<10?'#fbe4b0':'#ffe08a',0,y,16,1);d(8,10,4,'#fff4b0');P('#4a90b8',0,12,16,4);P('#fff8d8',3,13,10,1);P('#ffffff',2,3,3,1);P('#ffffff',10,4,4,1);});
   draw('noon',(P,d)=>{P('#7fb8e8',0,0,16,16);for(const [a,b] of [[7,0],[7,14],[0,7],[14,7],[2,2],[12,2],[2,12],[12,12]])P('#ffe07a',a,b,2,2);d(8,8,4,'#ffd34a');d(7,7,1,'#fff4c0');});
   draw('golden',(P,d)=>{for(let y=0;y<16;y++)P(y<6?'#9c94d8':y<10?'#f0a868':'#ffc48a',0,y,16,1);d(8,10,4,'#ffe07a');P('#3d7ea0',0,12,16,4);P('#a8d8e0',3,13,10,1);});
   draw('sunset',(P,d)=>{for(let y=0;y<16;y++)P(y<5?'#7d68b4':y<9?'#e2703f':'#ff9a5a',0,y,16,1);d(8,11,4,'#ffb04a');P('#283a74',0,11,16,5);P('#ffa060',4,12,8,1);P('#ffa060',6,14,4,1);});

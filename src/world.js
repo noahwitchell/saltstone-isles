@@ -108,6 +108,15 @@ function slopeAt(x,z){const e=6;return Math.hypot(groundH(x+e,z)-groundH(x-e,z),
 const nearStrip=(x,z,m)=>STRIPS.some(s=>{const l=toLocal(s,x,z);return Math.abs(l.s)<s.len/2+m&&Math.abs(l.t)<s.wid/2+m;});
 
 /* ---------------- renderer ---------------- */
+/* always landscape: if the phone is upright (or rotation-locked upright) the whole page is turned 90 degrees.
+   ROT says whether it's turned; VW/VH are the game's width and height; ptL() and rectL() convert screen
+   coordinates (touches, element boxes) into the game's own landscape coordinates. */
+let ROT=false;
+function setRot(){ROT=innerHeight>innerWidth;document.documentElement.classList.toggle('rot',ROT);}
+setRot();
+const VW=()=>ROT?innerHeight:innerWidth,VH=()=>ROT?innerWidth:innerHeight;
+const ptL=e=>ROT?{x:e.clientY,y:innerWidth-e.clientX}:{x:e.clientX,y:e.clientY};
+function rectL(el){const r=el.getBoundingClientRect();if(!ROT)return r;const W=innerWidth;return {left:r.top,top:W-r.right,right:r.bottom,bottom:W-r.left,width:r.height,height:r.width};}
 const glCanvas=document.getElementById('gl'), hudCanvas=document.getElementById('hud');
 const renderer=new THREE.WebGLRenderer({canvas:glCanvas,antialias:false,powerPreference:'high-performance'});
 renderer.setPixelRatio(1);
@@ -132,6 +141,8 @@ const toon=(o={},bake=true)=>{const m=new THREE.MeshToonMaterial(Object.assign({
 
 /* lighting presets */
 const TOD={
+  dawn:{name:'Sunrise',sunAz:78,sunEl:7,sun:0xfff0b4,sunI:1.05,sky:0xb4cdea,gnd:0x8a8a5a,hemiI:.62,zen:0x5a88cc,high:0xa8c6ea,hor:0xfbe4b0,haze:0xffe08a,sunc:0xfffbe0,fogN:800,fogF:6000,
+    deep:0x2a6098,mid:0x4a90b8,shal:0x7ad0c4,glint:0xfff8d8,con:1.06,sat:1.08,vig:.18,stars:0,lights:0,disc:.99935,beam:.05},
   noon:{name:'Midday',sunAz:200,sunEl:55,sun:0xfff4e2,sunI:.95,sky:0xb8d4f0,gnd:0x7c8a58,hemiI:.6,zen:0x3f7fd0,high:0x86b8ea,hor:0xd8eaf2,haze:0xf4f6ee,sunc:0xffffff,fogN:900,fogF:6500,
     deep:0x1f5f9a,mid:0x2f8fbf,shal:0x5fd2c8,glint:0xffffff,con:1.05,sat:1.05,vig:.15,stars:0,lights:0,disc:.99935,beam:0},
   golden:{name:'Golden hour',sunAz:250,sunEl:8,sun:0xffc48a,sunI:1.12,sky:0x9c94d8,gnd:0x7a6a4a,hemiI:.5,zen:0x37479a,high:0x9a98d4,hor:0xf4b892,haze:0xffa060,sunc:0xfff0c0,fogN:700,fogF:5600,
@@ -810,13 +821,16 @@ function cloudMist(p){let m=0;const gx=cloudGroup.position.x,gz=cloudGroup.posit
 /* ---------------- post-process ---------------- */
 let LW=320,LH=180,PS=2,rt;
 const postMat=new THREE.ShaderMaterial({
-  uniforms:{tColor:{value:null},tDepth:{value:null},res:{value:new THREE.Vector2()},cNear:{value:.4},cFar:{value:14000},outline:{value:1},levels:{value:14},dither:{value:1},con:{value:1},sat:{value:1},vig:{value:.2},mist:{value:0},mistC:{value:new THREE.Color(0xf2eef4)}},
+  uniforms:{tColor:{value:null},tDepth:{value:null},res:{value:new THREE.Vector2()},cNear:{value:.4},cFar:{value:14000},outline:{value:1},levels:{value:14},dither:{value:1},con:{value:1},sat:{value:1},vig:{value:.2},mist:{value:0},mistC:{value:new THREE.Color(0xf2eef4)},uSpot:{value:new THREE.Vector3()},uSpotR:{value:40},uSpotK:{value:new THREE.Vector3(1,1,1)},uSpotOn:{value:0},uInvProj:{value:new THREE.Matrix4()},uCamW:{value:new THREE.Matrix4()}},
   vertexShader:`varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position.xy,0.,1.);}`,
-  fragmentShader:`uniform sampler2D tColor,tDepth;uniform vec2 res;uniform float cNear,cFar,outline,levels,dither,con,sat,vig,mist;uniform vec3 mistC;varying vec2 vUv;
+  fragmentShader:`uniform sampler2D tColor,tDepth;uniform vec2 res;uniform float cNear,cFar,outline,levels,dither,con,sat,vig,mist,uSpotR,uSpotOn;uniform vec3 mistC,uSpot,uSpotK;uniform mat4 uInvProj,uCamW;varying vec2 vUv;
   float lin(float d){float z=d*2.-1.;return 2.*cNear*cFar/(cFar+cNear-z*(cFar-cNear));}
   float b2(vec2 a){a=floor(a);return fract(a.x*.5+a.y*a.y*.75);}
   float b4(vec2 a){return b2(.5*a)*.25+b2(a);}
   void main(){vec2 px=1./res;vec3 c=texture2D(tColor,vUv).rgb;
+    // searchlight: a soft circle on the ground ahead, where everything is lit up to daytime brightness
+    if(uSpotOn>.01){float sd=texture2D(tDepth,vUv).r;if(sd<1.){vec4 vp=uInvProj*vec4(vUv*2.-1.,sd*2.-1.,1.);vp/=vp.w;vec3 wp=(uCamW*vp).xyz;
+      float r=length(wp.xz-uSpot.xz),k=(1.-smoothstep(uSpotR*.72,uSpotR,r))*(1.-smoothstep(60.,140.,abs(wp.y-uSpot.y)));c=mix(c,min(c*uSpotK,vec3(1.)),k*uSpotOn);}}
     if(outline>.5){float dc=lin(texture2D(tDepth,vUv).r);
       float dn=max(max(lin(texture2D(tDepth,vUv+vec2(px.x,0.)).r),lin(texture2D(tDepth,vUv-vec2(px.x,0.)).r)),max(lin(texture2D(tDepth,vUv+vec2(0.,px.y)).r),lin(texture2D(tDepth,vUv-vec2(0.,px.y)).r)));
       float e=step(dc*.07+1.2,dn-dc)*(1.-smoothstep(250.,2600.,dc));
@@ -831,7 +845,7 @@ const postScene=new THREE.Scene(),postCam=new THREE.OrthographicCamera(-1,1,1,-1
 postScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2,2),postMat));
 const PIXT={chunky:150,classic:200,fine:280}; let pixMode='classic';
 function resize(){
-  const dpr=window.devicePixelRatio||1,cw=Math.max(innerWidth,320),ch=Math.max(innerHeight,180),dw=cw*dpr,dh=ch*dpr;
+  const dpr=window.devicePixelRatio||1,cw=Math.max(VW(),320),ch=Math.max(VH(),180),dw=cw*dpr,dh=ch*dpr;
   PS=Math.max(1,Math.round(Math.min(dw,dh)/PIXT[pixMode]));LW=Math.ceil(dw/PS);LH=Math.ceil(dh/PS);
   for(const c of [glCanvas,hudCanvas]){c.width=LW;c.height=LH;c.style.width=(LW*PS/dpr)+'px';c.style.height=(LH*PS/dpr)+'px';}
   renderer.setSize(LW,LH,false);

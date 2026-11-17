@@ -11,7 +11,7 @@ const DECOR=[
   {id:'flag',from:'cairns',name:"Kit's trail flag",desc:'One of the orange cairn flags, on a whip aerial behind the cockpit.'},
   {id:'hearts',from:'heart',name:"Lio's painted hearts",desc:'A pink heart painted on each side of the plane.'},
   {id:'star',from:'meteor',name:"Odile's gold star",desc:'Painted on the tail fin. She swears the gold came off the meteorite.'},
-  {id:'scarf',from:'sheep',name:"Agnes's knitted scarf",desc:'Red wool, for Biscuit. He pretends not to like it.'},
+  {id:'scarf',from:'sheep',name:"Agnes's knitted scarf",desc:'Red wool, for Biscuit, who pretends not to like it.'},
 ];
 if(!settings.decor)settings.decor={};
 const decorEarned=d=>log.errands&&log.errands[d.from]&&log.errands[d.from].st==='done';

@@ -32,6 +32,9 @@ const GOALS=[
   {id:'hopper',name:'Island hopper',hint:'Land at every airfield in the islands.'},
   {id:'tailwind',name:'Riding the wind',hint:'Stack three tailwinds into one gale.'},
   {id:'gale5',name:'Full gale',hint:'Stack all five tailwinds at once.'},
+  {id:'updraft3',name:'Going up',hint:'Stack all three updrafts at once.'},
+  {id:'roll',name:'Barrel roll',hint:'Roll the plane all the way round.'},
+  {id:'loop',name:'Loop the loop',hint:'Fly a full loop.'},
   {id:'trip',name:'Make a trip',hint:'Take off from one field and land at another.'},
   {id:'butter',name:'Butter landing',hint:'Touch down on a runway at under 90 ft/min.'},
   {id:'checklist',name:'By the book',hint:'Land with the whole before-landing checklist done.'},
@@ -406,7 +409,7 @@ function stepAir(dt){
   const A=clamp(qd/551,0,2.2),sA=Math.sqrt(A);
   const bank=Math.atan2(-R.y,U.y),rollRate=-ac.w.z;
   let e=inp.pitch,a=inp.roll,r=inp.yaw;
-  if(settings.steady){r+=clamp(beta*2.5,-1,1);if(Math.abs(inp.roll)<.05)a=clamp(-bank*1.1-rollRate*.35,-.7,.7);}
+  if(settings.steady){r+=clamp(beta*2.5,-1,1);/* steady wings levels you out, but not while you're pulling hard (so loops go all the way round) */if(Math.abs(inp.roll)<.05&&Math.abs(inp.pitch)<.6)a=clamp(-bank*1.1-rollRate*.35,-.7,.7);}
   if(settings.autoTrim){if(Math.abs(inp.pitch)<.04){if(ac.trimHold>=0&&!stalled){ac.trim=ac.trimNow!=null?ac.trimNow:alpha;ac.trimHold=-1;}}else{ac.trimHold=0;ac.trimNow=alpha;}}
   ac.trim=clamp(ac.trim,-.03,as-.07);
   if(settings.stallGuard){const lim=(as-.04-ac.trim)*AC.Ka/AC.Ke;e=Math.min(e,lim);if(alpha>as-.05)e-=(alpha-(as-.05))*25;}
@@ -498,7 +501,7 @@ function crash(why,v){
     showCard(`<div class="who"><img src="${portrait('gus')}" alt=""><div><b>${t}</b><span>GUS PATCHES IT UP · THE MAIL IS STILL IN THE BAG</span></div></div><p>${b}</p>${extra}`,[
       ['Try that approach again',()=>spawnApproach(dest),true],['Back to '+stripById(ac.lastField).name,()=>spawnField(stripById(ac.lastField))]]);},900);
 }
-function resetAc(){if(typeof refillParcels==='function'){refillParcels();lookDown=false;}if(typeof resetSwitches==='function')resetSwitches();ac.boostT=0;ac.bst=0;ac.gusts=[];ac.w.set(0,0,0);ac.td=null;ac.brake=0;ac.brakeHeld=false;ac.trimHold=0;ac.ice=0;smokeBurst.forEach(m=>m.visible=false);snapCam=true;}
+function resetAc(){if(typeof refillParcels==='function'){refillParcels();lookDown=false;}if(typeof resetSwitches==='function')resetSwitches();ac.boostT=0;ac.bst=0;ac.gusts=[];ac.ups=[];ac.ust=0;ac.w.set(0,0,0);ac.td=null;ac.brake=0;ac.brakeHeld=false;ac.trimHold=0;ac.ice=0;smokeBurst.forEach(m=>m.visible=false);snapCam=true;}
 function intoWindDir(s){return (s.fx*WIND.x+s.fz*WIND.z)<0?1:-1;}
 function spawnField(s,dirSign){
   dirSign=dirSign||intoWindDir(s);resetAc();
@@ -621,7 +624,7 @@ function updPAPI(){for(const P of PAPIS){const s=P.s,l=toLocal(s,ac.pos.x,ac.pos
 // Gravity in screen space from deviceorientation (beta/gamma are the same on iOS and Android).
 // Bank = how far the phone is turned like a steering wheel. Nose = tip toward/away from you, measured from where you held it at the start (recenter).
 const tilt={listening:false,ok:false,roll:0,pitch:0,p0:null,raw:null};
-const orientAngle=()=>{const a=(screen.orientation&&typeof screen.orientation.angle==='number')?screen.orientation.angle:(window.orientation||0);return ((a%360)+360)%360;};
+const orientAngle=()=>{if(ROT)return 90;const a=(screen.orientation&&typeof screen.orientation.angle==='number')?screen.orientation.angle:(window.orientation||0);return ((a%360)+360)%360;};
 function onOrient(e){if(e.beta==null||e.gamma==null)return;const b=e.beta*DEG,gm=e.gamma*DEG;
   const ux=-Math.cos(b)*Math.sin(gm),uy=Math.sin(b),uz=Math.cos(b)*Math.cos(gm),a=orientAngle();
   let sx,sy;if(a===90){sx=-uy;sy=ux;}else if(a===270){sx=uy;sy=-ux;}else if(a===180){sx=-ux;sy=-uy;}else{sx=ux;sy=uy;}
@@ -640,30 +643,30 @@ function updTiltUI(){const b=$('center');if(b)b.hidden=!settings.tilt;const h=$(
 /* ---------- input ---------- */
 const stick={id:null,ox:0,oy:0,x:0,y:0},R_STICK=54;
 const stickEl=$('stick'),ring=$('ring'),knob=$('knob');
-function placeRingIdle(){const r=stickEl.getBoundingClientRect();ring.style.left=(r.width*.55)+'px';ring.style.top=(r.height*.55)+'px';ring.classList.add('idle');knob.style.transform='';}
-stickEl.addEventListener('pointerdown',e=>{if(stick.id!==null)return;stick.id=e.pointerId;const r=stickEl.getBoundingClientRect();stick.ox=e.clientX;stick.oy=e.clientY;stick.x=stick.y=0;
-  ring.style.left=(e.clientX-r.left)+'px';ring.style.top=(e.clientY-r.top)+'px';ring.classList.remove('idle');$('ringHint').hidden=true;try{stickEl.setPointerCapture(e.pointerId);}catch(_){}e.preventDefault();});
-stickEl.addEventListener('pointermove',e=>{if(e.pointerId!==stick.id)return;let dx=(e.clientX-stick.ox)/R_STICK,dy=(e.clientY-stick.oy)/R_STICK;const L=Math.hypot(dx,dy);if(L>1){dx/=L;dy/=L;}
+function placeRingIdle(){const r=rectL(stickEl);ring.style.left=(r.width*.55)+'px';ring.style.top=(r.height*.55)+'px';ring.classList.add('idle');knob.style.transform='';}
+stickEl.addEventListener('pointerdown',e=>{if(stick.id!==null)return;stick.id=e.pointerId;const r=rectL(stickEl),P=ptL(e);stick.ox=P.x;stick.oy=P.y;stick.x=stick.y=0;
+  ring.style.left=(P.x-r.left)+'px';ring.style.top=(P.y-r.top)+'px';ring.classList.remove('idle');$('ringHint').hidden=true;try{stickEl.setPointerCapture(e.pointerId);}catch(_){}e.preventDefault();});
+stickEl.addEventListener('pointermove',e=>{if(e.pointerId!==stick.id)return;const P=ptL(e);let dx=(P.x-stick.ox)/R_STICK,dy=(P.y-stick.oy)/R_STICK;const L=Math.hypot(dx,dy);if(L>1){dx/=L;dy/=L;}
   stick.x=dx;stick.y=dy;knob.style.transform=`translate(${dx*R_STICK}px,${dy*R_STICK}px)`;});
 const endStick=e=>{if(e.pointerId!==stick.id)return;stick.id=null;stick.x=stick.y=0;placeRingIdle();};
 stickEl.addEventListener('pointerup',endStick);stickEl.addEventListener('pointercancel',endStick);
 /* throttle quadrant lever: grab the knob and push it up or pull it back; tap the track to jump it there */
 const thrEl=$("thr"),THR_T=22,THR_B=36;let thrId=null,thrGrab=null;
-const thrSpan=()=>thrEl.getBoundingClientRect().height-THR_T-THR_B;
-function thrYOf(t){const r=thrEl.getBoundingClientRect();return r.bottom-THR_B-t*thrSpan();}
-function thrFromY(y){const r=thrEl.getBoundingClientRect();ac.throttle=clamp((r.bottom-THR_B-y)/thrSpan(),0,1);setThrottleUI();}
+const thrSpan=()=>rectL(thrEl).height-THR_T-THR_B;
+function thrYOf(t){const r=rectL(thrEl);return r.bottom-THR_B-t*thrSpan();}
+function thrFromY(y){const r=rectL(thrEl);ac.throttle=clamp((r.bottom-THR_B-y)/thrSpan(),0,1);setThrottleUI();}
 thrEl.addEventListener('pointerdown',e=>{thrId=e.pointerId;try{thrEl.setPointerCapture(e.pointerId);}catch(_){}
-  const ky=thrYOf(ac.throttle);thrGrab=Math.abs(e.clientY-ky)<26?e.clientY-ky:0;if(!thrGrab&&Math.abs(e.clientY-ky)>=26)thrFromY(e.clientY);e.preventDefault();});
-thrEl.addEventListener('pointermove',e=>{if(e.pointerId===thrId)thrFromY(e.clientY-thrGrab);});
+  const ky=thrYOf(ac.throttle),py=ptL(e).y;thrGrab=Math.abs(py-ky)<26?py-ky:0;if(!thrGrab&&Math.abs(py-ky)>=26)thrFromY(py);e.preventDefault();});
+thrEl.addEventListener('pointermove',e=>{if(e.pointerId===thrId)thrFromY(ptL(e).y-thrGrab);});
 thrEl.addEventListener('pointerup',e=>{if(e.pointerId===thrId)thrId=null;});thrEl.addEventListener('pointercancel',()=>thrId=null);
-function setThrottleUI(){$('thrKnob').style.bottom=(THR_B+ac.throttle*thrSpan())+'px';$('thrPct').textContent=Math.round(ac.throttle*100)+'%';}
+function setThrottleUI(){thrEl.style.setProperty('--t',ac.throttle.toFixed(4));$('thrPct').textContent=Math.round(ac.throttle*100)+'%';}
 /* flap lever: three notches, 0 at the top (up), 2 at the bottom (full). Drag or tap a notch; F steps through them */
 const flapEl=$("flapL"),FLAP_Y=[20,34,48];let flapId=null;
 function setFlaps(n){n=clamp(n,0,2);if(n===ac.flaps)return;ac.flaps=n;updFlaps();snd.clunk();
   if(n)tip('flaps','Flaps give more lift and more drag, so you can fly slower. 1 for takeoff and approach, 2 for landing. Bea\'s logbook has the details.');}
-function flapFromY(y){const r=flapEl.getBoundingClientRect(),ly=y-r.top;let bi=0;FLAP_Y.forEach((v,i)=>{if(Math.abs(ly-v)<Math.abs(ly-FLAP_Y[bi]))bi=i;});setFlaps(bi);}
-flapEl.addEventListener('pointerdown',e=>{flapId=e.pointerId;try{flapEl.setPointerCapture(e.pointerId);}catch(_){}flapFromY(e.clientY);e.preventDefault();});
-flapEl.addEventListener('pointermove',e=>{if(e.pointerId===flapId)flapFromY(e.clientY);});
+function flapFromY(y){const r=rectL(flapEl),ly=y-r.top;let bi=0;FLAP_Y.forEach((v,i)=>{if(Math.abs(ly-v)<Math.abs(ly-FLAP_Y[bi]))bi=i;});setFlaps(bi);}
+flapEl.addEventListener('pointerdown',e=>{flapId=e.pointerId;try{flapEl.setPointerCapture(e.pointerId);}catch(_){}flapFromY(ptL(e).y);e.preventDefault();});
+flapEl.addEventListener('pointermove',e=>{if(e.pointerId===flapId)flapFromY(ptL(e).y);});
 flapEl.addEventListener('pointerup',()=>flapId=null);flapEl.addEventListener('pointercancel',()=>flapId=null);
 flapEl.querySelectorAll('.fd').forEach((el,i)=>el.style.top=FLAP_Y[i]+'px');
 function updFlaps(){$('flapH').style.top=FLAP_Y[ac.flaps]+'px';flapEl.querySelectorAll('.fd').forEach((el,i)=>el.classList.toggle('on',i===ac.flaps));}
@@ -704,7 +707,7 @@ $('mapc').addEventListener('click',()=>{if(mode==='fly'){mode='paused';bigMap();
 const keys={};
 addEventListener('keydown',e=>{keys[e.code]=true;if($('chartOv')&&(e.code==='Escape'||e.code==='KeyM')){closeChart();return;}if(mode!=='fly')return;
   if(e.code==='KeyF')setFlaps((ac.flaps+1)%3);if(e.code==='KeyV')$('view').click();if(e.code==='KeyL')toggleLook();if(e.code==='KeyG')doDrop();if(e.code==='KeyB')bOn();if(e.code==='KeyM'){mode='paused';bigMap();}
-  if(e.code==='KeyC')$('swCarb').click();if(e.code==='KeyT')recenterTilt();if(e.code==='KeyH')$('swLight').click();if(e.code==='KeyJ')$('swSearch').click();if(e.code==='KeyK')$('swSmoke').click();if(e.code==='KeyO')$('swFloat').click();if(e.code==='KeyR')keyMic();if(e.code==='KeyN')honk();
+  if(e.code==='KeyC')$('swCarb').click();if(e.code==='KeyT')recenterTilt();if(e.code==='KeyH')$('swLight').click();if(e.code==='KeyJ')$('swSearch').click();if(e.code==='KeyK')$('swSmoke').click();if(e.code==='KeyO')$('swFloat').click();if(e.code==='KeyR')keyMic();if(e.code==='KeyN')honk();if(e.code==='KeyU')useUpdraft();
   if(e.code==='Escape'||e.code==='KeyP')openMenu();if(e.code.startsWith('Arrow'))e.preventDefault();});
 addEventListener('keyup',e=>{keys[e.code]=false;if(e.code==='KeyB')bOff();});
 const kb={p:0,r:0};
@@ -896,7 +899,7 @@ function bigMap(){hideModal();if(mode==='fly')mode='paused';let o=$('chartOv');
     $('chartX').addEventListener('click',e=>{e.stopPropagation();closeChart();});addEventListener('resize',chartResize);}
   $('chartLeg').innerHTML=`<b>BEA'S CHART</b> · ★ ${log.score.toLocaleString()}<br>${Object.keys(sights).filter(q=>log.sights[q]).length}/${Object.keys(sights).length} landmarks (orange) · ${FLYGATES.filter(g=>log.gates[g.id]).length}/${FLYGATES.length} gaps (cyan)${activeDrops().length?' · '+activeDrops().length+' air drops (orange rings)':''}${activeErrands().length?'<br>Errands: '+activeErrands().map(errLine).join(', '):''}`;
   drawChart();}
-function drawChart(){const c=$('bigmap'),r=c.getBoundingClientRect(),W=Math.max(200,Math.round(r.width)),H=Math.max(150,Math.round(r.height));c.width=W;c.height=H;
+function drawChart(){const c=$('bigmap'),r=rectL(c),W=Math.max(200,Math.round(r.width)),H=Math.max(150,Math.round(r.height));c.width=W;c.height=H;
   const x=c.getContext('2d');x.imageSmoothingEnabled=false;const k=Math.min(W/45200,H/20600),CX=0,CZ=500,sc=clamp(Math.min(W/512,H/384),1,2.2);
   x.fillStyle='#1e4878';x.fillRect(0,0,W,H);x.save();x.translate(W/2-CX*k,H/2-CZ*k);x.scale(k,k);
   x.drawImage(mapBase,-MAPX/2,-MAPZ/2,MAPX,MAPZ);drawStripsOn(x,k/sc,dest);
@@ -982,7 +985,7 @@ function logbook(){
   const done=GOALS.filter(g=>log.goals[g.id]).length;
   showCard(`<h2>Your logbook</h2><div class="sub">${log.flights} FLIGHTS · ${log.trips} TRIPS · ${log.stamps} STAMPS · ${done}/${GOALS.length} GOALS</div><h3>PEOPLE</h3><div class="list">${ppl}</div><h3>FIELDS</h3><div class="list">${f}</div><h3>SIGHTS</h3><div class="list">${si}</div><h3>GOALS</h3><div class="list">${go}</div>`,[['Back',back,true]]);}
 const SET=[['tilt','Tilt to steer','Turn the phone like a steering wheel to bank. Tip it toward you to raise the nose, away to lower it. CENTER resets the level point. The touch stick still works.'],['steady','Steady wings','Levels the wings when you let go, and handles the rudder.'],['stallGuard','Stall guard','Stops you pulling the nose up far enough to stall.'],
-  ['autoTrim','Auto-trim','Holds your current speed when you let go of the stick.'],['tips','Tips','Short pointers the first time things happen.'],['dog','Biscuit barks at landmarks','He barks when you fly near a landmark or gap you haven\'t found. Never at errand items: tap his button up top for those.'],
+  ['autoTrim','Auto-trim','Holds your current speed when you let go of the stick.'],['tips','Tips','Short pointers the first time things happen.'],['dog','Biscuit barks at landmarks','A call when you fly near a landmark or gap you haven\'t found. Never at errand items: tap the clue button up top for those.'],
   ['invert','Invert pitch','Drag up to raise the nose instead of down.'],['shadows','Shadows','Long shadows from the sun and moon. Turn off if your phone gets warm.'],['sound','Sound','Engine, wind, music and the stall horn.'],['fps','Frame rate','Shows frames per second, the slowest frame, triangles and draw calls in a strip at the top of the screen while you fly. For checking how your phone keeps up.']];
 function settingsCard(){
   const rows=SET.map(([k,n,d])=>`<div class="tog"><div><b>${n}</b><span>${d}</span></div><button data-k="${k}" class="${settings[k]?'on':''}">${settings[k]?'ON':'OFF'}</button></div>`).join('');
@@ -1014,7 +1017,7 @@ $('tLog').addEventListener('click',()=>{$('title').hidden=true;logbook();});
 $('tSet').addEventListener('click',()=>{$('title').hidden=true;settingsCard();});
 $('rotOk').addEventListener('click',()=>{$('rotate').hidden=true;rotDismissed=true;});
 let rotDismissed=false;
-function checkRotate(){$('rotate').hidden=rotDismissed||innerWidth>=innerHeight;}
+function checkRotate(){$('rotate').hidden=true;}
 
 /* ---------- checks each frame ---------- */
 let sightT=0,hdgPrev=0,turnRate=0,airT=0,swT=0;
@@ -1157,7 +1160,7 @@ function updateVisuals(dt,t){
     blob.material.opacity=(settings.shadows?.42:.55)*(1-smooth(4,200,agl))+(ac.ground?.08:0);}
   if(dest){beacon.visible=mode==='fly'||mode==='paused';beacon.position.set(dest.x,dest.elev,dest.z);const d=Math.hypot(dest.x-ac.pos.x,dest.z-ac.pos.z);beacon.material.opacity=.13*smooth(500,1600,d);}
   spot.intensity=ac.light&&mode!=='title'?(TOD[tod].lights>0?1.35:.3):0;
-  updPAPI();updGates();updWind(dt);updFog();updDrops(dt);updSwitchesFx(dt);updDecor(dt,t);updPanels();updDog(dt,t);if(typeof updPet==='function')updPet(t);updSpark(dt,t);
+  updPAPI();updGates();updWind(dt);updFog();updDrops(dt);updSwitchesFx(dt);updUpdraft(dt);updDecor(dt,t);updPanels();updDog(dt,t);if(typeof updPet==='function')updPet(t);updSpark(dt,t);
   {const fb=(lookDown?64:camMode==='chase'?58:70)+(ac.bst||0)*6;if(Math.abs(camera.fov-fb)>.05){camera.fov=fb;camera.updateProjectionMatrix();}}
   sunL.castShadow=settings.shadows;const fo=mode==='title'?ac.pos:camera.position;
   axes();_sc.set(fo.x+_f.x*SHADOW_HALF*.5,surfH(fo.x,fo.z),fo.z+_f.z*SHADOW_HALF*.5);snapShadow(_sc);sunL.target.position.copy(_sc);sunL.position.copy(_sc).addScaledVector(sunDir,1500);
@@ -1175,20 +1178,20 @@ function loop(now){
   skyMat.uniforms.uTime.value=t;waterMat.uniforms.uTime.value=t;for(const a of anims)a(t);
   cloudGroup.position.set((t*2.2)%4000,0,-(t*.8)%4000);
   {const pu=postMat.uniforms;pu.mist.value=lerp(pu.mist.value,cloudMist(camera.position),1-Math.exp(-dt*5));pu.mistC.value.copy(scene.fog.color).lerp(_mistW,.3);}
-  if(mode==='fly'){readInput(dt);acc+=dt;const H_=1/120;let n=0;while(acc>=H_&&n<10){if(ac.ground)stepGround(H_);else{stepAir(H_);stepBoost(H_);stepBumps(H_);}simT+=H_;acc-=H_;n++;if(mode!=='fly')break;}if(n>=10)acc=0;
+  if(mode==='fly'){readInput(dt);acc+=dt;const H_=1/120;let n=0;while(acc>=H_&&n<10){if(ac.ground)stepGround(H_);else{stepAir(H_);stepBoost(H_);stepUp(H_);stepBumps(H_);}simT+=H_;acc-=H_;n++;if(mode!=='fly')break;}if(n>=10)acc=0;
     if(!Number.isFinite(ac.pos.x+ac.pos.y+ac.pos.z+ac.vel.x+ac.vel.y+ac.vel.z+ac.q.x+ac.q.w)){console.warn('sim NaN, respawning');spawnField(stripById(ac.lastField)||STRIPS[0]);}
     if(mode==='fly'){gameChecks(dt);playChecks(dt);}runTips(dt);}
   else acc=0;
   if(toastT>0){toastT-=dt;if(toastT<=0)$('toast').hidden=true;}
   if(callT>0){callT-=dt;if(callT<=0)$('callout').hidden=true;}
-  updateVisuals(dt,t);updateCam(dt,t);cullChunks(camera.position);waterMat.uniforms.uCamY.value=camera.position.y;sky.position.copy(camera.position);
+  updateVisuals(dt,t);updateCam(dt,t);cullChunks(camera.position);waterMat.uniforms.uCamY.value=camera.position.y;if(typeof spotUniforms==='function'){camera.updateMatrixWorld();spotUniforms();}sky.position.copy(camera.position);
   renderer.info.reset();renderer.setRenderTarget(rt);renderer.render(scene,camera);const tri=renderer.info.render.triangles,dc=renderer.info.render.calls;renderer.setRenderTarget(null);renderer.render(postScene,postCam);
   drawHUD(dt);
   if(settings.fps){fpsN++;fpsT+=now-(fpsLast||now);fpsLast=now;fpsMin=Math.min(fpsMin,1000/Math.max(now-(fpsPrev||now-16),1));fpsPrev=now;
     if(fpsT>=500){$('fps').textContent=`${Math.round(fpsN*1000/fpsT)} FPS · LOW ${Math.round(fpsMin)} · ${(tri/1e6).toFixed(2)}M TRI · ${dc} DRAWS · ${LW}×${LH}`;fpsN=0;fpsT=0;fpsMin=999;}}
   requestAnimationFrame(loop);
 }
-addEventListener('resize',()=>{resize();setThrottleUI();placeRingIdle();checkRotate();});
+addEventListener('resize',()=>{setRot();resize();setThrottleUI();placeRingIdle();checkRotate();});
 $('wind').addEventListener('click',e=>{e.stopPropagation();useWind();});pixMode=settings.pixels;resize();setTOD(settings.light);toTitle();placeRingIdle();checkRotate();refreshBag();applyPanels();
 updScore();updErrandUI();updTodBtn();updRadioBtn();$('lookBtn').addEventListener('click',e=>{e.stopPropagation();toggleLook();});$('dropBtn').addEventListener('click',e=>{e.stopPropagation();doDrop();});updParcelUI();$('radioBtn').addEventListener('click',e=>{e.stopPropagation();turnDial();});const ld=$('load');if(ld)ld.hidden=true;$('fps').hidden=!settings.fps;$('fps').textContent='FPS: measuring…';
 requestAnimationFrame(loop);
