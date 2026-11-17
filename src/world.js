@@ -182,6 +182,8 @@ const BOX=(w,h,d)=>new THREE.BoxGeometry(w,h,d);
 let terrainMesh=null,terrainVI=null,terrainBase=null;
 const LIGHTP=[],LIGHTC=[];const _lc=new THREE.Color();
 function addLight(x,y,z,col){LIGHTP.push(x,y,z);_lc.setHex(col);LIGHTC.push(_lc.r,_lc.g,_lc.b);}
+/* runway edge lights are kept per strip: they're pilot-controlled (key the mic and they come on) */
+const RWY_L={};function rwyLight(s,x,y,z,col){const L=RWY_L[s.id]||(RWY_L[s.id]={p:[],c:[]});L.p.push(x,y,z);_lc.setHex(col);L.c.push(_lc.r,_lc.g,_lc.b);}
 const shadowy=(m,cast=true)=>{m.castShadow=cast;m.receiveShadow=true;return m;};
 let glideCock=null,tachCock=null;
 /* farmland: fields on a grid rotated 20 degrees */
@@ -328,7 +330,7 @@ const SURF={paved:0x5e5a66,grass:0x6c9c45,dirt:0xd6b07c,sand:0xd9c48e,cinder:0x5
     // distance boards every 100 m: count down the runway left, so you can judge your roll and your height
     for(let k=1;k*100<s.len;k++)for(const e of [-1,1]){const u=-s.len/2+k*100,t=e*(hw+(s.surf==='paved'?12:7));
       put(u,t,.2,2.6,.2,0x3a3440);put(u,t,2.2,1.4,.25,k%2?0xf4efe2:0x2c2833);put(-u,t,.2,2.6,.2,0x3a3440);put(-u,t,2.2,1.4,.25,k%2?0xf4efe2:0x2c2833);}
-    for(let u=-s.len/2;u<=s.len/2+.1;u+=s.len/Math.round(s.len/30))for(const t of [-1,1]){const p=toWorld(s,u,t*(s.wid/2+1.5));addLight(p.x,groundH(p.x,p.z)+.7,p.z,Math.abs(Math.abs(u)-s.len/2)<1?0xffb347:0xfff1c8);}
+    for(let u=-s.len/2;u<=s.len/2+.1;u+=s.len/Math.round(s.len/30))for(const t of [-1,1]){const p=toWorld(s,u,t*(s.wid/2+1.5));rwyLight(s,p.x,groundH(p.x,p.z)+.7,p.z,Math.abs(Math.abs(u)-s.len/2)<1?0xffb347:0xfff1c8);}
     // windsock
     const wp=toWorld(s,-s.len*.3,-(s.wid/2+22)),wy=groundH(wp.x,wp.z);
     mk.push({geo:new THREE.CylinderGeometry(.12,.15,7,5),m:M([wp.x,wy+3.5,wp.z]),color:0xd8d2c8});

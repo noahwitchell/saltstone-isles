@@ -52,12 +52,12 @@ button:focus-visible{outline:2px solid #fff;outline-offset:2px}
   background:linear-gradient(#55505c,#18151c 40%,#0b090d);box-shadow:inset 0 2px 0 #8a8492,0 3px 0 #000a;pointer-events:none}
 #thrKnob::after{content:'';position:absolute;left:6px;right:6px;top:9px;height:2px;background:#e2703f}
 #thrPct{position:absolute;left:0;right:0;bottom:6px;text-align:center;font-family:var(--mono);font-size:14px;color:#ffd36b}
-#rail{position:fixed;left:calc(var(--sl) + 64px);top:calc(var(--st) + 50px);display:flex;flex-direction:column;gap:5px;z-index:2}
-.rb{width:36px;height:36px;padding:2px;line-height:0;background:#2c2733;box-shadow:inset 2px 2px 0 #4d4656,inset -2px -2px 0 #16131b,0 2px 0 #0008;opacity:.75}
-.rb img{width:32px;height:32px;image-rendering:pixelated}
+#rail{position:fixed;left:calc(var(--sl) + 64px);top:calc(var(--st) + 50px);display:flex;flex-direction:column;gap:4px;z-index:2}
+.rb{width:34px;height:34px;padding:2px;line-height:0;background:#2c2733;box-shadow:inset 2px 2px 0 #4d4656,inset -2px -2px 0 #16131b,0 2px 0 #0008;opacity:.75}
+.rb img{width:30px;height:30px;image-rendering:pixelated}
 .rb.on{background:#4a4255;opacity:1;box-shadow:inset 2px 2px 0 #6b6276,inset -2px -2px 0 #241f2a,0 2px 0 #0008}
 .rb.nudge{animation:nudge 1s infinite}@keyframes nudge{50%{background:#e2703f;opacity:1}}
-#wind{width:36px;height:52px;padding:0;font-family:var(--mono);font-size:10px;line-height:1;color:var(--ink);background:linear-gradient(to top,#ffd36b var(--w,0%),#fff0c4 var(--w,0%));box-shadow:inset -2px -2px 0 #b8902e, 0 2px 0 #0007;pointer-events:auto}
+#wind{width:34px;height:48px;padding:0;font-family:var(--mono);font-size:10px;line-height:1;color:var(--ink);background:linear-gradient(to top,#ffd36b var(--w,0%),#fff0c4 var(--w,0%));box-shadow:inset -2px -2px 0 #b8902e, 0 2px 0 #0007;pointer-events:auto}
 #wind img{width:28px;height:28px;image-rendering:pixelated;display:block;margin:2px auto 1px}
 #wind span{display:block;font-size:10px;color:#a0601e}
 #wind.on{background:#ffd36b}
@@ -93,10 +93,19 @@ button:focus-visible{outline:2px solid #fff;outline-offset:2px}
 #brake.on .ped{background:repeating-linear-gradient(#e5483b 0 3px,#8a2a22 3px 6px)}
 #check{position:fixed;left:calc(var(--sl) + 240px);top:calc(var(--st) + 50px);background:var(--glass);border:2px solid var(--line);padding:6px 9px;font-family:var(--mono);font-size:14px;line-height:1.6;pointer-events:none;z-index:2}
 #check b{display:block;font-size:9px;opacity:.75;letter-spacing:.06em}
-@media (max-height:520px){#pcol{flex-direction:row;align-items:flex-start;width:auto}#check{left:calc(var(--sl) + 392px)}}
+@media (max-height:520px){#pcol{flex-direction:row;align-items:flex-start;width:auto}#check{left:calc(var(--sl) + 404px)}}
 #check .ok{color:#8fe08a}
 #fps{position:fixed;left:50%;transform:translateX(-50%);top:calc(var(--st) + 46px);white-space:nowrap;background:var(--glass);color:var(--paper);font-family:var(--mono);font-size:13px;padding:3px 6px;pointer-events:none;z-index:1}
-#dropUI{position:fixed;right:var(--sr);top:calc(var(--st) + 50px);display:flex;flex-direction:column;gap:6px;z-index:3}
+#rcol{position:fixed;right:var(--sr);top:calc(var(--st) + 50px);display:flex;flex-direction:column;align-items:flex-end;gap:6px;z-index:3}
+#fun{display:flex;gap:4px;padding:4px;background:linear-gradient(#3b3542,#2c2733 50%,#24202b);border:2px solid #15121a;box-shadow:inset 2px 2px 0 #4d4656,inset -2px -2px 0 #1a161f}
+#fun .lab{position:absolute;left:-2px;right:-2px;top:3px;text-align:center;font:9px/1 var(--mono);letter-spacing:.02em;color:#cfc4b2;white-space:nowrap}
+#fun .tsw,#micBtn{height:80px;width:42px}#fun .tsw .nut{top:46px}#fun .tsw.on .bat{top:22px;height:24px}#fun .tsw:not(.on) .bat{top:46px;height:20px}#fun .tsw em.u{top:13px}
+.tsw.red .bat{background:linear-gradient(90deg,#8a1e18,#ff6a5a 45%,#a4281f)}.tsw.red.on em.u{color:#ff9a6a}
+#micBtn{position:relative;padding:0;background:#211d27;box-shadow:inset 1px 1px 0 #15121a,inset -1px -1px 0 #4d4656}
+#micBtn .grille{position:absolute;left:8px;right:8px;top:20px;height:36px;border-radius:5px;background:repeating-radial-gradient(circle at 50% 50%,#55505c 0 1.5px,#141118 1.5px 3.5px);box-shadow:0 0 0 2px #0b090d,0 3px 0 #000}
+#micBtn:active .grille{transform:translateY(2px);box-shadow:0 0 0 2px #0b090d,0 1px 0 #000}
+#micBtn em{position:absolute;left:0;right:0;bottom:5px;font:normal 10px/1 var(--mono);color:#ffd36b;text-align:center}
+#dropUI{display:flex;flex-direction:column;gap:6px}
 #dropUI button{font-family:var(--mono);font-size:14px;line-height:1.1;padding:8px 10px;min-width:62px}
 #lookBtn.on{background:var(--good);color:#fff;box-shadow:inset -3px -3px 0 #3e7334, 0 3px 0 #0007}
 #dropBtn{background:#e2703f;color:#fff8ec;box-shadow:inset -3px -3px 0 #b5512b, 0 3px 0 #0007}#dropBtn.empty{opacity:.55}
@@ -107,6 +116,11 @@ button:focus-visible{outline:2px solid #fff;outline-offset:2px}
 #ringHint{position:absolute;left:50%;top:100%;transform:translate(-50%,8px);font-family:var(--mono);font-size:13px;white-space:nowrap;color:var(--paper);opacity:.8}
 
 /* overlays */
+#chartOv{position:fixed;inset:0;z-index:20;background:#1e4878;border:3px solid #fff8ec;box-sizing:border-box}
+#chartOv canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+#chartLeg{position:absolute;left:calc(var(--sl) + 4px);top:calc(var(--st) + 2px);font-family:var(--mono);font-size:12px;line-height:1.15;color:var(--paper);background:rgba(20,34,58,.6);padding:3px 6px;max-width:42%;pointer-events:none}
+#chartLeg b{color:#ffd36b;letter-spacing:.06em}
+#chartX{position:absolute;right:calc(var(--sr) + 2px);top:calc(var(--st) + 2px);width:36px;height:36px;padding:0;font-size:18px;line-height:1;background:var(--paper);color:var(--ink)}
 .who{display:flex;gap:14px;align-items:center;margin-bottom:10px}
 .who img{width:96px;height:96px;image-rendering:pixelated;border:3px solid var(--ink);flex:none}
 .px-img{image-rendering:pixelated;display:block;max-width:100%;height:auto}
@@ -177,6 +191,7 @@ h3{font-family:var(--mono);font-size:15px;letter-spacing:.08em;color:var(--ink2)
     <button class="rb on" id="rMap" aria-label="Show or hide the map"></button>
     <button class="rb on" id="rJob" aria-label="Show or hide today's jobs"></button>
     <button class="rb on" id="rEng" aria-label="Show or hide the landing controls"></button>
+    <button class="rb on" id="rFun" aria-label="Show or hide the light, smoke, float and radio switches"></button>
     <button class="rb" id="rDrop" aria-label="Show or hide the air-drop controls" hidden></button>
     <button id="wind" aria-label="Tailwind boost"></button>
   </div>
@@ -190,7 +205,15 @@ h3{font-family:var(--mono);font-size:15px;letter-spacing:.08em;color:var(--ink2)
     <button id="brake"><b class="lab">BRAKE</b><span class="ped"></span></button>
   </div>
   <div id="check" hidden></div>
-  <div id="dropUI" hidden><button id="lookBtn" aria-label="Look straight down">LOOK<br>DOWN</button><button id="dropBtn" aria-label="Drop a parcel">DROP</button></div>
+  <div id="rcol">
+    <div id="fun">
+      <button class="tsw" id="swSearch"><b class="lab">SEARCH LT</b><span class="nut"></span><span class="bat"></span><em class="u">ON</em><em class="d">OFF</em></button>
+      <button class="tsw" id="swSmoke"><b class="lab">SMOKE</b><span class="nut"></span><span class="bat"></span><em class="u">ON</em><em class="d">OFF</em></button>
+      <button class="tsw red" id="swFloat"><b class="lab">FLOATS</b><span class="nut"></span><span class="bat"></span><em class="u">OUT</em><em class="d">PULL</em></button>
+      <button id="micBtn" aria-label="Key the radio mic"><b class="lab">MIC</b><span class="grille"></span><em>×3</em></button>
+    </div>
+    <div id="dropUI" hidden><button id="lookBtn" aria-label="Look straight down">LOOK<br>DOWN</button><button id="dropBtn" aria-label="Drop a parcel">DROP</button></div>
+  </div>
   <div id="stick"><div id="ring" class="idle"><div id="knob"></div><div id="ringHint">STICK · DRAG ANYWHERE</div></div></div>
 </div>
 <div id="toast" hidden></div>
