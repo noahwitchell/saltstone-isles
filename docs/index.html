@@ -538,13 +538,21 @@ const waterMat=new THREE.ShaderMaterial({
   fragmentShader:`uniform sampler2D hTex;uniform float uTime,fogNear,fogFar;uniform vec3 sunDir,fogColor,cDeep,cMid,cShal,cGlint;varying vec3 vW;varying float vD;
   float hs(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
   float vn(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(hs(i),hs(i+vec2(1,0)),f.x),mix(hs(i+vec2(0,1)),hs(i+vec2(1,1)),f.x),f.y);}
+  float caus(vec2 uv,float time){vec2 p=mod(uv*6.2831853,6.2831853)-250.,i=p;float c=1.;
+    for(int n=0;n<4;n++){float t=time*(1.-3.5/float(n+1));i=p+vec2(cos(t-i.x)+sin(t+i.y),sin(t-i.y)+cos(t+i.x));c+=1./length(vec2(p.x/(sin(i.x+t)/.005),p.y/(cos(i.y+t)/.005)));}
+    c/=4.;c=1.17-pow(c,1.4);return clamp(pow(abs(c),8.),0.,1.);}
   void main(){
     vec2 uv=(vW.xz+${HALF.toFixed(1)})/${SIZE.toFixed(1)}*${(CELLS/NV).toFixed(6)}+${(0.5/NV).toFixed(6)};
     vec4 ht=texture2D(hTex,uv);float h=(ht.r*65280.+ht.g*255.)/65535.*120.-60.;
     float dp=-h+(vn(vW.xz*.03)-.5)*1.1+(vn(vW.xz*.11+7.)-.5)*.35;
     vec3 c=mix(cShal,cMid,smoothstep(1.,8.,dp));c=mix(c,cDeep,smoothstep(9.,38.,dp));
-    float w=sin(vW.x*.045+uTime*.55+sin(vW.z*.031))*sin(vW.z*.052-uTime*.37+sin(vW.x*.02));
-    c=mix(c,mix(c,vec3(1.),.18),step(.8,w));
+    vec2 bp=floor(gl_FragCoord.xy);vec2 b2=mod(bp,2.),b4=mod(floor(bp*.5),2.);
+    float bay=(mod(b2.x*2.+b2.y*3.,4.)*4.+mod(b4.x*2.+b4.y*3.,4.)+.5)/16.;
+    // caustics: a drifting web of thin light threads (two scales), bright crisp threads with a dithered fringe
+    float e=max(caus(vW.xz/70.,uTime*.35),caus(vW.xz/43.+vec2(.37,.11),uTime*.28+4.)*.8);
+    float cs=mix(.34,.16,smoothstep(2.,30.,dp))*(1.-smoothstep(350.,1500.,vD))*smoothstep(-.2,.6,dp);
+    float ln=step(.42,e)+step(bay,smoothstep(.12,.42,e))*.5;
+    c=mix(c,mix(c,vec3(.93,1.,.97),.85),min(ln,1.)*cs);
     float fl=1.1+.45*sin(uTime*.6+vW.x*.011+vW.z*.009);
     float foam=(1.-smoothstep(fl-.25,fl+.25,dp))*smoothstep(-.4,-.1,dp);
     float wv=fract(uTime*.09-dp*.16);float band=smoothstep(.08,0.,abs(wv-.5)*(1.+dp*.05));
@@ -553,8 +561,6 @@ const waterMat=new THREE.ShaderMaterial({
     // sun/moon glint: a small bright core, a pixel-dithered falloff, and a few wave sparkles further out
     vec3 nW=normalize(vec3(sin(vW.x*.09+uTime*.9+sin(vW.z*.05))*.010,1.,sin(vW.z*.075-uTime*.7)*.014));
     vec3 V=normalize(cameraPosition-vW);vec3 R=reflect(-V,nW);float g=max(dot(R,sunDir),0.);
-    vec2 bp=floor(gl_FragCoord.xy);vec2 b2=mod(bp,2.),b4=mod(floor(bp*.5),2.);
-    float bay=(mod(b2.x*2.+b2.y*3.,4.)*4.+mod(b4.x*2.+b4.y*3.,4.)+.5)/16.;
     float core=smoothstep(.99935,.99975,g),halo=smoothstep(.9955,.9993,g);
     float sp=hs(floor(vW.xz/2.)+floor(uTime*3.));
     float spark=step(.82,sp)*smoothstep(.985,.996,g);
@@ -1293,6 +1299,91 @@ const ARCH_TREES=[
   ['heart',30,(x,z,h)=>h>1.5?{x,z,h,pine:false,s:.5+rnd()*.3,col:0xf0a8c0}:null],
 ];
 
+/* ---------------- sea formations: strange rocks out on the crossings, to fly through and play with ----------------
+   Each one sits in open water on a line between two airfields, turned so the way through faces along the route.
+   Every opening is a fly-through gap (FLYGATES, points + a stamp the first time) and every rock has collision (SOLIDS). */
+const FORMS=[];
+(function formations(){
+  let fs=90210;const fr=()=>{fs=(Math.imul(fs,1664525)+1013904223)>>>0;return fs/4294967296;};
+  const it=[],grass=[],foamIt=[];
+  const GR=[0x6c9c45,0x7aa64c,0x5f8f3e];
+  /* ---- finding spots: open water on the crossings, clear of land, landmarks, gaps and each other ---- */
+  const open=(x,z,r)=>{if(groundH(x,z)>-10)return false;for(let k=0;k<14;k++){const a=k/14*TAU;if(groundH(x+Math.cos(a)*r,z+Math.sin(a)*r)>-4)return false;if(groundH(x+Math.cos(a)*r*.5,z+Math.sin(a)*r*.5)>-6)return false;}return true;};
+  const clear=(x,z)=>!Object.values(sights).some(s=>Math.hypot(s.x-x,s.z-z)<650)&&!FLYGATES.some(g=>Math.hypot(g.x-x,g.z-z)<650)&&!FORMS.some(f=>Math.hypot(f.x-x,f.z-z)<900)&&!STRIPS.some(s=>Math.hypot(s.x-x,s.z-z)<900);
+  const routes=[];for(let i=0;i<STRIPS.length;i++)for(let j=i+1;j<STRIPS.length;j++){const a=STRIPS[i],b=STRIPS[j],d=Math.hypot(a.x-b.x,a.z-b.z);if(d>1600&&d<7500)routes.push([a,b,d]);}
+  routes.sort((p,q)=>p[2]-q[2]);
+  function spot(R){for(let n=0;n<500;n++){const [a,b]=routes[(fr()*Math.min(routes.length,40))|0],t=.3+fr()*.4,dx=b.x-a.x,dz=b.z-a.z,L=Math.hypot(dx,dz),off=(fr()-.5)*500;
+      const x=a.x+dx*t-dz/L*off,z=a.z+dz*t+dx/L*off;if(!clear(x,z)||!open(x,z,R+90))continue;const yaw=Math.atan2(dz,dx);return {x,z,yaw};}return null;}
+  /* ---- building blocks, in each formation's own frame: a = along the way through, b = across it, y = up ---- */
+  let F;const P=(a,b)=>({x:F.x+Math.cos(F.yaw)*a-Math.sin(F.yaw)*b,z:F.z+Math.sin(F.yaw)*a+Math.cos(F.yaw)*b});
+  const col=()=>rockC[(fr()*4)|0];
+  function rock(a,b,y,s,sy=s,solid=true,c=col()){const p=P(a,b);it.push({geo:new THREE.DodecahedronGeometry(1,0),m:M([p.x,y,p.z],[fr()*3,fr()*3,fr()*3],[s*(.9+fr()*.3),sy,s*(.9+fr()*.3)]),color:c});if(solid)solidSph(p.x,y,p.z,Math.min(s,sy)*.92);}
+  function column(a,b,y0,y1,r0,r1){const p=P(a,b),n=Math.max(3,Math.round((y1-y0)/12));let px=p.x,pz=p.z;
+    for(let k=0;k<n;k++){const ya=lerp(y0,y1,k/n),yb=lerp(y0,y1,(k+1)/n),ra=lerp(r0,r1,k/n),rb=lerp(r0,r1,(k+1)/n);
+      it.push({geo:new THREE.CylinderGeometry(rb,ra*1.05,yb-ya+.8,7),m:M([px,(ya+yb)/2,pz],[0,fr()*3,0]),color:col()});px+=(fr()-.5)*r1*.18;pz+=(fr()-.5)*r1*.18;}
+    solidCyl(p.x,p.z,y0,y1,Math.max(r0,r1)*.95,Math.min(r0,r1)*.95);foam(a,b,r0);}
+  function foam(a,b,r){const p=P(a,b);foamIt.push({geo:new THREE.CircleGeometry(r*1.5+2,12).rotateX(-Math.PI/2),m:M([p.x,.22,p.z]),color:0xffffff});}
+  function cap(a,b,y,s){const p=P(a,b);grass.push({geo:new THREE.DodecahedronGeometry(1,0),m:M([p.x,y,p.z],[0,fr()*3,0],[s,s*.32,s]),color:GR[(fr()*3)|0]});
+    for(let k=0;k<4;k++){const q=P(a+(fr()-.5)*s,b+(fr()-.5)*s);it.push({geo:BOX(1.1,1.4,1.1),m:M([q.x,y+s*.3+.6,q.z],[0,fr()*3,0]),color:k%2?0xf4f0e6:0x2c2833});}}
+  /* a ring (or part of one) of rocks round the opening, centred b0/cy, half-sizes rw (across) and rh (up), turned by roll */
+  function ring(a,b0,cy,rw,rh,roll,th,from=0,to=TAU,solid=true){const per=(rw+rh)*.5*(to-from),n=Math.max(4,Math.ceil(per/(th*1.05)));
+    const pts=[];for(let k=0;k<=n;k++){if(to-from>=TAU-1e-6&&k===n)break;const t=from+(to-from)*k/n,u=Math.cos(t)*rw,v=Math.sin(t)*rh,b=b0+u*Math.cos(roll)-v*Math.sin(roll),y=cy+u*Math.sin(roll)+v*Math.cos(roll);
+      const s=th*(.95+fr()*.3);rock(a+(fr()-.5)*th*.4,b,y,s,s*.95,solid);pts.push({b,y});}return pts;}
+  function shoal(R){for(let k=0;k<7;k++){const a=(fr()-.5)*R*2.2,b=(fr()-.5)*R*2.2,s=2+fr()*5;rock(a,b,-s*.35,s,s*.8,false);foam(a,b,s*.8);}}
+  const gate=(id,name,a,b,y0,y1,w,desc)=>{const p=P(a,b);flyGate(id,name,p.x,p.z,y0,y1,F.yaw,w,desc);};
+  const place=(R,id,name)=>{F=spot(R);if(!F){console.warn('no spot for',id);return false;}F.R=R;F.id=id;F.name=name;FORMS.push(F);return true;};
+
+  /* 1. three ordinary sea arches of different sizes */
+  const ARCHES=[['f_cormorant','Cormorant Arch',34,30,9,'A wide old arch the cormorants dry their wings on.'],['f_seal','Seal Arch',24,16,8,'A low, snug arch. The seals underneath will not move for you.'],
+    ['f_kitti','Kittiwake Arch',30,58,8,'A tall thin arch, loud with kittiwakes.']];
+  for(const [id,name,R,rise,th,desc] of ARCHES){if(!place(R+20,id,name))continue;
+    for(const e of [-1,1])column(0,e*R,-12,rise,th*1.5,th*1.05);const pts=ring(0,0,rise,R,R*.62,0,th,0,Math.PI);cap(0,0,rise+R*.62+th*.6,th*1.7);shoal(R);
+    gate(id,'Under '+name,0,0,-1,rise+R*.62-th*1.1,R-th*1.2,desc);}
+  /* 2. The Corkscrew: four slot-shaped rings, each turned further, so you have to roll through them */
+  if(place(150,'f_cork','The Corkscrew')){[0,1,2,3].forEach(k=>{const a=-105+k*70,roll=k*Math.PI/6,cy=58;
+      const pts=ring(a,0,cy,34,18,roll,7);let lo=pts[0];for(const p of pts)if(p.y<lo.y)lo=p;column(a,lo.b,-12,lo.y-3,8,5.5);
+      const hi=pts.reduce((m,p)=>p.y>m.y?p:m,pts[0]);cap(a,hi.b,hi.y+5,9);});
+    gate('f_cork','Out of the Corkscrew',105,0,58-24,58+24,10,'Four twisted slots of rock, each rolled a bit further. Roll with them.');shoal(140);}
+  /* 3. The Long Hole: a tunnel of rock you fly the length of */
+  if(place(90,'f_tunnel','The Long Hole')){const R=22,rise=10,th=8;for(let a=-54;a<=54;a+=9){ring(a,0,rise,R+fr()*2,R*.8,0,th,0,Math.PI);for(const e of [-1,1])rock(a,e*R,rise*.5-4,th*1.2,rise*.9);}
+    for(const e of [-1,1])for(const a of [-54,0,54])foam(a,e*R,th*1.2);for(let k=0;k<5;k++)cap(-40+k*20,(fr()-.5)*10,rise+R*.8+th*.8,9);
+    gate('f_tunnel','Through the Long Hole',0,0,-1,rise+R*.8-th*1.15,R-th*1.25,'A hundred metres of tunnel. Keep the wings level and do not breathe.');shoal(90);}
+  /* 4. The Needle's Eye: two slabs leaning in until they touch */
+  if(place(70,'f_eye','The Needle\'s Eye')){for(const e of [-1,1])for(let k=0;k<=11;k++){const t=k/11,b=e*lerp(34,6,t),y=lerp(-8,108,t),s=lerp(10,6,t);rock(-4,b,y,s,s*1.2);rock(5,b,y+4,s*.9,s*1.1);}
+    rock(0,0,116,10,8);cap(0,0,124,8);for(const e of [-1,1])foam(0,e*34,10);
+    gate('f_eye','Through the Needle\'s Eye',0,0,-1,46,12,'Two leaning slabs of rock. The gap gets narrower the higher you go.');shoal(60);}
+  /* 5. The Breaker: a rock wave curling over; fly under the lip */
+  if(place(90,'f_breaker','The Breaker')){for(let a=-60;a<=60;a+=10){const k=1-Math.abs(a)/75,R=38*k+10,cy=10+22*k;column(a,R,-12,cy,8,7);ring(a,0,cy,R,R*.95,0,8,0,Math.PI*1.18);}
+    cap(0,10,10+22+38*.95+9,12);gate('f_breaker','Under the Breaker',0,4,-1,40,20,'A wave of stone frozen just before it breaks. Go under while it is still holding.');shoal(90);}
+  /* 6. Toadstool Avenue: two rows of mushroom rocks, a narrow street between them */
+  if(place(150,'f_toad','Toadstool Avenue')){let low=1e9;for(let k=0;k<7;k++)for(const e of [-1,1]){const a=-150+k*50+(fr()-.5)*14,b=e*(27+fr()*6),h=34+fr()*44,cr=10+fr()*4;low=Math.min(low,h-3);
+      column(a,b,-10,h,6,4);const p=P(a,b);it.push({geo:new THREE.DodecahedronGeometry(1,0),m:M([p.x,h+2,p.z],[0,fr()*3,0],[cr,4,cr]),color:col()});solidCyl(p.x,p.z,h-2,h+6,cr,cr*.8);cap(a,b,h+6,cr*.7);}
+    gate('f_toad','Down Toadstool Avenue',0,0,-1,low-2,10,'Seven pairs of rock toadstools. The street between is not wide.');shoal(140);}
+  /* 7. The Slalom: four pairs of spires, each pair stepped sideways from the last */
+  if(place(200,'f_slalom','The Slalom')){[0,1,2,3].forEach(k=>{const a=-165+k*110,b0=(k%2?1:-1)*42;for(const e of [-1,1])spireAt(it,P(a,b0+e*19).x,P(a,b0+e*19).z,-12,70+fr()*25,8,4.5,k*2+(e>0?1:0));
+      for(const e of [-1,1])foam(a,b0+e*19,8);gate('f_slalom'+(k+1),`The Slalom, gate ${k+1}`,a,b0,-1,60,12,'Four pairs of spires, stepped left and right. Zigzag through all of them.');});shoal(180);}
+  /* 8. The Keyhole: a wall of rock with one round hole through the middle */
+  if(place(60,'f_key','The Keyhole')){const cy=44,hr=14,th=7;ring(0,0,cy,hr+th*.6,hr+th*.6,0,th);
+    for(let b=-36;b<=36;b+=10)for(let y=-6;y<=96;y+=10){const r=Math.hypot(b/38,(y-44)/54);if(r>1)continue;if(Math.hypot(b,y-cy)<hr+th*1.4)continue;rock((fr()-.5)*4,b+(fr()-.5)*3,y,7.5,7);}
+    cap(0,0,cy+54,14);foam(0,0,30);gate('f_key','Through the Keyhole',0,0,cy-hr+4,cy+hr-4,hr-4,'One round hole through a wall of rock. Line it up from a long way out.');shoal(50);}
+  /* 9. The Hanging Stone: a boulder jammed between two spires, high up */
+  if(place(70,'f_hang','The Hanging Stone')){for(const e of [-1,1])spireAt(it,P(0,e*30).x,P(0,e*30).z,-12,98,11,7,e>0?11:12);for(const e of [-1,1])foam(0,e*30,11);
+    rock(0,0,82,27,15);cap(0,0,97,11);gate('f_hang','Under the Hanging Stone',0,0,-1,60,17,'It has been stuck up there since the ice. Probably it will stay.');shoal(60);}
+  /* 10. The Jaws: an arch with teeth, top and bottom */
+  if(place(70,'f_jaws','The Jaws')){const R=36,rise=16,th=9;for(const e of [-1,1])column(0,e*R,-12,rise,th*1.5,th*1.1);const pts=ring(0,0,rise,R,R*.7,0,th,0,Math.PI);
+    for(const p of pts.slice(1,-1)){const dy=rise-p.y,db=-p.b,L=Math.hypot(db,dy)||1,q=P(0,p.b+db/L*8);it.push({geo:new THREE.ConeGeometry(2.6,11,5),m:M([q.x,p.y+dy/L*8,q.z],[0,0,0]).multiply(new THREE.Matrix4().makeRotationFromQuaternion(new Q().setFromUnitVectors(new V3(0,1,0),new V3(-Math.sin(F.yaw)*db/L,dy/L,Math.cos(F.yaw)*db/L)))),color:0xf4f0e6});}
+    for(const b of [-30,-22,22,30]){const q=P(0,b);it.push({geo:new THREE.ConeGeometry(3.4,14,5),m:M([q.x,4,q.z]),color:0xf4f0e6});solidCyl(q.x,q.z,-2,10,3,1);}
+    cap(0,0,rise+R*.7+th*.6,12);gate('f_jaws','Through the Jaws',0,0,-1,15,14,'Rock teeth above and below. It has never bitten anyone. Yet.');shoal(70);}
+  /* 11. Granny, Mum and Little Lil: three arches in a row, each smaller than the last */
+  if(place(150,'f_steps','Granny, Mum and Little Lil')){[[42,34,'Granny'],[28,22,'Mum'],[18,12,'Little Lil']].forEach(([R,rise,who],k)=>{const a=-110+k*110,th=k?7:9;
+      for(const e of [-1,1])column(a,e*R,-12,rise,th*1.5,th*1.05);ring(a,0,rise,R,R*.62,0,th,0,Math.PI);cap(a,0,rise+R*.62+th*.6,th*1.6);
+      gate('f_steps'+(k+1),`Under ${who}`,a,0,-1,rise+R*.62-th*1.1,R-th*1.2,'Three arches in a row, Granny, Mum and Little Lil. Can you thread all three in one go?');});shoal(140);}
+
+  scene.add(shadowy(new THREE.Mesh(merge(it),toon())));if(grass.length)scene.add(shadowy(new THREE.Mesh(merge(grass),toon())));
+  if(foamIt.length){const fm=new THREE.Mesh(merge(foamIt),new THREE.MeshBasicMaterial({color:0xf6f1e4,transparent:true,opacity:.55,depthWrite:false}));fm.renderOrder=2;scene.add(fm);
+    anims.push(t=>{fm.material.opacity=.42+Math.sin(t*1.7)*.13;});}
+})();
+
 /* ---------------- trees ---------------- */
 const trees=[];
 (function plant(){
@@ -1343,22 +1434,34 @@ const trees=[];
 })();
 
 /* ---------------- clouds ---------------- */
-const cloudGroup=new THREE.Group();scene.add(cloudGroup);
+const cloudGroup=new THREE.Group();scene.add(cloudGroup);const CLOUDS=[];
 (function clouds(){const it=[];
-  for(let c=0;c<64;c++){const cx=(rnd()-.5)*21000,cz=(rnd()-.5)*19000,cy=620+rnd()*380;const n=5+(rnd()*5|0);
+  for(let c=0;c<64;c++){const cx=(rnd()-.5)*21000,cz=(rnd()-.5)*19000,cy=620+rnd()*380;const n=5+(rnd()*5|0);const cl=CLOUDS.length;CLOUDS.push({x:cx,y:cy+10,z:cz,r:190});
     for(let k=0;k<n;k++){const s=40+rnd()*60;const y=cy+(rnd()-.3)*20;
-      it.push({geo:new THREE.IcosahedronGeometry(1,1),m:M([cx+(rnd()-.5)*220,y,cz+(rnd()-.5)*120],[0,rnd()*3,0],[s,s*.55,s*.9]),color:y>cy?0xfff8f0:0xeae2f2});}}
+      it.push({geo:new THREE.IcosahedronGeometry(1,1),m:M([cx+(rnd()-.5)*220,y,cz+(rnd()-.5)*120],[0,rnd()*3,0],[s,s*.55,s*.9]),color:y>cy?0xfff8f0:0xeae2f2,cl});}}
   // low cumulus: flat bases, stacked tiers of puffs that tower in the middle, and small satellite puffs round the edges
   let low=0;for(let tries=0;low<72&&tries<900;tries++){const cx=(rnd()-.5)*21000,cz=(rnd()-.5)*19000;
     if(STRIPS.some(s=>Math.hypot(s.x-cx,s.z-cz)<1100))continue;let gh=0;for(let k=0;k<5;k++)gh=Math.max(gh,groundH(cx+(k-2)*90,cz+((k*7)%5-2)*60));
-    const base=Math.max(230+rnd()*170,gh+150),R=70+rnd()*80,ax=rnd()*TAU,ca=Math.cos(ax),sa=Math.sin(ax),el=.55+rnd()*.35;low++;
-    const P=(u,v,y,s,sy,col)=>it.push({geo:new THREE.IcosahedronGeometry(1,1),m:M([cx+u*ca-v*sa,y,cz+u*sa+v*ca],[rnd()*.4,rnd()*3,rnd()*.4],[s*(.9+rnd()*.25),s*sy,s*(.9+rnd()*.25)]),color:col});
+    const base=Math.max(230+rnd()*170,gh+150),R=70+rnd()*80,ax=rnd()*TAU,ca=Math.cos(ax),sa=Math.sin(ax),el=.55+rnd()*.35;low++;const cl=CLOUDS.length;CLOUDS.push({x:cx,y:base+R*.55,z:cz,r:R*1.3});
+    const P=(u,v,y,s,sy,col)=>it.push({geo:new THREE.IcosahedronGeometry(1,1),m:M([cx+u*ca-v*sa,y,cz+u*sa+v*ca],[rnd()*.4,rnd()*3,rnd()*.4],[s*(.9+rnd()*.25),s*sy,s*(.9+rnd()*.25)]),color:col,cl});
     const nb=7+(rnd()*5|0);for(let k=0;k<nb;k++){const a=k/nb*TAU+rnd()*.5,d=R*(.35+rnd()*.6);P(Math.cos(a)*d,Math.sin(a)*d*el,base+6,R*(.32+rnd()*.18),.38,0xdcd4e6);}
     const nm=5+(rnd()*4|0);for(let k=0;k<nm;k++){const a=rnd()*TAU,d=R*rnd()*.5;const s=R*(.38+rnd()*.2);P(Math.cos(a)*d,Math.sin(a)*d*el,base+s*.55+rnd()*10,s,.78,0xf2ecf4);}
     const nt=2+(rnd()*3|0),tall=rnd();for(let k=0;k<nt;k++){const a=rnd()*TAU,d=R*rnd()*.28;const s=R*(.26+rnd()*.14)*(1+tall*.3);P(Math.cos(a)*d,Math.sin(a)*d*el,base+R*(.55+tall*.35)+k*s*.35,s,.85,0xfffaf2);}
     const ns=3+(rnd()*4|0);for(let k=0;k<ns;k++){const a=rnd()*TAU,d=R*(1+rnd()*.35);P(Math.cos(a)*d,Math.sin(a)*d*el,base+8+rnd()*14,R*(.1+rnd()*.1),.7,0xf6f0f4);}}
-  cloudGroup.add(new THREE.Mesh(merge(it),toon({},false)));
+  /* every cloud fades out as you fly into it: each vertex carries its cloud's centre and size (cc), the opaque pass
+     draws clouds you're well clear of, and a see-through pass draws the ones you're entering at their faded opacity */
+  const geo=merge(it),cc=new Float32Array(geo.attributes.position.count*4);let o=0;
+  it.forEach((q,i)=>{const n=q.geo.index?q.geo.index.count:q.geo.attributes.position.count,c=CLOUDS[q.cl];for(let k=0;k<n;k++,o++){cc[o*4]=c.x;cc[o*4+1]=c.y;cc[o*4+2]=c.z;cc[o*4+3]=c.r;}});
+  geo.setAttribute('cc',new THREE.BufferAttribute(cc,4));
+  const cmat=see=>{const m=toon(see?{transparent:true,depthWrite:false}:{},false);m.onBeforeCompile=sh=>{
+    sh.vertexShader='attribute vec4 cc;varying float vFade;\n'+sh.vertexShader.replace('#include <project_vertex>','#include <project_vertex>\nvec3 ccw=(modelMatrix*vec4(cc.xyz,1.)).xyz;vFade=smoothstep(.45,1.5,distance(cameraPosition,ccw)/cc.w);');
+    sh.fragmentShader='varying float vFade;\n'+sh.fragmentShader.replace('void main() {','void main() {\n'+(see?'if(vFade>=.999||vFade<.01)discard;':'if(vFade<.999)discard;')).replace('#include <dithering_fragment>','#include <dithering_fragment>\ngl_FragColor.a*='+(see?'vFade':'1.')+';');};
+    m.customProgramCacheKey=()=>'cloud'+see;return m;};
+  cloudGroup.add(new THREE.Mesh(geo,cmat(false)));const seeM=new THREE.Mesh(geo,cmat(true));seeM.renderOrder=5;cloudGroup.add(seeM);
 })();
+/* how deep in a cloud the camera is (0 clear .. 1 in the middle): drives a soft white-out in the post pass */
+function cloudMist(p){let m=0;const gx=cloudGroup.position.x,gz=cloudGroup.position.z;for(const c of CLOUDS){const dy=p.y-c.y;if(Math.abs(dy)>c.r)continue;
+  const d=Math.hypot(p.x-c.x-gx,dy*1.4,p.z-c.z-gz)/c.r;if(d<.9)m=Math.max(m,1-smooth(.3,.9,d));}return m;}
 
 /* ---------------- life: boats, birds, smoke ---------------- */
 (function boats(){
@@ -1396,9 +1499,9 @@ const cloudGroup=new THREE.Group();scene.add(cloudGroup);
 /* ---------------- post-process ---------------- */
 let LW=320,LH=180,PS=2,rt;
 const postMat=new THREE.ShaderMaterial({
-  uniforms:{tColor:{value:null},tDepth:{value:null},res:{value:new THREE.Vector2()},cNear:{value:.4},cFar:{value:14000},outline:{value:1},levels:{value:14},dither:{value:1},con:{value:1},sat:{value:1},vig:{value:.2}},
+  uniforms:{tColor:{value:null},tDepth:{value:null},res:{value:new THREE.Vector2()},cNear:{value:.4},cFar:{value:14000},outline:{value:1},levels:{value:14},dither:{value:1},con:{value:1},sat:{value:1},vig:{value:.2},mist:{value:0},mistC:{value:new THREE.Color(0xf2eef4)}},
   vertexShader:`varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position.xy,0.,1.);}`,
-  fragmentShader:`uniform sampler2D tColor,tDepth;uniform vec2 res;uniform float cNear,cFar,outline,levels,dither,con,sat,vig;varying vec2 vUv;
+  fragmentShader:`uniform sampler2D tColor,tDepth;uniform vec2 res;uniform float cNear,cFar,outline,levels,dither,con,sat,vig,mist;uniform vec3 mistC;varying vec2 vUv;
   float lin(float d){float z=d*2.-1.;return 2.*cNear*cFar/(cFar+cNear-z*(cFar-cNear));}
   float b2(vec2 a){a=floor(a);return fract(a.x*.5+a.y*a.y*.75);}
   float b4(vec2 a){return b2(.5*a)*.25+b2(a);}
@@ -1407,6 +1510,7 @@ const postMat=new THREE.ShaderMaterial({
       float dn=max(max(lin(texture2D(tDepth,vUv+vec2(px.x,0.)).r),lin(texture2D(tDepth,vUv-vec2(px.x,0.)).r)),max(lin(texture2D(tDepth,vUv+vec2(0.,px.y)).r),lin(texture2D(tDepth,vUv-vec2(0.,px.y)).r)));
       float e=step(dc*.07+1.2,dn-dc)*(1.-smoothstep(250.,2600.,dc));
       c=mix(c,c*vec3(.45,.38,.52),e*.85);}
+    c=mix(c,mistC,mist*(.5+.25*smoothstep(.2,.9,vUv.y)));
     float l=dot(c,vec3(.299,.587,.114));c=mix(vec3(l),c,sat);c=(c-.5)*con+.5;
     vec2 vv=vUv-.5;c*=1.-vig*dot(vv,vv)*1.6;
     float b=dither>.5?b4(gl_FragCoord.xy)-.5:0.;
@@ -2374,7 +2478,7 @@ function settingsCard(){
   const ev=[['OFF',0],['HUSH',.5],['SOFT',1],['FULL',2]].map(([n,v])=>`<button data-ev="${v}" class="${settings.engVol==v?'primary':''}">${n}</button>`).join('');
   const mv=[['OFF',0],['SOFT',.5],['ON',1]].map(([n,v])=>`<button data-mv="${v}" class="${(settings.music??.5)==v?'primary':''}">${n}</button>`).join('');
   const lt=Object.keys(TOD).map(k=>`<button data-lt="${k}" class="${settings.light===k?'primary':''}">${TOD[k].name.toUpperCase()}</button>`).join('');
-  showCard(`<h2>Settings</h2><div class="sub">ASSISTS · TURN THEM OFF ONE AT A TIME AS YOU IMPROVE</div>${rows}<h3>ENGINE VOLUME</h3><div class="btns">${ev}</div><h3>LO-FI RADIO</h3><div class="btns">${mv}</div><h3>TIME OF DAY</h3><div class="btns">${lt}</div><h3>PIXELS</h3><div class="btns">${px}</div><div class="sub" style="margin-top:14px">BUILD ffbb925</div>`,[['Back',back,true]]);
+  showCard(`<h2>Settings</h2><div class="sub">ASSISTS · TURN THEM OFF ONE AT A TIME AS YOU IMPROVE</div>${rows}<h3>ENGINE VOLUME</h3><div class="btns">${ev}</div><h3>LO-FI RADIO</h3><div class="btns">${mv}</div><h3>TIME OF DAY</h3><div class="btns">${lt}</div><h3>PIXELS</h3><div class="btns">${px}</div><div class="sub" style="margin-top:14px">BUILD ba69b9c</div>`,[['Back',back,true]]);
   const cb=$('cardBody');
   cb.querySelectorAll('[data-k]').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.k;if(k==='tilt'){if(!settings.tilt){settings.tilt=true;saveS();enableTilt().then(()=>{updTiltUI();settingsCard();});}else{settings.tilt=false;saveS();disableTilt();updTiltUI();settingsCard();}return;}settings[k]=!settings[k];saveS();if(k==='sound')snd.setOn(settings.sound);if(k==='fps'){$('fps').hidden=!settings.fps;$('fps').textContent='FPS: measuring…';fpsN=fpsT=0;fpsLast=0;}if(k==='sound')music.setVol();settingsCard();}));
   cb.querySelectorAll('[data-px]').forEach(b=>b.addEventListener('click',()=>{settings.pixels=b.dataset.px;pixMode=settings.pixels;saveS();resize();settingsCard();}));
@@ -2544,6 +2648,7 @@ function updateVisuals(dt,t){
   snd.update(ac.rpm,ac.ias+(ac.bst||0)*22,ac.stallWarn,mode==='fly',ac.rough);
 }
 
+const _mistW=new THREE.Color(0xffffff);
 /* ---------- score, fly-through gaps, errands, and Biscuit the dog ---------- */
 if(log.score==null)log.score=0;if(!log.gates)log.gates={};if(!log.errands)log.errands={};if(!log.gateHint)log.gateHint={};
 function updScore(){const e=$('score');if(e)e.textContent='★ '+log.score.toLocaleString();}
@@ -2637,7 +2742,16 @@ const dog=(()=>{const g=new THREE.Group(),fur=0xe8a850,lt=0xf4e4c8,dk=0x2c2833;
     {geo:BOX(.06,.06,.02),m:M([-.09,.07,-.205]),color:dk},{geo:BOX(.06,.06,.02),m:M([.09,.07,-.205]),color:dk},{geo:BOX(.2,.1,.12),m:M([0,.16,.02]),color:lt},{geo:BOX(.3,.24,.3),m:M([-.06,-.1,.28]),color:fur}]),litify(toon({},false))));
   const ear=s=>{const e=new THREE.Mesh(merge([{geo:BOX(.07,.26,.16).translate(0,-.13,0),m:M([0,0,0]),color:0xa8743e}]),litify(toon({},false)));e.position.set(s*.18,.12,.03);g.add(e);return e;};
   const eL=ear(-1),eR=ear(1),tongue=new THREE.Mesh(BOX(.08,.14,.03).translate(0,-.07,0),new THREE.MeshToonMaterial({color:0xe86a7a,gradientMap:gradTex}));tongue.position.set(.03,-.14,-.34);g.add(tongue);
-  g.position.set(.8,.6,-1.5);g.scale.setScalar(1.8);plane.add(g);return {g,eL,eR,tongue,bark:0,yaw:0};})();
+  /* his body: only shown in the cockpit, where he sits in the right seat (in chase view just his head is out the window) */
+  const root=new THREE.Group(),dm=litify(toon({},false));root.add(g);
+  const body=new THREE.Group(),chest=new THREE.Mesh(merge([{geo:BOX(.3,.44,.3),m:M([0,-.3,.12]),color:fur},{geo:BOX(.2,.3,.04),m:M([0,-.33,-.04]),color:lt},
+    {geo:BOX(.33,.07,.33),m:M([0,-.14,.12]),color:0xd2493c},{geo:BOX(.07,.07,.03),m:M([0,-.22,-.05]),color:0xf1c84a}]),dm);
+  const rest=new THREE.Mesh(merge([{geo:BOX(.34,.32,.5),m:M([0,-.55,.42],[-.35,0,0]),color:fur},{geo:BOX(.42,.32,.36),m:M([0,-.68,.62]),color:fur},
+    ...[-1,1].map(e=>({geo:BOX(.09,.38,.09),m:M([e*.09,-.62,-.02]),color:fur})),...[-1,1].map(e=>({geo:BOX(.11,.07,.15),m:M([e*.09,-.82,-.07]),color:lt})),
+    ...[-1,1].map(e=>({geo:BOX(.12,.14,.24),m:M([e*.2,-.78,.55]),color:fur}))]),dm);
+  const tail=new THREE.Group();tail.add(new THREE.Mesh(merge([{geo:BOX(.07,.07,.3).translate(0,0,.15),m:M([0,0,0]),color:fur},{geo:BOX(.08,.08,.08),m:M([0,0,.32]),color:lt}]),dm));
+  tail.position.set(0,-.62,.8);tail.rotation.x=.7;body.add(chest,rest,tail);root.add(body);
+  root.position.set(.8,.6,-1.5);root.scale.setScalar(1.8);plane.add(root);return {g,root,body,chest,tail,eL,eR,tongue,bark:0,yaw:0,glance:0,glanceT:9};})();
 snd.woof=function(){if(!this.ctx||!settings.sound)return;const c=this.ctx,t0=c.currentTime;
   for(const [dt,f0] of [[0,520],[.2,480]]){const t=t0+dt,o=c.createOscillator(),g=c.createGain(),f=c.createBiquadFilter(),n=c.createBufferSource();o.type='sawtooth';o.frequency.setValueAtTime(f0,t);o.frequency.exponentialRampToValueAtTime(f0*.42,t+.13);
     f.type='bandpass';f.frequency.value=900;f.Q.value=1.2;n.buffer=this.buf;const ng=c.createGain();ng.gain.value=.5;
@@ -2669,24 +2783,27 @@ function dogAuto(dt){autoCD-=dt;autoT+=dt;if(autoT<1)return;autoT=0;if(!settings
   for(const g of FLYGATES)if(!log.gates[g.id]&&!barked['g'+g.id]&&Math.hypot(P.x-g.x,P.z-g.z)<1000)cand.push({key:'g'+g.id,x:g.x,z:g.z,say:`a gap to fly through: ${g.name}`});
   if(!cand.length)return;const best=cand.reduce((a,c)=>Math.hypot(P.x-c.x,P.z-c.z)<Math.hypot(P.x-a.x,P.z-a.z)?c:a);
   barked[best.key]=1;autoCD=30;dogTarget=best;dog.bark=1.6;snd.woof();toast(`Woof! Biscuit's nose points ${dirWord(best.x,best.z)}: ${best.say}.`,3.2);}
-let peekClock=12,peekDur=0;
 function updDog(dt,t){const U=plane.userData,cock=!U.bodyM.visible&&mode!=='crashed';dog.bark=Math.max(0,dog.bark-dt);const b=dog.bark>0?1:0;
   let yaw=0;if(b&&dogTarget){const lp=plane.worldToLocal(_c1.set(dogTarget.x,ac.pos.y,dogTarget.z));yaw=clamp(Math.atan2(-lp.x,-lp.z),-.8,.8);}
   dog.yaw=lerp(dog.yaw,yaw,1-Math.exp(-dt*6));
-  if(cock){/* in the cockpit he sits in the right seat and pops his head up now and then for a look */
-    peekClock-=dt;if(peekClock<=0){peekClock=18+Math.random()*16;peekDur=3.5+Math.random()*2;}if(b)peekDur=Math.max(peekDur,1.2);peekDur-=dt;
-    dog.peek=lerp(dog.peek||0,peekDur>0?1:0,1-Math.exp(-dt*(peekDur>0?3.5:2.5)));dog.g.visible=dog.peek>.02;if(!dog.g.visible)return;
-    // pops up from the bottom-right corner of the view, then ducks back down
-    const D=1.5,hh=D*Math.tan(camera.fov*DEG/2),hw=hh*camera.aspect;camera.updateMatrixWorld();
-    _c1.set(hw*.8,-hh*1.4+dog.peek*hh*.98+Math.sin(t*2.2)*.01,-D);camera.localToWorld(_c1);plane.worldToLocal(_c1);
-    dog.g.scale.setScalar(1.15);dog.g.position.copy(_c1);
-    const look=.7+Math.sin(t*.7)*.45+(peekDur<1.2&&!b?.8*(1-peekDur/1.2):0);dog.g.rotation.set(.1-(b?Math.abs(Math.sin(t*14))*.2:0),b?dog.yaw:look,Math.sin(t*1.6)*.08);
+  if(cock){/* in the cockpit he sits in the right seat, bottom-right of the view: head, collar and chest above the dash */
+    dog.root.visible=dog.body.visible=true;const D=1.5,hh=D*Math.tan(camera.fov*DEG/2),hw=hh*camera.aspect;
+    if(dog.root.parent!==camera){if(!camera.parent)scene.add(camera);camera.add(dog.root);}   // rides with the view, so he never lags or drifts
+    dog.up=lerp(dog.up||0,b?1:0,1-Math.exp(-dt*8));
+    dog.root.position.set(hw*.64,-hh*.5+dog.up*hh*.14+Math.abs(Math.sin(t*14))*b*hh*.04,-D);
+    dog.root.scale.setScalar(1);dog.root.rotation.set(.18,1.15,0);
+    // now and then he turns to look at you; otherwise he watches out of the windshield
+    dog.glanceT-=dt;if(dog.glanceT<=0){dog.glanceT=14+Math.random()*14;dog.glance=1.6;}dog.glance=Math.max(0,dog.glance-dt);
+    const want=b?dog.yaw-1.15:dog.glance>0?.95:-.2+Math.sin(t*.31)*.3+Math.sin(t*.13)*.2;dog.hy=lerp(dog.hy||0,want,1-Math.exp(-dt*(b?8:3)));
+    dog.g.position.set(0,dog.up*.06,0);dog.g.rotation.set(.05-(b?Math.abs(Math.sin(t*14))*.22:0),dog.hy,dog.glance>0?.22:Math.sin(t*.5)*.12);
+    dog.chest.scale.y=1+Math.sin(t*(b?9:3.2))*.03;dog.tail.rotation.y=Math.sin(t*(b?16:6))*(b?.8:.45);
     dog.eL.rotation.x=dog.eR.rotation.x=-.1+Math.sin(t*3)*.05;dog.eL.rotation.z=-.15;dog.eR.rotation.z=.15;dog.tongue.rotation.x=Math.sin(t*9)*.15;return;}
-  dog.g.visible=U.bodyM.visible;if(!dog.g.visible)return;dog.g.scale.setScalar(1.8);const sp=Math.min(ac.ias/45,1.3);
+  if(dog.root.parent!==plane)plane.add(dog.root);dog.body.visible=false;dog.root.rotation.set(0,0,0);dog.g.position.set(0,0,0);
+  dog.root.visible=U.bodyM.visible;if(!dog.root.visible)return;dog.root.scale.setScalar(1.8);const sp=Math.min(ac.ias/45,1.3);
   dog.eL.rotation.x=dog.eR.rotation.x=-sp*1.1+Math.sin(t*22)*.18*sp;dog.eL.rotation.z=-.3*sp-Math.sin(t*17)*.12*sp;dog.eR.rotation.z=.3*sp+Math.sin(t*19)*.12*sp;
   dog.tongue.rotation.x=-sp*.9+Math.sin(t*25)*.2;
   dog.g.rotation.set(Math.sin(t*3)*.05-(b?Math.abs(Math.sin(t*14))*.25:0),dog.yaw,Math.sin(t*2.1)*.06);
-  dog.g.position.set(.8+(b?.12:0)+Math.sin(t*1.3)*.02,.6+(b?.06:0),-1.5);}
+  dog.root.position.set(.8+(b?.12:0)+Math.sin(t*1.3)*.02,.6+(b?.06:0),-1.5);}
 function playChecks(dt){checkGates();checkFinds(dt);barkCD-=dt;dogAuto(dt);dogPopTick(dt);}
 /* Biscuit's pixel portrait pops up beside the message when he barks */
 const dogPic=(()=>{const c=document.createElement('canvas');c.width=c.height=32;const x=c.getContext('2d'),P=(col,a,b,w=1,h=1)=>{x.fillStyle=col;x.fillRect(a,b,w,h);};
@@ -2767,7 +2884,8 @@ let acc=0,last=performance.now(),fpsN=0,fpsT=0,fpsLast=0,fpsPrev=0,fpsMin=999;re
 function loop(now){
   const dt=Math.min(.05,(now-last)/1000);last=now;const t=now/1000;
   skyMat.uniforms.uTime.value=t;waterMat.uniforms.uTime.value=t;for(const a of anims)a(t);
-  cloudGroup.position.set((t*2.2)%400,0,-(t*.8)%400);
+  cloudGroup.position.set((t*2.2)%4000,0,-(t*.8)%4000);
+  {const pu=postMat.uniforms;pu.mist.value=lerp(pu.mist.value,cloudMist(camera.position),1-Math.exp(-dt*5));pu.mistC.value.copy(scene.fog.color).lerp(_mistW,.3);}
   if(mode==='fly'){readInput(dt);acc+=dt;const H_=1/120;let n=0;while(acc>=H_&&n<10){if(ac.ground)stepGround(H_);else{stepAir(H_);stepBoost(H_);stepBumps(H_);}simT+=H_;acc-=H_;n++;if(mode!=='fly')break;}if(n>=10)acc=0;
     if(!Number.isFinite(ac.pos.x+ac.pos.y+ac.pos.z+ac.vel.x+ac.vel.y+ac.vel.z+ac.q.x+ac.q.w)){console.warn('sim NaN, respawning');spawnField(stripById(ac.lastField)||STRIPS[0]);}
     if(mode==='fly'){gameChecks(dt);playChecks(dt);}runTips(dt);}

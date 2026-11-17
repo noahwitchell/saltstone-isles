@@ -91,7 +91,16 @@ const dog=(()=>{const g=new THREE.Group(),fur=0xe8a850,lt=0xf4e4c8,dk=0x2c2833;
     {geo:BOX(.06,.06,.02),m:M([-.09,.07,-.205]),color:dk},{geo:BOX(.06,.06,.02),m:M([.09,.07,-.205]),color:dk},{geo:BOX(.2,.1,.12),m:M([0,.16,.02]),color:lt},{geo:BOX(.3,.24,.3),m:M([-.06,-.1,.28]),color:fur}]),litify(toon({},false))));
   const ear=s=>{const e=new THREE.Mesh(merge([{geo:BOX(.07,.26,.16).translate(0,-.13,0),m:M([0,0,0]),color:0xa8743e}]),litify(toon({},false)));e.position.set(s*.18,.12,.03);g.add(e);return e;};
   const eL=ear(-1),eR=ear(1),tongue=new THREE.Mesh(BOX(.08,.14,.03).translate(0,-.07,0),new THREE.MeshToonMaterial({color:0xe86a7a,gradientMap:gradTex}));tongue.position.set(.03,-.14,-.34);g.add(tongue);
-  g.position.set(.8,.6,-1.5);g.scale.setScalar(1.8);plane.add(g);return {g,eL,eR,tongue,bark:0,yaw:0};})();
+  /* his body: only shown in the cockpit, where he sits in the right seat (in chase view just his head is out the window) */
+  const root=new THREE.Group(),dm=litify(toon({},false));root.add(g);
+  const body=new THREE.Group(),chest=new THREE.Mesh(merge([{geo:BOX(.3,.44,.3),m:M([0,-.3,.12]),color:fur},{geo:BOX(.2,.3,.04),m:M([0,-.33,-.04]),color:lt},
+    {geo:BOX(.33,.07,.33),m:M([0,-.14,.12]),color:0xd2493c},{geo:BOX(.07,.07,.03),m:M([0,-.22,-.05]),color:0xf1c84a}]),dm);
+  const rest=new THREE.Mesh(merge([{geo:BOX(.34,.32,.5),m:M([0,-.55,.42],[-.35,0,0]),color:fur},{geo:BOX(.42,.32,.36),m:M([0,-.68,.62]),color:fur},
+    ...[-1,1].map(e=>({geo:BOX(.09,.38,.09),m:M([e*.09,-.62,-.02]),color:fur})),...[-1,1].map(e=>({geo:BOX(.11,.07,.15),m:M([e*.09,-.82,-.07]),color:lt})),
+    ...[-1,1].map(e=>({geo:BOX(.12,.14,.24),m:M([e*.2,-.78,.55]),color:fur}))]),dm);
+  const tail=new THREE.Group();tail.add(new THREE.Mesh(merge([{geo:BOX(.07,.07,.3).translate(0,0,.15),m:M([0,0,0]),color:fur},{geo:BOX(.08,.08,.08),m:M([0,0,.32]),color:lt}]),dm));
+  tail.position.set(0,-.62,.8);tail.rotation.x=.7;body.add(chest,rest,tail);root.add(body);
+  root.position.set(.8,.6,-1.5);root.scale.setScalar(1.8);plane.add(root);return {g,root,body,chest,tail,eL,eR,tongue,bark:0,yaw:0,glance:0,glanceT:9};})();
 snd.woof=function(){if(!this.ctx||!settings.sound)return;const c=this.ctx,t0=c.currentTime;
   for(const [dt,f0] of [[0,520],[.2,480]]){const t=t0+dt,o=c.createOscillator(),g=c.createGain(),f=c.createBiquadFilter(),n=c.createBufferSource();o.type='sawtooth';o.frequency.setValueAtTime(f0,t);o.frequency.exponentialRampToValueAtTime(f0*.42,t+.13);
     f.type='bandpass';f.frequency.value=900;f.Q.value=1.2;n.buffer=this.buf;const ng=c.createGain();ng.gain.value=.5;
@@ -123,24 +132,27 @@ function dogAuto(dt){autoCD-=dt;autoT+=dt;if(autoT<1)return;autoT=0;if(!settings
   for(const g of FLYGATES)if(!log.gates[g.id]&&!barked['g'+g.id]&&Math.hypot(P.x-g.x,P.z-g.z)<1000)cand.push({key:'g'+g.id,x:g.x,z:g.z,say:`a gap to fly through: ${g.name}`});
   if(!cand.length)return;const best=cand.reduce((a,c)=>Math.hypot(P.x-c.x,P.z-c.z)<Math.hypot(P.x-a.x,P.z-a.z)?c:a);
   barked[best.key]=1;autoCD=30;dogTarget=best;dog.bark=1.6;snd.woof();toast(`Woof! Biscuit's nose points ${dirWord(best.x,best.z)}: ${best.say}.`,3.2);}
-let peekClock=12,peekDur=0;
 function updDog(dt,t){const U=plane.userData,cock=!U.bodyM.visible&&mode!=='crashed';dog.bark=Math.max(0,dog.bark-dt);const b=dog.bark>0?1:0;
   let yaw=0;if(b&&dogTarget){const lp=plane.worldToLocal(_c1.set(dogTarget.x,ac.pos.y,dogTarget.z));yaw=clamp(Math.atan2(-lp.x,-lp.z),-.8,.8);}
   dog.yaw=lerp(dog.yaw,yaw,1-Math.exp(-dt*6));
-  if(cock){/* in the cockpit he sits in the right seat and pops his head up now and then for a look */
-    peekClock-=dt;if(peekClock<=0){peekClock=18+Math.random()*16;peekDur=3.5+Math.random()*2;}if(b)peekDur=Math.max(peekDur,1.2);peekDur-=dt;
-    dog.peek=lerp(dog.peek||0,peekDur>0?1:0,1-Math.exp(-dt*(peekDur>0?3.5:2.5)));dog.g.visible=dog.peek>.02;if(!dog.g.visible)return;
-    // pops up from the bottom-right corner of the view, then ducks back down
-    const D=1.5,hh=D*Math.tan(camera.fov*DEG/2),hw=hh*camera.aspect;camera.updateMatrixWorld();
-    _c1.set(hw*.8,-hh*1.4+dog.peek*hh*.98+Math.sin(t*2.2)*.01,-D);camera.localToWorld(_c1);plane.worldToLocal(_c1);
-    dog.g.scale.setScalar(1.15);dog.g.position.copy(_c1);
-    const look=.7+Math.sin(t*.7)*.45+(peekDur<1.2&&!b?.8*(1-peekDur/1.2):0);dog.g.rotation.set(.1-(b?Math.abs(Math.sin(t*14))*.2:0),b?dog.yaw:look,Math.sin(t*1.6)*.08);
+  if(cock){/* in the cockpit he sits in the right seat, bottom-right of the view: head, collar and chest above the dash */
+    dog.root.visible=dog.body.visible=true;const D=1.5,hh=D*Math.tan(camera.fov*DEG/2),hw=hh*camera.aspect;
+    if(dog.root.parent!==camera){if(!camera.parent)scene.add(camera);camera.add(dog.root);}   // rides with the view, so he never lags or drifts
+    dog.up=lerp(dog.up||0,b?1:0,1-Math.exp(-dt*8));
+    dog.root.position.set(hw*.64,-hh*.5+dog.up*hh*.14+Math.abs(Math.sin(t*14))*b*hh*.04,-D);
+    dog.root.scale.setScalar(1);dog.root.rotation.set(.18,1.15,0);
+    // now and then he turns to look at you; otherwise he watches out of the windshield
+    dog.glanceT-=dt;if(dog.glanceT<=0){dog.glanceT=14+Math.random()*14;dog.glance=1.6;}dog.glance=Math.max(0,dog.glance-dt);
+    const want=b?dog.yaw-1.15:dog.glance>0?.95:-.2+Math.sin(t*.31)*.3+Math.sin(t*.13)*.2;dog.hy=lerp(dog.hy||0,want,1-Math.exp(-dt*(b?8:3)));
+    dog.g.position.set(0,dog.up*.06,0);dog.g.rotation.set(.05-(b?Math.abs(Math.sin(t*14))*.22:0),dog.hy,dog.glance>0?.22:Math.sin(t*.5)*.12);
+    dog.chest.scale.y=1+Math.sin(t*(b?9:3.2))*.03;dog.tail.rotation.y=Math.sin(t*(b?16:6))*(b?.8:.45);
     dog.eL.rotation.x=dog.eR.rotation.x=-.1+Math.sin(t*3)*.05;dog.eL.rotation.z=-.15;dog.eR.rotation.z=.15;dog.tongue.rotation.x=Math.sin(t*9)*.15;return;}
-  dog.g.visible=U.bodyM.visible;if(!dog.g.visible)return;dog.g.scale.setScalar(1.8);const sp=Math.min(ac.ias/45,1.3);
+  if(dog.root.parent!==plane)plane.add(dog.root);dog.body.visible=false;dog.root.rotation.set(0,0,0);dog.g.position.set(0,0,0);
+  dog.root.visible=U.bodyM.visible;if(!dog.root.visible)return;dog.root.scale.setScalar(1.8);const sp=Math.min(ac.ias/45,1.3);
   dog.eL.rotation.x=dog.eR.rotation.x=-sp*1.1+Math.sin(t*22)*.18*sp;dog.eL.rotation.z=-.3*sp-Math.sin(t*17)*.12*sp;dog.eR.rotation.z=.3*sp+Math.sin(t*19)*.12*sp;
   dog.tongue.rotation.x=-sp*.9+Math.sin(t*25)*.2;
   dog.g.rotation.set(Math.sin(t*3)*.05-(b?Math.abs(Math.sin(t*14))*.25:0),dog.yaw,Math.sin(t*2.1)*.06);
-  dog.g.position.set(.8+(b?.12:0)+Math.sin(t*1.3)*.02,.6+(b?.06:0),-1.5);}
+  dog.root.position.set(.8+(b?.12:0)+Math.sin(t*1.3)*.02,.6+(b?.06:0),-1.5);}
 function playChecks(dt){checkGates();checkFinds(dt);barkCD-=dt;dogAuto(dt);dogPopTick(dt);}
 /* Biscuit's pixel portrait pops up beside the message when he barks */
 const dogPic=(()=>{const c=document.createElement('canvas');c.width=c.height=32;const x=c.getContext('2d'),P=(col,a,b,w=1,h=1)=>{x.fillStyle=col;x.fillRect(a,b,w,h);};

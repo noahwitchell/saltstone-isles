@@ -260,13 +260,21 @@ const waterMat=new THREE.ShaderMaterial({
   fragmentShader:`uniform sampler2D hTex;uniform float uTime,fogNear,fogFar;uniform vec3 sunDir,fogColor,cDeep,cMid,cShal,cGlint;varying vec3 vW;varying float vD;
   float hs(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
   float vn(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(hs(i),hs(i+vec2(1,0)),f.x),mix(hs(i+vec2(0,1)),hs(i+vec2(1,1)),f.x),f.y);}
+  float caus(vec2 uv,float time){vec2 p=mod(uv*6.2831853,6.2831853)-250.,i=p;float c=1.;
+    for(int n=0;n<4;n++){float t=time*(1.-3.5/float(n+1));i=p+vec2(cos(t-i.x)+sin(t+i.y),sin(t-i.y)+cos(t+i.x));c+=1./length(vec2(p.x/(sin(i.x+t)/.005),p.y/(cos(i.y+t)/.005)));}
+    c/=4.;c=1.17-pow(c,1.4);return clamp(pow(abs(c),8.),0.,1.);}
   void main(){
     vec2 uv=(vW.xz+${HALF.toFixed(1)})/${SIZE.toFixed(1)}*${(CELLS/NV).toFixed(6)}+${(0.5/NV).toFixed(6)};
     vec4 ht=texture2D(hTex,uv);float h=(ht.r*65280.+ht.g*255.)/65535.*120.-60.;
     float dp=-h+(vn(vW.xz*.03)-.5)*1.1+(vn(vW.xz*.11+7.)-.5)*.35;
     vec3 c=mix(cShal,cMid,smoothstep(1.,8.,dp));c=mix(c,cDeep,smoothstep(9.,38.,dp));
-    float w=sin(vW.x*.045+uTime*.55+sin(vW.z*.031))*sin(vW.z*.052-uTime*.37+sin(vW.x*.02));
-    c=mix(c,mix(c,vec3(1.),.18),step(.8,w));
+    vec2 bp=floor(gl_FragCoord.xy);vec2 b2=mod(bp,2.),b4=mod(floor(bp*.5),2.);
+    float bay=(mod(b2.x*2.+b2.y*3.,4.)*4.+mod(b4.x*2.+b4.y*3.,4.)+.5)/16.;
+    // caustics: a drifting web of thin light threads (two scales), bright crisp threads with a dithered fringe
+    float e=max(caus(vW.xz/70.,uTime*.35),caus(vW.xz/43.+vec2(.37,.11),uTime*.28+4.)*.8);
+    float cs=mix(.34,.16,smoothstep(2.,30.,dp))*(1.-smoothstep(350.,1500.,vD))*smoothstep(-.2,.6,dp);
+    float ln=step(.42,e)+step(bay,smoothstep(.12,.42,e))*.5;
+    c=mix(c,mix(c,vec3(.93,1.,.97),.85),min(ln,1.)*cs);
     float fl=1.1+.45*sin(uTime*.6+vW.x*.011+vW.z*.009);
     float foam=(1.-smoothstep(fl-.25,fl+.25,dp))*smoothstep(-.4,-.1,dp);
     float wv=fract(uTime*.09-dp*.16);float band=smoothstep(.08,0.,abs(wv-.5)*(1.+dp*.05));
@@ -275,8 +283,6 @@ const waterMat=new THREE.ShaderMaterial({
     // sun/moon glint: a small bright core, a pixel-dithered falloff, and a few wave sparkles further out
     vec3 nW=normalize(vec3(sin(vW.x*.09+uTime*.9+sin(vW.z*.05))*.010,1.,sin(vW.z*.075-uTime*.7)*.014));
     vec3 V=normalize(cameraPosition-vW);vec3 R=reflect(-V,nW);float g=max(dot(R,sunDir),0.);
-    vec2 bp=floor(gl_FragCoord.xy);vec2 b2=mod(bp,2.),b4=mod(floor(bp*.5),2.);
-    float bay=(mod(b2.x*2.+b2.y*3.,4.)*4.+mod(b4.x*2.+b4.y*3.,4.)+.5)/16.;
     float core=smoothstep(.99935,.99975,g),halo=smoothstep(.9955,.9993,g);
     float sp=hs(floor(vW.xz/2.)+floor(uTime*3.));
     float spark=step(.82,sp)*smoothstep(.985,.996,g);
@@ -720,22 +726,34 @@ const trees=[];
 })();
 
 /* ---------------- clouds ---------------- */
-const cloudGroup=new THREE.Group();scene.add(cloudGroup);
+const cloudGroup=new THREE.Group();scene.add(cloudGroup);const CLOUDS=[];
 (function clouds(){const it=[];
-  for(let c=0;c<64;c++){const cx=(rnd()-.5)*21000,cz=(rnd()-.5)*19000,cy=620+rnd()*380;const n=5+(rnd()*5|0);
+  for(let c=0;c<64;c++){const cx=(rnd()-.5)*21000,cz=(rnd()-.5)*19000,cy=620+rnd()*380;const n=5+(rnd()*5|0);const cl=CLOUDS.length;CLOUDS.push({x:cx,y:cy+10,z:cz,r:190});
     for(let k=0;k<n;k++){const s=40+rnd()*60;const y=cy+(rnd()-.3)*20;
-      it.push({geo:new THREE.IcosahedronGeometry(1,1),m:M([cx+(rnd()-.5)*220,y,cz+(rnd()-.5)*120],[0,rnd()*3,0],[s,s*.55,s*.9]),color:y>cy?0xfff8f0:0xeae2f2});}}
+      it.push({geo:new THREE.IcosahedronGeometry(1,1),m:M([cx+(rnd()-.5)*220,y,cz+(rnd()-.5)*120],[0,rnd()*3,0],[s,s*.55,s*.9]),color:y>cy?0xfff8f0:0xeae2f2,cl});}}
   // low cumulus: flat bases, stacked tiers of puffs that tower in the middle, and small satellite puffs round the edges
   let low=0;for(let tries=0;low<72&&tries<900;tries++){const cx=(rnd()-.5)*21000,cz=(rnd()-.5)*19000;
     if(STRIPS.some(s=>Math.hypot(s.x-cx,s.z-cz)<1100))continue;let gh=0;for(let k=0;k<5;k++)gh=Math.max(gh,groundH(cx+(k-2)*90,cz+((k*7)%5-2)*60));
-    const base=Math.max(230+rnd()*170,gh+150),R=70+rnd()*80,ax=rnd()*TAU,ca=Math.cos(ax),sa=Math.sin(ax),el=.55+rnd()*.35;low++;
-    const P=(u,v,y,s,sy,col)=>it.push({geo:new THREE.IcosahedronGeometry(1,1),m:M([cx+u*ca-v*sa,y,cz+u*sa+v*ca],[rnd()*.4,rnd()*3,rnd()*.4],[s*(.9+rnd()*.25),s*sy,s*(.9+rnd()*.25)]),color:col});
+    const base=Math.max(230+rnd()*170,gh+150),R=70+rnd()*80,ax=rnd()*TAU,ca=Math.cos(ax),sa=Math.sin(ax),el=.55+rnd()*.35;low++;const cl=CLOUDS.length;CLOUDS.push({x:cx,y:base+R*.55,z:cz,r:R*1.3});
+    const P=(u,v,y,s,sy,col)=>it.push({geo:new THREE.IcosahedronGeometry(1,1),m:M([cx+u*ca-v*sa,y,cz+u*sa+v*ca],[rnd()*.4,rnd()*3,rnd()*.4],[s*(.9+rnd()*.25),s*sy,s*(.9+rnd()*.25)]),color:col,cl});
     const nb=7+(rnd()*5|0);for(let k=0;k<nb;k++){const a=k/nb*TAU+rnd()*.5,d=R*(.35+rnd()*.6);P(Math.cos(a)*d,Math.sin(a)*d*el,base+6,R*(.32+rnd()*.18),.38,0xdcd4e6);}
     const nm=5+(rnd()*4|0);for(let k=0;k<nm;k++){const a=rnd()*TAU,d=R*rnd()*.5;const s=R*(.38+rnd()*.2);P(Math.cos(a)*d,Math.sin(a)*d*el,base+s*.55+rnd()*10,s,.78,0xf2ecf4);}
     const nt=2+(rnd()*3|0),tall=rnd();for(let k=0;k<nt;k++){const a=rnd()*TAU,d=R*rnd()*.28;const s=R*(.26+rnd()*.14)*(1+tall*.3);P(Math.cos(a)*d,Math.sin(a)*d*el,base+R*(.55+tall*.35)+k*s*.35,s,.85,0xfffaf2);}
     const ns=3+(rnd()*4|0);for(let k=0;k<ns;k++){const a=rnd()*TAU,d=R*(1+rnd()*.35);P(Math.cos(a)*d,Math.sin(a)*d*el,base+8+rnd()*14,R*(.1+rnd()*.1),.7,0xf6f0f4);}}
-  cloudGroup.add(new THREE.Mesh(merge(it),toon({},false)));
+  /* every cloud fades out as you fly into it: each vertex carries its cloud's centre and size (cc), the opaque pass
+     draws clouds you're well clear of, and a see-through pass draws the ones you're entering at their faded opacity */
+  const geo=merge(it),cc=new Float32Array(geo.attributes.position.count*4);let o=0;
+  it.forEach((q,i)=>{const n=q.geo.index?q.geo.index.count:q.geo.attributes.position.count,c=CLOUDS[q.cl];for(let k=0;k<n;k++,o++){cc[o*4]=c.x;cc[o*4+1]=c.y;cc[o*4+2]=c.z;cc[o*4+3]=c.r;}});
+  geo.setAttribute('cc',new THREE.BufferAttribute(cc,4));
+  const cmat=see=>{const m=toon(see?{transparent:true,depthWrite:false}:{},false);m.onBeforeCompile=sh=>{
+    sh.vertexShader='attribute vec4 cc;varying float vFade;\n'+sh.vertexShader.replace('#include <project_vertex>','#include <project_vertex>\nvec3 ccw=(modelMatrix*vec4(cc.xyz,1.)).xyz;vFade=smoothstep(.45,1.5,distance(cameraPosition,ccw)/cc.w);');
+    sh.fragmentShader='varying float vFade;\n'+sh.fragmentShader.replace('void main() {','void main() {\n'+(see?'if(vFade>=.999||vFade<.01)discard;':'if(vFade<.999)discard;')).replace('#include <dithering_fragment>','#include <dithering_fragment>\ngl_FragColor.a*='+(see?'vFade':'1.')+';');};
+    m.customProgramCacheKey=()=>'cloud'+see;return m;};
+  cloudGroup.add(new THREE.Mesh(geo,cmat(false)));const seeM=new THREE.Mesh(geo,cmat(true));seeM.renderOrder=5;cloudGroup.add(seeM);
 })();
+/* how deep in a cloud the camera is (0 clear .. 1 in the middle): drives a soft white-out in the post pass */
+function cloudMist(p){let m=0;const gx=cloudGroup.position.x,gz=cloudGroup.position.z;for(const c of CLOUDS){const dy=p.y-c.y;if(Math.abs(dy)>c.r)continue;
+  const d=Math.hypot(p.x-c.x-gx,dy*1.4,p.z-c.z-gz)/c.r;if(d<.9)m=Math.max(m,1-smooth(.3,.9,d));}return m;}
 
 /* ---------------- life: boats, birds, smoke ---------------- */
 (function boats(){
@@ -773,9 +791,9 @@ const cloudGroup=new THREE.Group();scene.add(cloudGroup);
 /* ---------------- post-process ---------------- */
 let LW=320,LH=180,PS=2,rt;
 const postMat=new THREE.ShaderMaterial({
-  uniforms:{tColor:{value:null},tDepth:{value:null},res:{value:new THREE.Vector2()},cNear:{value:.4},cFar:{value:14000},outline:{value:1},levels:{value:14},dither:{value:1},con:{value:1},sat:{value:1},vig:{value:.2}},
+  uniforms:{tColor:{value:null},tDepth:{value:null},res:{value:new THREE.Vector2()},cNear:{value:.4},cFar:{value:14000},outline:{value:1},levels:{value:14},dither:{value:1},con:{value:1},sat:{value:1},vig:{value:.2},mist:{value:0},mistC:{value:new THREE.Color(0xf2eef4)}},
   vertexShader:`varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position.xy,0.,1.);}`,
-  fragmentShader:`uniform sampler2D tColor,tDepth;uniform vec2 res;uniform float cNear,cFar,outline,levels,dither,con,sat,vig;varying vec2 vUv;
+  fragmentShader:`uniform sampler2D tColor,tDepth;uniform vec2 res;uniform float cNear,cFar,outline,levels,dither,con,sat,vig,mist;uniform vec3 mistC;varying vec2 vUv;
   float lin(float d){float z=d*2.-1.;return 2.*cNear*cFar/(cFar+cNear-z*(cFar-cNear));}
   float b2(vec2 a){a=floor(a);return fract(a.x*.5+a.y*a.y*.75);}
   float b4(vec2 a){return b2(.5*a)*.25+b2(a);}
@@ -784,6 +802,7 @@ const postMat=new THREE.ShaderMaterial({
       float dn=max(max(lin(texture2D(tDepth,vUv+vec2(px.x,0.)).r),lin(texture2D(tDepth,vUv-vec2(px.x,0.)).r)),max(lin(texture2D(tDepth,vUv+vec2(0.,px.y)).r),lin(texture2D(tDepth,vUv-vec2(0.,px.y)).r)));
       float e=step(dc*.07+1.2,dn-dc)*(1.-smoothstep(250.,2600.,dc));
       c=mix(c,c*vec3(.45,.38,.52),e*.85);}
+    c=mix(c,mistC,mist*(.5+.25*smoothstep(.2,.9,vUv.y)));
     float l=dot(c,vec3(.299,.587,.114));c=mix(vec3(l),c,sat);c=(c-.5)*con+.5;
     vec2 vv=vUv-.5;c*=1.-vig*dot(vv,vv)*1.6;
     float b=dither>.5?b4(gl_FragCoord.xy)-.5:0.;

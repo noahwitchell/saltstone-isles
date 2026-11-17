@@ -1026,6 +1026,7 @@ function updateVisuals(dt,t){
   snd.update(ac.rpm,ac.ias+(ac.bst||0)*22,ac.stallWarn,mode==='fly',ac.rough);
 }
 
+const _mistW=new THREE.Color(0xffffff);
 /*@PLAY@*/
 
 /* ---------- main loop ---------- */
@@ -1033,7 +1034,8 @@ let acc=0,last=performance.now(),fpsN=0,fpsT=0,fpsLast=0,fpsPrev=0,fpsMin=999;re
 function loop(now){
   const dt=Math.min(.05,(now-last)/1000);last=now;const t=now/1000;
   skyMat.uniforms.uTime.value=t;waterMat.uniforms.uTime.value=t;for(const a of anims)a(t);
-  cloudGroup.position.set((t*2.2)%400,0,-(t*.8)%400);
+  cloudGroup.position.set((t*2.2)%4000,0,-(t*.8)%4000);
+  {const pu=postMat.uniforms;pu.mist.value=lerp(pu.mist.value,cloudMist(camera.position),1-Math.exp(-dt*5));pu.mistC.value.copy(scene.fog.color).lerp(_mistW,.3);}
   if(mode==='fly'){readInput(dt);acc+=dt;const H_=1/120;let n=0;while(acc>=H_&&n<10){if(ac.ground)stepGround(H_);else{stepAir(H_);stepBoost(H_);stepBumps(H_);}simT+=H_;acc-=H_;n++;if(mode!=='fly')break;}if(n>=10)acc=0;
     if(!Number.isFinite(ac.pos.x+ac.pos.y+ac.pos.z+ac.vel.x+ac.vel.y+ac.vel.z+ac.q.x+ac.q.w)){console.warn('sim NaN, respawning');spawnField(stripById(ac.lastField)||STRIPS[0]);}
     if(mode==='fly'){gameChecks(dt);playChecks(dt);}runTips(dt);}
