@@ -75,9 +75,11 @@ button:focus-visible{outline:2px solid #fff;outline-offset:2px}
 #jDrop.done{color:#8fe08a}#jDrop{color:#ff9a6a}
 /* landing controls: small separate switches along the bottom, brake right next to the throttle */
 #eng{position:fixed;left:calc(var(--sl) + 64px);bottom:var(--sb);display:flex;gap:5px;align-items:flex-end;z-index:2}
-.tsw,#brake,#flapL,#micBtn{position:relative;width:40px;height:58px;padding:0;border-radius:7px;background:rgba(28,24,34,.78);
+.tsw,#brake,#flapL,#micBtn,#hornBtn{position:relative;width:40px;height:58px;padding:0;border-radius:7px;background:rgba(28,24,34,.78);
   box-shadow:inset 0 0 0 1px #5a5266,inset 0 2px 0 #ffffff14,0 2px 0 #0009;touch-action:manipulation}
-.tsw:active,#brake:active,#micBtn:active{transform:none}
+.tsw:active,#brake:active,#micBtn:active,#hornBtn:active{transform:none}
+#hornBtn .bell{position:absolute;left:50%;top:32px;width:24px;height:24px;margin:-12px 0 0 -12px;border-radius:50%;background:radial-gradient(circle at 38% 35%,#fff2b0,#e0a83a 45%,#8a5a18);box-shadow:0 0 0 1.5px #3a2a10,0 3px 0 #000a}
+#hornBtn:active .bell,#hornBtn.honk .bell{transform:translateY(2px);box-shadow:0 0 0 1.5px #3a2a10,0 1px 0 #000a;filter:brightness(1.2)}
 .lab{position:absolute;left:-3px;right:-3px;top:4px;text-align:center;font:8px/1 var(--mono);letter-spacing:.02em;color:#d8cebe;white-space:nowrap;pointer-events:none}
 .tsw .nut{position:absolute;left:50%;top:34px;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#f0eef4,#9a96a2 55%,#55515c);box-shadow:0 0 0 1.5px #15121a}
 .tsw .bat{position:absolute;left:50%;width:6px;margin-left:-3px;border-radius:3px;background:linear-gradient(90deg,#8c8896,#f4f2f8 45%,#a4a0ac);box-shadow:0 0 0 1px #15121a;transition:top .07s,height .07s}
@@ -214,6 +216,7 @@ h3{font-family:var(--mono);font-size:15px;letter-spacing:.08em;color:var(--ink2)
       <button class="tsw" id="swSmoke"><b class="lab">SMOKE</b><span class="nut"></span><span class="bat"></span><em class="u">ON</em><em class="d">OFF</em></button>
       <button class="tsw red" id="swFloat"><b class="lab">FLOATS</b><span class="nut"></span><span class="bat"></span><em class="u">OUT</em><em class="d">PULL</em></button>
       <button id="micBtn" aria-label="Key the radio mic"><b class="lab">MIC</b><span class="grille"></span><em>○○○</em></button>
+      <button id="hornBtn" aria-label="Honk the horn"><b class="lab">HORN</b><span class="bell"></span></button>
     </div>
     <div id="dropUI" hidden><button id="lookBtn" aria-label="Look straight down">LOOK<br>DOWN</button><button id="dropBtn" aria-label="Drop a parcel">DROP</button></div>
   </div>

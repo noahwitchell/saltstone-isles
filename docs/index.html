@@ -88,9 +88,11 @@ button:focus-visible{outline:2px solid #fff;outline-offset:2px}
 #jDrop.done{color:#8fe08a}#jDrop{color:#ff9a6a}
 /* landing controls: small separate switches along the bottom, brake right next to the throttle */
 #eng{position:fixed;left:calc(var(--sl) + 64px);bottom:var(--sb);display:flex;gap:5px;align-items:flex-end;z-index:2}
-.tsw,#brake,#flapL,#micBtn{position:relative;width:40px;height:58px;padding:0;border-radius:7px;background:rgba(28,24,34,.78);
+.tsw,#brake,#flapL,#micBtn,#hornBtn{position:relative;width:40px;height:58px;padding:0;border-radius:7px;background:rgba(28,24,34,.78);
   box-shadow:inset 0 0 0 1px #5a5266,inset 0 2px 0 #ffffff14,0 2px 0 #0009;touch-action:manipulation}
-.tsw:active,#brake:active,#micBtn:active{transform:none}
+.tsw:active,#brake:active,#micBtn:active,#hornBtn:active{transform:none}
+#hornBtn .bell{position:absolute;left:50%;top:32px;width:24px;height:24px;margin:-12px 0 0 -12px;border-radius:50%;background:radial-gradient(circle at 38% 35%,#fff2b0,#e0a83a 45%,#8a5a18);box-shadow:0 0 0 1.5px #3a2a10,0 3px 0 #000a}
+#hornBtn:active .bell,#hornBtn.honk .bell{transform:translateY(2px);box-shadow:0 0 0 1.5px #3a2a10,0 1px 0 #000a;filter:brightness(1.2)}
 .lab{position:absolute;left:-3px;right:-3px;top:4px;text-align:center;font:8px/1 var(--mono);letter-spacing:.02em;color:#d8cebe;white-space:nowrap;pointer-events:none}
 .tsw .nut{position:absolute;left:50%;top:34px;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#f0eef4,#9a96a2 55%,#55515c);box-shadow:0 0 0 1.5px #15121a}
 .tsw .bat{position:absolute;left:50%;width:6px;margin-left:-3px;border-radius:3px;background:linear-gradient(90deg,#8c8896,#f4f2f8 45%,#a4a0ac);box-shadow:0 0 0 1px #15121a;transition:top .07s,height .07s}
@@ -229,6 +231,7 @@ h3{font-family:var(--mono);font-size:15px;letter-spacing:.08em;color:var(--ink2)
       <button class="tsw" id="swSmoke"><b class="lab">SMOKE</b><span class="nut"></span><span class="bat"></span><em class="u">ON</em><em class="d">OFF</em></button>
       <button class="tsw red" id="swFloat"><b class="lab">FLOATS</b><span class="nut"></span><span class="bat"></span><em class="u">OUT</em><em class="d">PULL</em></button>
       <button id="micBtn" aria-label="Key the radio mic"><b class="lab">MIC</b><span class="grille"></span><em>○○○</em></button>
+      <button id="hornBtn" aria-label="Honk the horn"><b class="lab">HORN</b><span class="bell"></span></button>
     </div>
     <div id="dropUI" hidden><button id="lookBtn" aria-label="Look straight down">LOOK<br>DOWN</button><button id="dropBtn" aria-label="Drop a parcel">DROP</button></div>
   </div>
@@ -1019,7 +1022,7 @@ var townSpots=[];
      tr.scale.setScalar(1.4);mover(tr,[[p.x-p.ux*40,p.z-p.uz*40],[p.x+p.ux*40,p.z+p.uz*40],[p.x+p.ux*40-p.uz*6,p.z+p.uz*40+p.ux*6],[p.x-p.ux*40-p.uz*6,p.z-p.uz*40+p.ux*6],[p.x-p.ux*40-p.uz*12,p.z-p.uz*40+p.ux*12],[p.x+p.ux*40-p.uz*12,p.z+p.uz*40+p.ux*12]],2.2,.1,0);}}
   // townsfolk strolling round the square and along the street
   const folkC=[0xd2493c,0x3f6f8f,0xe8a33a,0x3f8f5a,0x7a4ab8,0xf8f4ee,0xe0607a,0x8a5a3a];
-  const person=i=>{const g=new THREE.Mesh(merge([{geo:BOX(.7,1.1,.45),m:M([0,1.25,0]),color:folkC[i%8]},{geo:BOX(.5,.5,.5),m:M([0,2.1,0]),color:[0xf0c7a4,0xc98c5e,0x8a5a3a][i%3]},{geo:BOX(.6,.8,.4),m:M([0,.4,0]),color:0x3a3440}]),toon({},false));g.scale.setScalar(1.35);return g;};
+  const person=i=>{const g=new THREE.Mesh(merge([{geo:BOX(.7,1.1,.45),m:M([0,1.25,0]),color:folkC[i%8]},{geo:BOX(.5,.5,.5),m:M([0,2.1,0]),color:[0xf0c7a4,0xc98c5e,0x8a5a3a][i%3]},{geo:BOX(.6,.8,.4),m:M([0,.4,0]),color:0x3a3440}]),toon({},false));g.scale.setScalar(1.35);(window.FOLK||(window.FOLK=[])).push(g);return g;};
   for(let i=0;i<14;i++){let pts;if(i<6){const r=8+(i%3)*2.5,c=at(0,-19);pts=[...Array(9)].map((_,k)=>{const a=k/8*TAU*(i%2?1:-1)+i;return [c.x+Math.cos(a)*r,c.z+Math.sin(a)*r];});}
     else{const a0=-110+hash2(i,1,5)*80,s=(i%2?1:-1)*3;pts=[P2(at(a0,s)),P2(at(a0+60+hash2(i,2,5)*60,s))];}
     mover(person(i),pts,.9+hash2(i,3,5)*.5,.1,hash2(i,4,5));}
@@ -1982,6 +1985,7 @@ const GOALS=[
   {id:'bullseye',name:'Bullseye',hint:'Land a parcel within 5 m of the middle of a drop target.'},
   {id:'drops',name:'Air mail',hint:'Deliver ten air drops.'},
   {id:'floatplane',name:'Splashdown',hint:'Pull the floats and land on the water.'},
+  {id:'honk',name:'Hello down there',hint:'Honk the horn at three or more people at once.'},
   {id:'errand',name:'Good neighbour',hint:'Finish an errand for an islander.'},
   {id:'errands',name:'Everybody\'s favourite',hint:'Finish every islander\'s errand.'},
 ];
@@ -2633,7 +2637,7 @@ $('mapc').addEventListener('click',()=>{if(mode==='fly'){mode='paused';bigMap();
 const keys={};
 addEventListener('keydown',e=>{keys[e.code]=true;if($('chartOv')&&(e.code==='Escape'||e.code==='KeyM')){closeChart();return;}if(mode!=='fly')return;
   if(e.code==='KeyF')setFlaps((ac.flaps+1)%3);if(e.code==='KeyV')$('view').click();if(e.code==='KeyL')toggleLook();if(e.code==='KeyG')doDrop();if(e.code==='KeyB')bOn();if(e.code==='KeyM'){mode='paused';bigMap();}
-  if(e.code==='KeyC')$('swCarb').click();if(e.code==='KeyT')recenterTilt();if(e.code==='KeyH')$('swLight').click();if(e.code==='KeyJ')$('swSearch').click();if(e.code==='KeyK')$('swSmoke').click();if(e.code==='KeyO')$('swFloat').click();if(e.code==='KeyR')keyMic();
+  if(e.code==='KeyC')$('swCarb').click();if(e.code==='KeyT')recenterTilt();if(e.code==='KeyH')$('swLight').click();if(e.code==='KeyJ')$('swSearch').click();if(e.code==='KeyK')$('swSmoke').click();if(e.code==='KeyO')$('swFloat').click();if(e.code==='KeyR')keyMic();if(e.code==='KeyN')honk();
   if(e.code==='Escape'||e.code==='KeyP')openMenu();if(e.code.startsWith('Arrow'))e.preventDefault();});
 addEventListener('keyup',e=>{keys[e.code]=false;if(e.code==='KeyB')bOff();});
 const kb={p:0,r:0};
@@ -2671,7 +2675,8 @@ const snd={ctx:null,
   burst(v,lp,dur){if(!this.ctx)return;const c=this.ctx,s=c.createBufferSource();s.buffer=this.buf;const f=c.createBiquadFilter();f.type='lowpass';f.frequency.value=lp;const g=c.createGain(),t=c.currentTime;
     g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+dur);s.connect(f);f.connect(g);g.connect(this.master);s.start(t,Math.random());s.stop(t+dur+.05);},
   beep(f){if(!this.ctx)return;const c=this.ctx,o=c.createOscillator(),g=c.createGain(),t=c.currentTime;o.type='triangle';o.frequency.value=f;g.gain.setValueAtTime(.08,t);g.gain.exponentialRampToValueAtTime(.001,t+.18);o.connect(g);g.connect(this.master);o.start(t);o.stop(t+.2);},
-  thump(v=1){this.burst(.6*v,260,.25);},crash(){this.burst(.5,900,1.2);},click(){this.burst(.25,3000,.03);},squelch(){this.burst(.3,5200,.07);setTimeout(()=>this.burst(.12,2600,.05),70);},hiss(v=1){this.burst(.45*v,3600,.9);setTimeout(()=>this.burst(.3*v,900,.15),650);},flick(){this.burst(.4,7000,.012);setTimeout(()=>this.burst(.22,2200,.025),22);},clunk(){this.burst(.35,1400,.05);setTimeout(()=>this.burst(.25,600,.08),40);},
+  thump(v=1){this.burst(.6*v,260,.25);},crash(){this.burst(.5,900,1.2);},click(){this.burst(.25,3000,.03);},honk(){if(!this.ctx)return;const c=this.ctx,t0=c.currentTime+.02;for(let k=0;k<2;k++){const t=t0+k*.27,g=c.createGain(),lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=2200;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.22,t+.015);g.gain.setValueAtTime(.22,t+.17);g.gain.linearRampToValueAtTime(0,t+.21);lp.connect(g);g.connect(this.master);
+    for(const f of [415,523]){const o=c.createOscillator();o.type='square';o.frequency.setValueAtTime(f*(k?1:1.02),t);o.frequency.linearRampToValueAtTime(f*.97,t+.2);o.connect(lp);o.start(t);o.stop(t+.25);}}},squelch(){this.burst(.3,5200,.07);setTimeout(()=>this.burst(.12,2600,.05),70);},hiss(v=1){this.burst(.45*v,3600,.9);setTimeout(()=>this.burst(.3*v,900,.15),650);},flick(){this.burst(.4,7000,.012);setTimeout(()=>this.burst(.22,2200,.025),22);},clunk(){this.burst(.35,1400,.05);setTimeout(()=>this.burst(.25,600,.08),40);},
   setOn(v){if(this.master)this.master.gain.value=v?.5:0;if(this.ctx&&this.ctx.state==='suspended')this.ctx.resume();}};
 
 /* ---------- the radio: five generative stations (all WebAudio), one dial on the flight screen ---------- */
@@ -2916,7 +2921,7 @@ function settingsCard(){
   const mv=[['OFF',0],['SOFT',.5],['ON',1]].map(([n,v])=>`<button data-mv="${v}" class="${(settings.music??.5)==v?'primary':''}">${n}</button>`).join('');
   const st=STATIONS.map(S=>`<button data-st="${S.id}" class="${settings.station===S.id?'primary':''}">${S.fq} ${S.name.toUpperCase()}</button>`).join('');
   const lt=Object.keys(TOD).map(k=>`<button data-lt="${k}" class="${settings.light===k?'primary':''}">${TOD[k].name.toUpperCase()}</button>`).join('');
-  showCard(`<h2>Settings</h2><div class="sub">ASSISTS · TURN THEM OFF ONE AT A TIME AS YOU IMPROVE</div>${rows}<h3>ENGINE VOLUME</h3><div class="btns">${ev}</div><h3>RADIO VOLUME</h3><div class="btns">${mv}</div><h3>RADIO STATION · OR TAP THE DIAL UP TOP WHILE FLYING</h3><div class="btns">${st}</div><h3>TIME OF DAY</h3><div class="btns">${lt}</div><h3>PIXELS</h3><div class="btns">${px}</div><div class="sub" style="margin-top:14px">BUILD df1a034</div>`,[['Back',back,true]]);
+  showCard(`<h2>Settings</h2><div class="sub">ASSISTS · TURN THEM OFF ONE AT A TIME AS YOU IMPROVE</div>${rows}<h3>ENGINE VOLUME</h3><div class="btns">${ev}</div><h3>RADIO VOLUME</h3><div class="btns">${mv}</div><h3>RADIO STATION · OR TAP THE DIAL UP TOP WHILE FLYING</h3><div class="btns">${st}</div><h3>TIME OF DAY</h3><div class="btns">${lt}</div><h3>PIXELS</h3><div class="btns">${px}</div><div class="sub" style="margin-top:14px">BUILD d050a2e</div>`,[['Back',back,true]]);
   const cb=$('cardBody');
   cb.querySelectorAll('[data-k]').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.k;if(k==='tilt'){if(!settings.tilt){settings.tilt=true;saveS();enableTilt().then(()=>{updTiltUI();settingsCard();});}else{settings.tilt=false;saveS();disableTilt();updTiltUI();settingsCard();}return;}settings[k]=!settings[k];saveS();if(k==='sound')snd.setOn(settings.sound);if(k==='fps'){$('fps').hidden=!settings.fps;$('fps').textContent='FPS: measuring…';fpsN=fpsT=0;fpsLast=0;}if(k==='sound')music.setVol();settingsCard();}));
   cb.querySelectorAll('[data-px]').forEach(b=>b.addEventListener('click',()=>{settings.pixels=b.dataset.px;pixMode=settings.pixels;saveS();resize();settingsCard();}));
@@ -3543,19 +3548,29 @@ function updRunwayLights(dt){const dark=TOD[tod].lights>0;
     tip('pcl','Dark runway? Little airfields have pilot-controlled lights. Tap MIC (top right) to call the nearest field and they\'ll switch the runway lights on. Call again for brighter.');}
 
 /* ---- smoke trail ---- */
-const SMOKE_N=520,SMOKE_LIFE=42,SMOKE_EVERY=.08;let smokeOn=false,smokeAcc=0,smokeI=0;
-const smokeTrail=new THREE.InstancedMesh(new THREE.DodecahedronGeometry(1,0),new THREE.MeshLambertMaterial({color:0xf4f0ea}),SMOKE_N);smokeTrail.frustumCulled=false;scene.add(smokeTrail);
+const SMOKE_N=1600,SMOKE_LIFE=120,SMOKE_EVERY=.075;let smokeOn=false,smokeAcc=0,smokeI=0;
+/* light, soft smoke: nearly see-through right behind the plane (so it never blocks your view), thickening to
+   solid white with distance, so you see what you've drawn when you turn round and look back */
+const smokeMat=new THREE.ShaderMaterial({transparent:true,depthWrite:false,
+  uniforms:{uSun:{value:sunDir},uTint:{value:1},fogColor:{value:scene.fog.color},fogNear:{value:700},fogFar:{value:5600}},
+  vertexShader:`varying float vSh;varying float vD;uniform vec3 uSun;
+    void main(){vec4 w=modelMatrix*instanceMatrix*vec4(position,1.);vec3 n=normalize(mat3(modelMatrix*instanceMatrix)*normal);
+      vSh=.84+.16*max(dot(n,normalize(uSun)),0.)+.06*n.y;vec4 mv=viewMatrix*w;vD=-mv.z;gl_Position=projectionMatrix*mv;}`,
+  fragmentShader:`varying float vSh;varying float vD;uniform float uTint,fogNear,fogFar;uniform vec3 fogColor;
+    void main(){float a=mix(.1,.98,smoothstep(14.,130.,vD));vec3 c=vec3(.96,.95,.94)*vSh*uTint;c=mix(c,fogColor,smoothstep(fogNear,fogFar,vD));gl_FragColor=vec4(c,a);}`});
+const smokeTrail=new THREE.InstancedMesh(new THREE.DodecahedronGeometry(1,1),smokeMat,SMOKE_N);smokeTrail.renderOrder=6;smokeTrail.frustumCulled=false;scene.add(smokeTrail);
 const SMK=Array.from({length:SMOKE_N},()=>({t:-1,p:new V3(),v:new V3(),r:Math.random()*TAU}));
 const _tail=new V3(),_tm=new THREE.Matrix4(),_tq=new THREE.Quaternion(),_ts=new V3();
 for(let i=0;i<SMOKE_N;i++)smokeTrail.setMatrixAt(i,_tm.makeScale(0,0,0));
 function updSmoke(dt){
   if(smokeOn&&mode==='fly'&&!ac.ground&&ac.ias>10){smokeAcc+=dt;while(smokeAcc>=SMOKE_EVERY){smokeAcc-=SMOKE_EVERY;const q=SMK[smokeI];smokeI=(smokeI+1)%SMOKE_N;
-    q.t=0;q.p.copy(_tail.set(0,.2,4.8).applyQuaternion(ac.q).add(ac.pos)).addScaledVector(ac.vel,-smokeAcc);q.v.copy(WIND).multiplyScalar(.6);q.v.y=.25;}}
+    q.t=0;q.p.copy(_tail.set(0,.2,4.8).applyQuaternion(ac.q).add(ac.pos)).addScaledVector(ac.vel,-smokeAcc);q.v.copy(WIND).multiplyScalar(.3);q.v.y=.12;}}
   let any=false;
   for(let i=0;i<SMOKE_N;i++){const q=SMK[i];if(q.t<0)continue;any=true;q.t+=dt;if(q.t>SMOKE_LIFE){q.t=-1;smokeTrail.setMatrixAt(i,_tm.makeScale(0,0,0));continue;}
-    q.p.addScaledVector(q.v,dt);const u=q.t/SMOKE_LIFE,sc=(.9+Math.sqrt(q.t)*1.1)*(u>.85?(1-u)/.15:1);
+    q.p.addScaledVector(q.v,dt);const u=q.t/SMOKE_LIFE,sc=(1.7+Math.min(Math.sqrt(q.t)*1.5,9))*(u>.88?(1-u)/.12:1);
     _tq.setFromAxisAngle(_wy,q.r+q.t*.1);smokeTrail.setMatrixAt(i,_tm.compose(q.p,_tq,_ts.setScalar(sc)));}
-  if(any)smokeTrail.instanceMatrix.needsUpdate=true;}
+  if(any)smokeTrail.instanceMatrix.needsUpdate=true;
+  const T=TOD[tod],U=smokeMat.uniforms;U.uTint.value=clamp(T.sunI*.55+T.hemiI*.55,.3,1.05);U.fogNear.value=scene.fog.near;U.fogFar.value=scene.fog.far;}
 
 /* ---- searchlight ---- */
 let searchOn=false;
@@ -3595,8 +3610,26 @@ $('swSearch').addEventListener('click',()=>{searchOn=!searchOn;snd.flick();updFu
 $('swSmoke').addEventListener('click',()=>{smokeOn=!smokeOn;snd.flick();if(smokeOn)snd.hiss(.5);updFunUI();if(smokeOn)tip('smoke','Smoke on! It hangs in the air for a while, so you can draw loops and letters in the sky.');});
 $('swFloat').addEventListener('click',()=>{setFloats(!floatsOn);});
 $('micBtn').addEventListener('pointerdown',e=>{e.preventDefault();keyMic();});
+/* ---- the horn: a little double honk. Folk in town, at drop camps, and the errand goats and sheep nearby jump and
+   turn to look up at you; Biscuit joins in ---- */
+let honkT=-1;const honkers=[];
+function honk(){if(mode!=='fly'||(honkT>=0&&honkT<.6))return;snd.honk();honkT=0;honkers.length=0;const P=ac.pos,b=$('hornBtn');b.classList.add('honk');setTimeout(()=>b.classList.remove('honk'),550);
+  const near=(x,y,z)=>Math.hypot(x-P.x,z-P.z)<420&&P.y-y<320;
+  for(const o of (window.FOLK||[])){o.updateMatrixWorld();const w=o.getWorldPosition(_so);if(near(w.x,w.y,w.z))honkers.push({o,mv:true,ph:Math.random()*.35});}
+  for(const set of ['goats','sheep'])for(const f of (FINDS[set]||[]))if(f.obj&&near(f.x,f.y,f.z))honkers.push({o:f.obj,mv:false,y0:f.obj.position.y,ph:Math.random()*.35});
+  for(const [d,s] of SITES)if(s.react<0&&near(d.x,d.y,d.z))honkers.push({o:s.man,mv:false,y0:s.man.position.y,ph:.1});
+  const n=honkers.length;
+  if(n)toast(n===1?'Honk honk! Someone down there jumps and looks up.':`Honk honk! ${n} down there jump and look up.`,2);
+  setTimeout(()=>{if(mode==='fly'&&settings.dog!==false){dog.bark=1.3;snd.woof();}},520);
+  if(n>=3)goal('honk',true);}
+function updHonk(dt){if(honkT<0)return;honkT+=dt;
+  for(const h of honkers){const t=honkT-h.ph,hop=t>0&&t<1.8?Math.abs(Math.sin(t*7.5))*1.4*(1-t/1.8):0;
+    if(h.mv)h.o.position.y+=hop;else h.o.position.y=h.y0+hop;
+    if(t>0&&t<1.8){const w=h.o.getWorldPosition(_so);h.o.rotation.y=Math.atan2(ac.pos.x-w.x,ac.pos.z-w.z);}}
+  if(honkT>2.4){for(const h of honkers)if(!h.mv)h.o.position.y=h.y0;honkers.length=0;honkT=-1;}}
+$('hornBtn').addEventListener('pointerdown',e=>{e.preventDefault();honk();});
 function resetSwitches(){smokeOn=false;floatsOn=false;ac.floats=0;floatG.visible=false;micBusy=false;updFunUI();}
-function updSwitchesFx(dt){updRunwayLights(dt);updSmoke(dt);updSearch(dt);updFloats(dt);}
+function updSwitchesFx(dt){updHonk(dt);updRunwayLights(dt);updSmoke(dt);updSearch(dt);updFloats(dt);}
 updFunUI();
 
 /* ---- keep the sound alive: phones suspend the audio engine when the screen locks or the app goes to the background

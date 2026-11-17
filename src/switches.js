@@ -58,19 +58,29 @@ function updRunwayLights(dt){const dark=TOD[tod].lights>0;
     tip('pcl','Dark runway? Little airfields have pilot-controlled lights. Tap MIC (top right) to call the nearest field and they\'ll switch the runway lights on. Call again for brighter.');}
 
 /* ---- smoke trail ---- */
-const SMOKE_N=520,SMOKE_LIFE=42,SMOKE_EVERY=.08;let smokeOn=false,smokeAcc=0,smokeI=0;
-const smokeTrail=new THREE.InstancedMesh(new THREE.DodecahedronGeometry(1,0),new THREE.MeshLambertMaterial({color:0xf4f0ea}),SMOKE_N);smokeTrail.frustumCulled=false;scene.add(smokeTrail);
+const SMOKE_N=1600,SMOKE_LIFE=120,SMOKE_EVERY=.075;let smokeOn=false,smokeAcc=0,smokeI=0;
+/* light, soft smoke: nearly see-through right behind the plane (so it never blocks your view), thickening to
+   solid white with distance, so you see what you've drawn when you turn round and look back */
+const smokeMat=new THREE.ShaderMaterial({transparent:true,depthWrite:false,
+  uniforms:{uSun:{value:sunDir},uTint:{value:1},fogColor:{value:scene.fog.color},fogNear:{value:700},fogFar:{value:5600}},
+  vertexShader:`varying float vSh;varying float vD;uniform vec3 uSun;
+    void main(){vec4 w=modelMatrix*instanceMatrix*vec4(position,1.);vec3 n=normalize(mat3(modelMatrix*instanceMatrix)*normal);
+      vSh=.84+.16*max(dot(n,normalize(uSun)),0.)+.06*n.y;vec4 mv=viewMatrix*w;vD=-mv.z;gl_Position=projectionMatrix*mv;}`,
+  fragmentShader:`varying float vSh;varying float vD;uniform float uTint,fogNear,fogFar;uniform vec3 fogColor;
+    void main(){float a=mix(.1,.98,smoothstep(14.,130.,vD));vec3 c=vec3(.96,.95,.94)*vSh*uTint;c=mix(c,fogColor,smoothstep(fogNear,fogFar,vD));gl_FragColor=vec4(c,a);}`});
+const smokeTrail=new THREE.InstancedMesh(new THREE.DodecahedronGeometry(1,1),smokeMat,SMOKE_N);smokeTrail.renderOrder=6;smokeTrail.frustumCulled=false;scene.add(smokeTrail);
 const SMK=Array.from({length:SMOKE_N},()=>({t:-1,p:new V3(),v:new V3(),r:Math.random()*TAU}));
 const _tail=new V3(),_tm=new THREE.Matrix4(),_tq=new THREE.Quaternion(),_ts=new V3();
 for(let i=0;i<SMOKE_N;i++)smokeTrail.setMatrixAt(i,_tm.makeScale(0,0,0));
 function updSmoke(dt){
   if(smokeOn&&mode==='fly'&&!ac.ground&&ac.ias>10){smokeAcc+=dt;while(smokeAcc>=SMOKE_EVERY){smokeAcc-=SMOKE_EVERY;const q=SMK[smokeI];smokeI=(smokeI+1)%SMOKE_N;
-    q.t=0;q.p.copy(_tail.set(0,.2,4.8).applyQuaternion(ac.q).add(ac.pos)).addScaledVector(ac.vel,-smokeAcc);q.v.copy(WIND).multiplyScalar(.6);q.v.y=.25;}}
+    q.t=0;q.p.copy(_tail.set(0,.2,4.8).applyQuaternion(ac.q).add(ac.pos)).addScaledVector(ac.vel,-smokeAcc);q.v.copy(WIND).multiplyScalar(.3);q.v.y=.12;}}
   let any=false;
   for(let i=0;i<SMOKE_N;i++){const q=SMK[i];if(q.t<0)continue;any=true;q.t+=dt;if(q.t>SMOKE_LIFE){q.t=-1;smokeTrail.setMatrixAt(i,_tm.makeScale(0,0,0));continue;}
-    q.p.addScaledVector(q.v,dt);const u=q.t/SMOKE_LIFE,sc=(.9+Math.sqrt(q.t)*1.1)*(u>.85?(1-u)/.15:1);
+    q.p.addScaledVector(q.v,dt);const u=q.t/SMOKE_LIFE,sc=(1.7+Math.min(Math.sqrt(q.t)*1.5,9))*(u>.88?(1-u)/.12:1);
     _tq.setFromAxisAngle(_wy,q.r+q.t*.1);smokeTrail.setMatrixAt(i,_tm.compose(q.p,_tq,_ts.setScalar(sc)));}
-  if(any)smokeTrail.instanceMatrix.needsUpdate=true;}
+  if(any)smokeTrail.instanceMatrix.needsUpdate=true;
+  const T=TOD[tod],U=smokeMat.uniforms;U.uTint.value=clamp(T.sunI*.55+T.hemiI*.55,.3,1.05);U.fogNear.value=scene.fog.near;U.fogFar.value=scene.fog.far;}
 
 /* ---- searchlight ---- */
 let searchOn=false;
@@ -110,8 +120,26 @@ $('swSearch').addEventListener('click',()=>{searchOn=!searchOn;snd.flick();updFu
 $('swSmoke').addEventListener('click',()=>{smokeOn=!smokeOn;snd.flick();if(smokeOn)snd.hiss(.5);updFunUI();if(smokeOn)tip('smoke','Smoke on! It hangs in the air for a while, so you can draw loops and letters in the sky.');});
 $('swFloat').addEventListener('click',()=>{setFloats(!floatsOn);});
 $('micBtn').addEventListener('pointerdown',e=>{e.preventDefault();keyMic();});
+/* ---- the horn: a little double honk. Folk in town, at drop camps, and the errand goats and sheep nearby jump and
+   turn to look up at you; Biscuit joins in ---- */
+let honkT=-1;const honkers=[];
+function honk(){if(mode!=='fly'||(honkT>=0&&honkT<.6))return;snd.honk();honkT=0;honkers.length=0;const P=ac.pos,b=$('hornBtn');b.classList.add('honk');setTimeout(()=>b.classList.remove('honk'),550);
+  const near=(x,y,z)=>Math.hypot(x-P.x,z-P.z)<420&&P.y-y<320;
+  for(const o of (window.FOLK||[])){o.updateMatrixWorld();const w=o.getWorldPosition(_so);if(near(w.x,w.y,w.z))honkers.push({o,mv:true,ph:Math.random()*.35});}
+  for(const set of ['goats','sheep'])for(const f of (FINDS[set]||[]))if(f.obj&&near(f.x,f.y,f.z))honkers.push({o:f.obj,mv:false,y0:f.obj.position.y,ph:Math.random()*.35});
+  for(const [d,s] of SITES)if(s.react<0&&near(d.x,d.y,d.z))honkers.push({o:s.man,mv:false,y0:s.man.position.y,ph:.1});
+  const n=honkers.length;
+  if(n)toast(n===1?'Honk honk! Someone down there jumps and looks up.':`Honk honk! ${n} down there jump and look up.`,2);
+  setTimeout(()=>{if(mode==='fly'&&settings.dog!==false){dog.bark=1.3;snd.woof();}},520);
+  if(n>=3)goal('honk',true);}
+function updHonk(dt){if(honkT<0)return;honkT+=dt;
+  for(const h of honkers){const t=honkT-h.ph,hop=t>0&&t<1.8?Math.abs(Math.sin(t*7.5))*1.4*(1-t/1.8):0;
+    if(h.mv)h.o.position.y+=hop;else h.o.position.y=h.y0+hop;
+    if(t>0&&t<1.8){const w=h.o.getWorldPosition(_so);h.o.rotation.y=Math.atan2(ac.pos.x-w.x,ac.pos.z-w.z);}}
+  if(honkT>2.4){for(const h of honkers)if(!h.mv)h.o.position.y=h.y0;honkers.length=0;honkT=-1;}}
+$('hornBtn').addEventListener('pointerdown',e=>{e.preventDefault();honk();});
 function resetSwitches(){smokeOn=false;floatsOn=false;ac.floats=0;floatG.visible=false;micBusy=false;updFunUI();}
-function updSwitchesFx(dt){updRunwayLights(dt);updSmoke(dt);updSearch(dt);updFloats(dt);}
+function updSwitchesFx(dt){updHonk(dt);updRunwayLights(dt);updSmoke(dt);updSearch(dt);updFloats(dt);}
 updFunUI();
 
 /* ---- keep the sound alive: phones suspend the audio engine when the screen locks or the app goes to the background

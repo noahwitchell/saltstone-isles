@@ -47,6 +47,7 @@ const GOALS=[
   {id:'bullseye',name:'Bullseye',hint:'Land a parcel within 5 m of the middle of a drop target.'},
   {id:'drops',name:'Air mail',hint:'Deliver ten air drops.'},
   {id:'floatplane',name:'Splashdown',hint:'Pull the floats and land on the water.'},
+  {id:'honk',name:'Hello down there',hint:'Honk the horn at three or more people at once.'},
   {id:'errand',name:'Good neighbour',hint:'Finish an errand for an islander.'},
   {id:'errands',name:'Everybody\'s favourite',hint:'Finish every islander\'s errand.'},
 ];
@@ -698,7 +699,7 @@ $('mapc').addEventListener('click',()=>{if(mode==='fly'){mode='paused';bigMap();
 const keys={};
 addEventListener('keydown',e=>{keys[e.code]=true;if($('chartOv')&&(e.code==='Escape'||e.code==='KeyM')){closeChart();return;}if(mode!=='fly')return;
   if(e.code==='KeyF')setFlaps((ac.flaps+1)%3);if(e.code==='KeyV')$('view').click();if(e.code==='KeyL')toggleLook();if(e.code==='KeyG')doDrop();if(e.code==='KeyB')bOn();if(e.code==='KeyM'){mode='paused';bigMap();}
-  if(e.code==='KeyC')$('swCarb').click();if(e.code==='KeyT')recenterTilt();if(e.code==='KeyH')$('swLight').click();if(e.code==='KeyJ')$('swSearch').click();if(e.code==='KeyK')$('swSmoke').click();if(e.code==='KeyO')$('swFloat').click();if(e.code==='KeyR')keyMic();
+  if(e.code==='KeyC')$('swCarb').click();if(e.code==='KeyT')recenterTilt();if(e.code==='KeyH')$('swLight').click();if(e.code==='KeyJ')$('swSearch').click();if(e.code==='KeyK')$('swSmoke').click();if(e.code==='KeyO')$('swFloat').click();if(e.code==='KeyR')keyMic();if(e.code==='KeyN')honk();
   if(e.code==='Escape'||e.code==='KeyP')openMenu();if(e.code.startsWith('Arrow'))e.preventDefault();});
 addEventListener('keyup',e=>{keys[e.code]=false;if(e.code==='KeyB')bOff();});
 const kb={p:0,r:0};
@@ -736,7 +737,8 @@ const snd={ctx:null,
   burst(v,lp,dur){if(!this.ctx)return;const c=this.ctx,s=c.createBufferSource();s.buffer=this.buf;const f=c.createBiquadFilter();f.type='lowpass';f.frequency.value=lp;const g=c.createGain(),t=c.currentTime;
     g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+dur);s.connect(f);f.connect(g);g.connect(this.master);s.start(t,Math.random());s.stop(t+dur+.05);},
   beep(f){if(!this.ctx)return;const c=this.ctx,o=c.createOscillator(),g=c.createGain(),t=c.currentTime;o.type='triangle';o.frequency.value=f;g.gain.setValueAtTime(.08,t);g.gain.exponentialRampToValueAtTime(.001,t+.18);o.connect(g);g.connect(this.master);o.start(t);o.stop(t+.2);},
-  thump(v=1){this.burst(.6*v,260,.25);},crash(){this.burst(.5,900,1.2);},click(){this.burst(.25,3000,.03);},squelch(){this.burst(.3,5200,.07);setTimeout(()=>this.burst(.12,2600,.05),70);},hiss(v=1){this.burst(.45*v,3600,.9);setTimeout(()=>this.burst(.3*v,900,.15),650);},flick(){this.burst(.4,7000,.012);setTimeout(()=>this.burst(.22,2200,.025),22);},clunk(){this.burst(.35,1400,.05);setTimeout(()=>this.burst(.25,600,.08),40);},
+  thump(v=1){this.burst(.6*v,260,.25);},crash(){this.burst(.5,900,1.2);},click(){this.burst(.25,3000,.03);},honk(){if(!this.ctx)return;const c=this.ctx,t0=c.currentTime+.02;for(let k=0;k<2;k++){const t=t0+k*.27,g=c.createGain(),lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=2200;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.22,t+.015);g.gain.setValueAtTime(.22,t+.17);g.gain.linearRampToValueAtTime(0,t+.21);lp.connect(g);g.connect(this.master);
+    for(const f of [415,523]){const o=c.createOscillator();o.type='square';o.frequency.setValueAtTime(f*(k?1:1.02),t);o.frequency.linearRampToValueAtTime(f*.97,t+.2);o.connect(lp);o.start(t);o.stop(t+.25);}}},squelch(){this.burst(.3,5200,.07);setTimeout(()=>this.burst(.12,2600,.05),70);},hiss(v=1){this.burst(.45*v,3600,.9);setTimeout(()=>this.burst(.3*v,900,.15),650);},flick(){this.burst(.4,7000,.012);setTimeout(()=>this.burst(.22,2200,.025),22);},clunk(){this.burst(.35,1400,.05);setTimeout(()=>this.burst(.25,600,.08),40);},
   setOn(v){if(this.master)this.master.gain.value=v?.5:0;if(this.ctx&&this.ctx.state==='suspended')this.ctx.resume();}};
 
 /* ---------- the radio: five generative stations (all WebAudio), one dial on the flight screen ---------- */

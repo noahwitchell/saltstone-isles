@@ -126,7 +126,7 @@ var townSpots=[];
      tr.scale.setScalar(1.4);mover(tr,[[p.x-p.ux*40,p.z-p.uz*40],[p.x+p.ux*40,p.z+p.uz*40],[p.x+p.ux*40-p.uz*6,p.z+p.uz*40+p.ux*6],[p.x-p.ux*40-p.uz*6,p.z-p.uz*40+p.ux*6],[p.x-p.ux*40-p.uz*12,p.z-p.uz*40+p.ux*12],[p.x+p.ux*40-p.uz*12,p.z+p.uz*40+p.ux*12]],2.2,.1,0);}}
   // townsfolk strolling round the square and along the street
   const folkC=[0xd2493c,0x3f6f8f,0xe8a33a,0x3f8f5a,0x7a4ab8,0xf8f4ee,0xe0607a,0x8a5a3a];
-  const person=i=>{const g=new THREE.Mesh(merge([{geo:BOX(.7,1.1,.45),m:M([0,1.25,0]),color:folkC[i%8]},{geo:BOX(.5,.5,.5),m:M([0,2.1,0]),color:[0xf0c7a4,0xc98c5e,0x8a5a3a][i%3]},{geo:BOX(.6,.8,.4),m:M([0,.4,0]),color:0x3a3440}]),toon({},false));g.scale.setScalar(1.35);return g;};
+  const person=i=>{const g=new THREE.Mesh(merge([{geo:BOX(.7,1.1,.45),m:M([0,1.25,0]),color:folkC[i%8]},{geo:BOX(.5,.5,.5),m:M([0,2.1,0]),color:[0xf0c7a4,0xc98c5e,0x8a5a3a][i%3]},{geo:BOX(.6,.8,.4),m:M([0,.4,0]),color:0x3a3440}]),toon({},false));g.scale.setScalar(1.35);(window.FOLK||(window.FOLK=[])).push(g);return g;};
   for(let i=0;i<14;i++){let pts;if(i<6){const r=8+(i%3)*2.5,c=at(0,-19);pts=[...Array(9)].map((_,k)=>{const a=k/8*TAU*(i%2?1:-1)+i;return [c.x+Math.cos(a)*r,c.z+Math.sin(a)*r];});}
     else{const a0=-110+hash2(i,1,5)*80,s=(i%2?1:-1)*3;pts=[P2(at(a0,s)),P2(at(a0+60+hash2(i,2,5)*60,s))];}
     mover(person(i),pts,.9+hash2(i,3,5)*.5,.1,hash2(i,4,5));}
