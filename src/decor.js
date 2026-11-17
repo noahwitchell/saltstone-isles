@@ -64,6 +64,6 @@ function hangarCard(){const rows=DECOR.map(d=>{const e=decorEarned(d);
     return e?`<div class="tog"><div><b>${d.name}</b><span>${d.desc}</span></div><button data-dec="${d.id}" class="${decorOn(d)?'on':''}">${decorOn(d)?'ON':'OFF'}</button></div>`
       :`<div class="tog"><div><b style="opacity:.55">???</b><span>Finish ${CHARS[ERRANDS[d.from].giver].name.split(' ')[0]}'s errand to earn this one.</span></div><button disabled style="opacity:.35">-</button></div>`;}).join('');
   const n=DECOR.filter(decorEarned).length;
-  showCard(`<h2>The hangar</h2><div class="sub">${n} OF ${DECOR.length} KEEPSAKES · GIFTS FROM THE ISLANDERS</div>${n?'':'<p>Nothing here yet. Islanders give you a keepsake when you finish an errand for them, and you can hang it on the plane.</p>'}${rows}`,[['Back',back,true]]);
-  $('cardBody').querySelectorAll('[data-dec]').forEach(b=>b.addEventListener('click',()=>{const id=b.dataset.dec,d=DECOR.find(q=>q.id===id);settings.decor[id]=!decorOn(d);saveS();applyDecor();b.classList.toggle('on',decorOn(d));b.textContent=decorOn(d)?'ON':'OFF';snd.click();}));}
+  showCard(`<h2>The hangar</h2>${typeof petPanel==='function'?petPanel():''}<h3>KEEPSAKES · ${n} OF ${DECOR.length}</h3><div class="sub">GIFTS FROM THE ISLANDERS</div>${n?'':'<p>Nothing here yet. Islanders give you a keepsake when you finish an errand for them, and you can hang it on the plane.</p>'}${rows}`,[['Back',back,true]]);
+  $('cardBody').querySelectorAll('[data-dec]').forEach(b=>b.addEventListener('click',()=>{const id=b.dataset.dec,d=DECOR.find(q=>q.id===id);settings.decor[id]=!decorOn(d);saveS();applyDecor();b.classList.toggle('on',decorOn(d));b.textContent=decorOn(d)?'ON':'OFF';snd.click();}));if(typeof wirePetPanel==='function')wirePetPanel();}
 applyDecor();

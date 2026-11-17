@@ -598,7 +598,8 @@ function goal(id,quiet){if(log.goals[id])return false;log.goals[id]=Date.now();s
 
 /* ---------- tips & toast ---------- */
 let toastT=0;
-function toast(msg,sec=3){const t=$('toast');t.textContent=msg;fixNums(t);t.hidden=false;toastT=sec;t.classList.toggle('up',!$('stallBan').hidden);}
+const petSay=s=>typeof petName==='function'&&petName()!=='Biscuit'?String(s).replace(/Biscuit/g,petName()):s;
+function toast(msg,sec=3){msg=petSay(msg);const t=$('toast');t.textContent=msg;fixNums(t);t.hidden=false;toastT=sec;t.classList.toggle('up',!$('stallBan').hidden);}
 const tipQ=[];
 function tip(id,text,delay=0){if(!settings.tips||log.tips[id]||tipQ.some(q=>q.id===id))return;tipQ.push({id,text,delay});}
 function runTips(dt){if(!tipQ.length||toastT>0.5)return;const q=tipQ[0];q.delay-=dt;if(q.delay>0)return;tipQ.shift();log.tips[q.id]=1;saveL();toast(q.text,6.5);}
@@ -960,7 +961,7 @@ function fixNums(root){const tw=document.createTreeWalker(root,NodeFilter.SHOW_T
 /* ---------- menus ---------- */
 /* menus: "Back"-type buttons sit in a bar at the top of the card; everything else stays at the bottom */
 const isBackBtn=(l,fn)=>fn===back||l==='Back to flying'||l==='All pages'||l==='Resume'||l==='Title screen';
-function showCard(html,buttons,opt){$('cardBody').innerHTML='<div class="topbar"></div>'+html+'<div class="btns'+(opt&&opt.grid?' grid':'')+'"></div>';$('cardBody').classList.remove('wide');const b=$('cardBody').querySelector('.btns:last-child'),tb=$('cardBody').querySelector('.topbar');
+function showCard(html,buttons,opt){html=petSay(html);$('cardBody').innerHTML='<div class="topbar"></div>'+html+'<div class="btns'+(opt&&opt.grid?' grid':'')+'"></div>';$('cardBody').classList.remove('wide');const b=$('cardBody').querySelector('.btns:last-child'),tb=$('cardBody').querySelector('.topbar');
   (buttons||[]).forEach(([l,fn,p])=>{const el=document.createElement('button');const top=isBackBtn(l,fn);el.textContent=top&&l!=='Title screen'?'‹ '+(l==='Done'?'Back':l):l;if(l==='Title screen'){el.style.marginLeft='auto';el.style.setProperty('--bc','#eaa6a6');el.style.background='#eaa6a6';}if(p&&!top)el.className='primary';if(top)el.classList.add('backbtn');if(opt&&opt.colors&&opt.colors[l])el.style.setProperty('--bc',opt.colors[l]);el.addEventListener('click',fn);(top?tb:b).appendChild(el);});
   if(!tb.children.length)tb.remove();if(!b.children.length)b.remove();$('modal').hidden=false;$('cardBody').scrollTop=0;scriptify($('cardBody'));fixNums($('cardBody'));}
 function hideModal(){$('modal').hidden=true;}
@@ -1156,7 +1157,7 @@ function updateVisuals(dt,t){
     blob.material.opacity=(settings.shadows?.42:.55)*(1-smooth(4,200,agl))+(ac.ground?.08:0);}
   if(dest){beacon.visible=mode==='fly'||mode==='paused';beacon.position.set(dest.x,dest.elev,dest.z);const d=Math.hypot(dest.x-ac.pos.x,dest.z-ac.pos.z);beacon.material.opacity=.13*smooth(500,1600,d);}
   spot.intensity=ac.light&&mode!=='title'?(TOD[tod].lights>0?1.35:.3):0;
-  updPAPI();updGates();updWind(dt);updFog();updDrops(dt);updSwitchesFx(dt);updDecor(dt,t);updPanels();updDog(dt,t);updSpark(dt,t);
+  updPAPI();updGates();updWind(dt);updFog();updDrops(dt);updSwitchesFx(dt);updDecor(dt,t);updPanels();updDog(dt,t);if(typeof updPet==='function')updPet(t);updSpark(dt,t);
   {const fb=(lookDown?64:camMode==='chase'?58:70)+(ac.bst||0)*6;if(Math.abs(camera.fov-fb)>.05){camera.fov=fb;camera.updateProjectionMatrix();}}
   sunL.castShadow=settings.shadows;const fo=mode==='title'?ac.pos:camera.position;
   axes();_sc.set(fo.x+_f.x*SHADOW_HALF*.5,surfH(fo.x,fo.z),fo.z+_f.z*SHADOW_HALF*.5);snapShadow(_sc);sunL.target.position.copy(_sc);sunL.position.copy(_sc).addScaledVector(sunDir,1500);
