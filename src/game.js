@@ -30,7 +30,8 @@ const GOALS=[
   {id:'land_kettle',name:'Land at Crater Shelf',hint:'The cinder strip on the volcano, far to the northeast.'},
   {id:'land_farhold',name:'Land at Farhold',hint:'The lit runway on the foggy island far to the northwest.'},
   {id:'hopper',name:'Island hopper',hint:'Land at every airfield in the islands.'},
-  {id:'tailwind',name:'Riding the wind',hint:'Stack all three tailwinds into one gale.'},
+  {id:'tailwind',name:'Riding the wind',hint:'Stack three tailwinds into one gale.'},
+  {id:'gale5',name:'Full gale',hint:'Stack all five tailwinds at once.'},
   {id:'trip',name:'Make a trip',hint:'Take off from one field and land at another.'},
   {id:'butter',name:'Butter landing',hint:'Touch down on a runway at under 90 ft/min.'},
   {id:'checklist',name:'By the book',hint:'Land with the whole before-landing checklist done.'},
@@ -51,7 +52,7 @@ const GOALS=[
   {id:'errand',name:'Good neighbour',hint:'Finish an errand for an islander.'},
   {id:'errands',name:'Everybody\'s favourite',hint:'Finish every islander\'s errand.'},
 ];
-const DESC_ARCH={sisters:'Twin Sisters. Grass shelf beside two rock spires. Gusty off the rocks.',cleft:'Cleft Isle. Dirt strip on the plateau, beside a canyon.',apple:'Applecross. Paved, among the orchards. Easy and friendly.',
+const DESC_ARCH={hollow:'Hollowpeak. Grass on the western shoulder of the big green peak.',oyster:'Oyster Bay. Sand strip along the back of the crescent, calm bay beside it.',ridgeback:'Ridgeback. Dirt strip under the long ridge. Rough air when the wind crosses it.',fern:'Fernhollow. Grass in a wooded valley. Trees close on both sides.',bracken:'Brackenmoor. Long paved runway on the open moor, far out west.',sunrise:'Sunrise Cay. Hard sand through the palms.',anvil:'The Anvil. Dirt strip on top of a red rock tower. Cliffs at both ends.',creel:'Creel Isle. Grass strip above the fishing hamlet.',fiddler:'Fiddler\'s Reach. Grass along the inner shore of the crescent.',daybreak:'Daybreak Head. Paved runway on the headland, the farthest east.',sisters:'Twin Sisters. Grass shelf beside two rock spires. Gusty off the rocks.',cleft:'Cleft Isle. Dirt strip on the plateau, beside a canyon.',apple:'Applecross. Paved, among the orchards. Easy and friendly.',
   salt:'The Saltpans. Hard white salt, flat as a table. Glare at noon.',mirror:'Looking-Glass Isle. Grass beside the lake rim. Short-ish.',mesa:'Starwatch Mesa. Paved, on top of the mesa. Cliffs at both ends.',
   cascade:'Cascade Isle. Grass terrace under the cliffs. Mind the trees.',lantern:'Lantern Key. Paved, low and lit. Lovely at night.',quarry:'Greystone. Dirt strip on the quarry hill. Dusty.',windward:'Windward. Grass on the ridge flank. Always a breeze.'};
 const DESC={harbor:'Ferrow. Long paved runway by the village. The friendly one.',light:'Gull Point. Grass strip on the clifftop, sea at both ends.',ridge:'Tallpine. Short dirt strip on a mountain saddle. Slow down early.',
@@ -303,19 +304,19 @@ function updGates(){
 /* tailwind button: three charges, each a 6 s gust that carries you along fast and holds your height.
    Tap again while a gust is blowing and they stack: two gusts go faster, three faster still.
    Charges refill one every 5 s once every gust has died down. */
-const BOOST_V=55,BOOST_T=6,WIND_N=3,WIND_CD=5,STACK=[0,1,1.7,2.25];
+const BOOST_V=55,BOOST_T=6,WIND_N=5,WIND_CD=5,STACK=[0,1,1.7,2.25,2.75,3.2];
 let windCharges=WIND_N,windCD=0,windUiT=0,windWait=WIND_CD,windPeak=0;
 const glideAlt=(s,d)=>s.elev+AC.gearH+Math.tan(4*DEG)*d;
 function windBlock(){if(ac.ground||mode!=='fly')return 'IN THE AIR';const agl=ac.pos.y-AC.gearH-surfH(ac.pos.x,ac.pos.z);if(agl<40)return 'TOO LOW';
   return null;}
 function useWind(){const b=windBlock();
-  if(windCharges<=0){toast(ac.gusts&&ac.gusts.length?'All three are blowing. Ride it out.':`The wind is gathering. Next one in ${Math.ceil(windCD)} s.`,1.4);return;}
+  if(windCharges<=0){toast(ac.gusts&&ac.gusts.length?'All five are blowing. Ride it out, or hold BRAKE to stop it.':`The wind is gathering. Next one in ${Math.ceil(windCD)} s.`,1.4);return;}
   if(b){toast(b==='TOO LOW'?'Climb a little first. Tailwinds need some height.':'Tailwinds work once you\'re flying.',1.8);return;}
   if(!ac.gusts)ac.gusts=[];ac.gusts.push(BOOST_T);windCharges--;const n=ac.gusts.length;windPeak=Math.max(windPeak,n);
   windWait=WIND_CD;windCD=windWait;ac.boostT=Math.max(...ac.gusts);
   snd.beep(1320+n*180);setTimeout(()=>snd.beep(1760+n*220),90);
-  toast(n>1?`Tailwind ×${n}!${n===3?' Full gale.':''}`:windCharges?`Tailwind! ${windCharges} left.`:'Last tailwind for now.',1.4);
-  if(!log.goals.tailwind&&n===3)goal('tailwind');updWindUI();}
+  toast(n>1?`Tailwind ×${n}!${n===5?' FULL GALE!':n===3?' A proper gale.':''}`:windCharges?`Tailwind! ${windCharges} left.`:'Last tailwind for now.',1.4);
+  if(!log.goals.tailwind&&n>=3)goal('tailwind');if(n===5)goal('gale5');if(n>=2)tip('windstop','Going too fast? Hold BRAKE in the air and the tailwind stops at once.',1);updWindUI();}
 function updWindUI(){const b=$('wind');if(!b)return;const blk=windBlock(),cool=windCharges<=0,n=(ac.gusts||[]).length,fill=windCharges<WIND_N&&!n;
   b.innerHTML=`<img src="${RICON.wind}" alt="Tailwind">${n>1?'×'+n:''}<span>${'●'.repeat(windCharges)+'○'.repeat(WIND_N-windCharges)}</span>`;
   b.classList.toggle('cool',cool&&!n);b.classList.toggle('off',!!blk&&!cool);b.classList.toggle('on',n>0);
@@ -326,9 +327,12 @@ function updWind(dt){const blowing=ac.gusts&&ac.gusts.length;
 function stepBoost(dt){
   if(!ac.gusts)ac.gusts=[];const agl=ac.pos.y-AC.gearH-surfH(ac.pos.x,ac.pos.z);
   if(agl<30||ac.ground)ac.gusts.length=0;
+  /* holding BRAKE in the air calls off the tailwind straight away (and the extra speed bleeds off fast) */
+  if(ac.brakeHeld&&!ac.ground&&ac.gusts.length){ac.gusts.length=0;ac.windStop=1.2;snd.burst(.35,900,.5);toast('Tailwind off.',1.2);}
+  if(ac.windStop>0)ac.windStop-=dt;
   for(let i=ac.gusts.length-1;i>=0;i--){ac.gusts[i]-=dt;if(ac.gusts[i]<=0)ac.gusts.splice(i,1);}
   ac.boostT=ac.gusts.length?Math.max(...ac.gusts):0;const tgt=STACK[ac.gusts.length];
-  ac.bst=lerp(ac.bst||0,tgt,1-Math.exp(-dt*(tgt>(ac.bst||0)?2.5:1.1)));
+  ac.bst=lerp(ac.bst||0,tgt,1-Math.exp(-dt*(tgt>(ac.bst||0)?2.5:ac.windStop>0?5:1.1)));
   if(ac.bst<.005||ac.ground)return;
   axes();const hl=Math.hypot(_f.x,_f.z);if(hl<.2)return;
   ac.pos.x+=_f.x/hl*BOOST_V*ac.bst*dt;ac.pos.z+=_f.z/hl*BOOST_V*ac.bst*dt;
@@ -737,7 +741,8 @@ const snd={ctx:null,
   burst(v,lp,dur){if(!this.ctx)return;const c=this.ctx,s=c.createBufferSource();s.buffer=this.buf;const f=c.createBiquadFilter();f.type='lowpass';f.frequency.value=lp;const g=c.createGain(),t=c.currentTime;
     g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+dur);s.connect(f);f.connect(g);g.connect(this.master);s.start(t,Math.random());s.stop(t+dur+.05);},
   beep(f){if(!this.ctx)return;const c=this.ctx,o=c.createOscillator(),g=c.createGain(),t=c.currentTime;o.type='triangle';o.frequency.value=f;g.gain.setValueAtTime(.08,t);g.gain.exponentialRampToValueAtTime(.001,t+.18);o.connect(g);g.connect(this.master);o.start(t);o.stop(t+.2);},
-  thump(v=1){this.burst(.6*v,260,.25);},crash(){this.burst(.5,900,1.2);},click(){this.burst(.25,3000,.03);},honk(){if(!this.ctx)return;const c=this.ctx,t0=c.currentTime+.02;for(let k=0;k<2;k++){const t=t0+k*.27,g=c.createGain(),lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=2200;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.22,t+.015);g.gain.setValueAtTime(.22,t+.17);g.gain.linearRampToValueAtTime(0,t+.21);lp.connect(g);g.connect(this.master);
+  thump(v=1){this.burst(.6*v,260,.25);},crash(){this.burst(.5,900,1.2);},click(){this.burst(.25,3000,.03);},toot(){if(!this.ctx)return;const c=this.ctx;for(let k=0;k<2;k++){const t=c.currentTime+.02+k*.75,g=c.createGain(),lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=700;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.3,t+.08);g.gain.setValueAtTime(.3,t+.5);g.gain.linearRampToValueAtTime(0,t+.65);lp.connect(g);g.connect(this.master);
+    for(const f of [k?98:110,k?147:165]){const o=c.createOscillator();o.type='sawtooth';o.frequency.value=f;o.connect(lp);o.start(t);o.stop(t+.7);}}},honk(){if(!this.ctx)return;const c=this.ctx,t0=c.currentTime+.02;for(let k=0;k<2;k++){const t=t0+k*.27,g=c.createGain(),lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=2200;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.22,t+.015);g.gain.setValueAtTime(.22,t+.17);g.gain.linearRampToValueAtTime(0,t+.21);lp.connect(g);g.connect(this.master);
     for(const f of [415,523]){const o=c.createOscillator();o.type='square';o.frequency.setValueAtTime(f*(k?1:1.02),t);o.frequency.linearRampToValueAtTime(f*.97,t+.2);o.connect(lp);o.start(t);o.stop(t+.25);}}},squelch(){this.burst(.3,5200,.07);setTimeout(()=>this.burst(.12,2600,.05),70);},hiss(v=1){this.burst(.45*v,3600,.9);setTimeout(()=>this.burst(.3*v,900,.15),650);},flick(){this.burst(.4,7000,.012);setTimeout(()=>this.burst(.22,2200,.025),22);},clunk(){this.burst(.35,1400,.05);setTimeout(()=>this.burst(.25,600,.08),40);},
   setOn(v){if(this.master)this.master.gain.value=v?.5:0;if(this.ctx&&this.ctx.state==='suspended')this.ctx.resume();}};
 
@@ -955,13 +960,15 @@ function fixNums(root){const tw=document.createTreeWalker(root,NodeFilter.SHOW_T
 /* ---------- menus ---------- */
 /* menus: "Back"-type buttons sit in a bar at the top of the card; everything else stays at the bottom */
 const isBackBtn=(l,fn)=>fn===back||l==='Back to flying'||l==='All pages'||l==='Resume';
-function showCard(html,buttons){$('cardBody').innerHTML='<div class="topbar"></div>'+html+'<div class="btns"></div>';$('cardBody').classList.remove('wide');const b=$('cardBody').querySelector('.btns:last-child'),tb=$('cardBody').querySelector('.topbar');
-  (buttons||[]).forEach(([l,fn,p])=>{const el=document.createElement('button');const top=isBackBtn(l,fn);el.textContent=top?'‹ '+(l==='Done'?'Back':l):l;if(p&&!top)el.className='primary';if(top)el.classList.add('backbtn');el.addEventListener('click',fn);(top?tb:b).appendChild(el);});
+function showCard(html,buttons,opt){$('cardBody').innerHTML='<div class="topbar"></div>'+html+'<div class="btns'+(opt&&opt.grid?' grid':'')+'"></div>';$('cardBody').classList.remove('wide');const b=$('cardBody').querySelector('.btns:last-child'),tb=$('cardBody').querySelector('.topbar');
+  (buttons||[]).forEach(([l,fn,p])=>{const el=document.createElement('button');const top=isBackBtn(l,fn);el.textContent=top?'‹ '+(l==='Done'?'Back':l):l;if(p&&!top)el.className='primary';if(top)el.classList.add('backbtn');if(opt&&opt.colors&&opt.colors[l])el.style.setProperty('--bc',opt.colors[l]);el.addEventListener('click',fn);(top?tb:b).appendChild(el);});
   if(!tb.children.length)tb.remove();if(!b.children.length)b.remove();$('modal').hidden=false;$('cardBody').scrollTop=0;scriptify($('cardBody'));fixNums($('cardBody'));}
 function hideModal(){$('modal').hidden=true;}
 function back(){hideModal();if(mode==='title')$('title').hidden=false;else if(mode==='paused'||mode==='card')openMenu();}
 function openMenu(){if(mode==='fly')mode='paused';showCard(`<h2>Paused</h2><div class="sub">${dest?'HEADING FOR '+dest.name.toUpperCase():''}${mail.active?' · '+mail.bag.length+' IN THE BAG':''} · ${log.stamps} STAMPS</div>`,[
-  ['Resume',()=>{hideModal();mode='fly';},true],...(mail.active?[['Mail bag',()=>mailCard()]]:[]),["Bea's chart",()=>bigMap()],["Bea's logbook",()=>bea(-1)],['Practice a landing',()=>picker('practice')],['Start at a field',()=>picker('start')],['Your logbook',()=>logbook()],['Settings',()=>settingsCard()],['Title screen',()=>{hideModal();toTitle();}]]);}
+  ['Resume',()=>{hideModal();mode='fly';},true],...(mail.active?[['Mail bag',()=>mailCard()]]:[]),["Bea's chart",()=>bigMap()],["Bea's logbook",()=>bea(-1)],['Practice a landing',()=>picker('practice')],['Start at a field',()=>picker('start')],['Your logbook',()=>logbook()],['Settings',()=>settingsCard()],['Title screen',()=>{hideModal();toTitle();}]],{grid:true,colors:MENU_COL});$('cardBody').classList.add('wide');}
+/* each pause-menu button gets its own colour so they're easy to tell apart at a glance */
+const MENU_COL={'Mail bag':'#f2c25a',"Bea's chart":'#7cc4d4',"Bea's logbook":'#a6d38a','Practice a landing':'#c4aee6','Start at a field':'#f0a77c','Your logbook':'#9fc4ef','Settings':'#cfc6b4','Title screen':'#eaa6a6'};
 function picker(kind){
   const items=STRIPS.map(s=>{const F=log.fields[s.id];return `<button class="item" data-id="${s.id}"><span><b>${s.name}</b><span class="d">${DESC[s.id]}</span></span><span class="r">${F&&F.best?stars(F.best):'NOT YET'}</span></button>`;}).join('');
   showCard(`<h2>${kind==='practice'?'Practice a landing':'Start at a field'}</h2><div class="sub">${kind==='practice'?'START 1.5 KM OUT, LINED UP, ON THE GLIDE PATH':'START ON THE RUNWAY, ENGINE AT IDLE'}</div><div class="list">${items}</div>`,[['Back',back]]);
@@ -1066,14 +1073,15 @@ function approachMeter(){
   const gl=glide(dest),agl=(ac.pos.y-AC.gearH-surfH(ac.pos.x,ac.pos.z))*FT,over=stripAt(ac.pos.x,ac.pos.z,25);
   const w=LW,h=LH,S=Math.max(16,Math.min(Math.round(h*.12),28)),cx=Math.round(w/2),cy=Math.round(h*.3),K=rgba(0x241c2e);
   const txt=(t,x,y,c,left)=>{pb.text(t,x+1,y+1,K,1,!left);pb.text(t,x,y,c,1,!left);};
-  if(agl<38&&(over||(gl.active&&gl.along<350))){
+  /* landing only: not on the way up after takeoff (climbing, or just airborne) */
+  if(agl<38&&ac.vel.y<.4&&airT>6&&(over||(gl.active&&gl.along<350))){
     // FLARE: nose angle and sink rate, each with a green target band
     axes();const pitch=Math.asin(clamp(_f.y,-1,1))/DEG,sink=-ac.vel.y*196.85,bw=S*3,x0=cx-Math.round(bw/2),y0=cy-8;
     const bar=(y,lo,hi,g0,g1,v,lab,ok)=>{const X=t=>x0+Math.round((t-lo)/(hi-lo)*bw);pb.rect(x0-1,y-1,bw+2,6,K);pb.rect(x0,y,bw,4,C.face);pb.rect(X(g0),y,X(g1)-X(g0),4,C.green);
       const vx=clamp(X(v),x0,x0+bw-2);pb.rect(vx-2,y-3,5,10,K);pb.rect(vx-1,y-2,3,8,ok?C.white:C.orange);txt(lab,x0-19,y,C.tick,true);};
     const pOk=pitch>=2&&pitch<=8,sOk=sink<300;
-    txt(pOk&&sOk?'FLARE · GOOD':'FLARE',cx,y0-12,pOk&&sOk?C.green:C.tick);
-    bar(y0,-6,16,2,8,pitch,'NOSE',pOk);bar(y0+14,0,900,0,300,sink,'SINK',sOk);return true;}
+    txt(pOk&&sOk?'FLARE - GOOD':'FLARE',cx,y0-12,pOk&&sOk?C.green:C.tick);
+    bar(y0,-6,16,2,8,pitch,'NOSE',pOk);bar(y0+14,0,900,0,300,sink,'DROP',sOk);return true;}
   if(!gl.active||gl.along>3600)return false;
   // LINE UP: corner brackets, a ring for "on path", and a diamond showing where the path is. Fly toward the diamond.
   const brk=(sx,sy)=>{pb.rect(cx+sx*S-(sx>0?5:0),cy+sy*S,6,1,K);pb.rect(cx+sx*S-(sx>0?5:0),cy+sy*S-1,6,1,C.tick);pb.rect(cx+sx*S,cy+sy*S-(sy>0?5:0),1,6,C.tick);};
@@ -1172,7 +1180,7 @@ function loop(now){
   else acc=0;
   if(toastT>0){toastT-=dt;if(toastT<=0)$('toast').hidden=true;}
   if(callT>0){callT-=dt;if(callT<=0)$('callout').hidden=true;}
-  updateVisuals(dt,t);updateCam(dt,t);cullChunks(camera.position);sky.position.copy(camera.position);
+  updateVisuals(dt,t);updateCam(dt,t);cullChunks(camera.position);waterMat.uniforms.uCamY.value=camera.position.y;sky.position.copy(camera.position);
   renderer.info.reset();renderer.setRenderTarget(rt);renderer.render(scene,camera);const tri=renderer.info.render.triangles,dc=renderer.info.render.calls;renderer.setRenderTarget(null);renderer.render(postScene,postCam);
   drawHUD(dt);
   if(settings.fps){fpsN++;fpsT+=now-(fpsLast||now);fpsLast=now;fpsMin=Math.min(fpsMin,1000/Math.max(now-(fpsPrev||now-16),1));fpsPrev=now;

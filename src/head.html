@@ -152,6 +152,11 @@ button:focus-visible{outline:2px solid #fff;outline-offset:2px}
 .rows .s{color:#c9842a;letter-spacing:2px;white-space:nowrap}
 .btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
 .btns button{font-size:15px}
+/* card buttons are tinted so they stand out from the paper card; the orange one is the main action */
+.card .btns button:not(.primary){background:var(--bc,#d6e4ec);border:2px solid #241c2e33;box-shadow:inset -3px -3px 0 #0000001f,0 3px 0 #0007}
+.card .btns.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+@media (max-width:560px){.card .btns.grid{grid-template-columns:repeat(2,1fr)}}
+.card .btns.grid button{min-height:52px;font-size:16px;text-align:center;display:flex;align-items:center;justify-content:center;padding:6px 8px;color:var(--ink)}
 #title{background:linear-gradient(180deg,rgba(28,22,38,.0) 30%,rgba(28,22,38,.55));place-items:end start;padding-bottom:calc(20px + env(safe-area-inset-bottom,0px))}
 #title .wrap{max-width:560px}
 #title h1{margin:0;font-family:var(--fancy);font-size:54px;line-height:.9;color:var(--paper);text-shadow:4px 4px 0 var(--ink);font-weight:400}

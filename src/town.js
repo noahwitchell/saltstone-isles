@@ -142,14 +142,14 @@ var townSpots=[];
       const i=n++,g=new THREE.Group(),sc=sailC[i%6];
       g.add(new THREE.Mesh(merge([{geo:BOX(2.6,1.1,8),m:M([0,.35,0]),color:hullC[i%5]},{geo:BOX(2.7,.3,8.1),m:M([0,-.1,0]),color:0xf8f4ee},{geo:BOX(1.6,.8,2.2),m:M([0,1.2,1.4]),color:0xe8d8b8},{geo:BOX(.25,12,.25),m:M([0,6.6,-.6]),color:0xe8e4dc},
         {geo:tri(4.4,10.4).rotateY(-Math.PI/2),m:M([0,1.4,-.4]),color:sc},{geo:tri(2.6,8.6).rotateY(Math.PI/2),m:M([0,1.4,-1]),color:sc===0xf8f4ee?0xf0e2a8:0xf8f4ee}]),toon({side:THREE.DoubleSide},false)));
-      g.add(wake());g.scale.setScalar(1.3);scene.add(g);const sp=(.035+rnd()*.025)*(rnd()<.5?1:-1),ph=rnd()*TAU;
-      anims.push(t=>{const q=ph+t*sp;g.position.set(x+Math.cos(q)*r,0,z+Math.sin(q)*r);g.rotation.y=-q+(sp>0?Math.PI:0);g.rotation.z=(sp>0?-1:1)*.12+Math.sin(t*1.1+ph)*.04;});break;}}
+      g.add(wake());g.scale.setScalar(1.3);scene.add(g);const sp=(.035+rnd()*.025)*(rnd()<.5?1:-1),ph=rnd()*TAU,bsc=scareSpot(x,0,z,'sail');
+      anims.push(t=>{const q=ph+t*sp,s=scareOf(bsc,t);g.position.set(x+Math.cos(q)*r,s*Math.abs(Math.sin(t*5))*.8,z+Math.sin(q)*r);g.rotation.y=-q+(sp>0?Math.PI:0);g.rotation.z=(sp>0?-1:1)*.12+Math.sin(t*1.1+ph)*.04+s*Math.sin(t*4.5)*.22;});break;}}
   // fishing boats sitting off the shore with gulls wheeling over them
   const gm=new THREE.MeshBasicMaterial({color:0xf8f4ee,side:THREE.DoubleSide});
   let f=0;for(const S of STRIPS){if(f>=12)break;for(let k=0;k<40;k++){const a=rnd()*TAU,d=300+rnd()*700,x=S.x+Math.cos(a)*d,z=S.z+Math.sin(a)*d;if(!isSea(x,z,-5)||!ringSea(x,z,40))continue;f++;
       const b=new THREE.Mesh(merge([{geo:BOX(3.4,1.6,10),m:M([0,.5,0]),color:[0xd2493c,0x3f6f8f,0x3f8f5a,0xe8a33a][f%4]},{geo:BOX(3.5,.4,10.1),m:M([0,-.2,0]),color:0x2c2833},{geo:BOX(2.4,2.2,3),m:M([0,2.2,2]),color:0xf8f4ee},{geo:BOX(2.5,.3,3.1),m:M([0,3.4,2]),color:0x3f6f8f},
         {geo:BOX(.2,7,.2),m:M([0,4.5,-2.4]),color:0xe8e4dc},{geo:BOX(.15,.15,7),m:M([0,7.2,-5]),color:0xe8e4dc,},{geo:BOX(1.2,.8,1.2),m:M([.6,1.7,-3]),color:0xe8a33a}]),toon({},false));b.scale.setScalar(1.3);b.position.set(x,0,z);const ry=rnd()*TAU;b.rotation.y=ry;scene.add(b);
-      anims.push(t=>{b.position.y=Math.sin(t*1.2+f)*.18;b.rotation.z=Math.sin(t*.9+f)*.05;b.rotation.x=Math.sin(t*.7+f*2)*.03;});addLight(x,4.4,z,0xffe0a0);
+      const fsc=scareSpot(x,0,z,'boat');anims.push(t=>{const s=scareOf(fsc,t);b.position.y=Math.sin(t*1.2+f)*.18+s*Math.abs(Math.sin(t*5))*.6;b.rotation.z=Math.sin(t*.9+f)*.05+s*Math.sin(t*4)*.16;b.rotation.x=Math.sin(t*.7+f*2)*.03;});addLight(x,4.4,z,0xffe0a0);
       const gsc=scareSpot(x,12,z);for(let k=0;k<4;k++){const gg=new THREE.Group(),wl=new THREE.Group(),wr=new THREE.Group();wl.add(new THREE.Mesh(new THREE.PlaneGeometry(2,.7).translate(-1,0,0).rotateX(-Math.PI/2),gm));wr.add(new THREE.Mesh(new THREE.PlaneGeometry(2,.7).translate(1,0,0).rotateX(-Math.PI/2),gm));gg.add(wl,wr);scene.add(gg);
         const rr=10+k*5,ph=k*1.6,hy=12+k*3;anims.push(t=>{const q=ph+t*.4*(k%2?1:-1),s=scareOf(gsc,t),da=k*1.57+.4;gg.position.set(x+Math.cos(q)*rr+Math.cos(da)*s*40,hy+Math.sin(t+k)*2+s*30,z+Math.sin(q)*rr+Math.sin(da)*s*40);gg.rotation.y=-q;const fl=Math.sin(t*(7+16*s)+k)*.5;wl.rotation.z=fl;wr.rotation.z=-fl;});}
       break;}}

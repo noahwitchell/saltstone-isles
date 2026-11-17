@@ -152,6 +152,11 @@ button:focus-visible{outline:2px solid #fff;outline-offset:2px}
 .rows .s{color:#c9842a;letter-spacing:2px;white-space:nowrap}
 .btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
 .btns button{font-size:15px}
+/* card buttons are tinted so they stand out from the paper card; the orange one is the main action */
+.card .btns button:not(.primary){background:var(--bc,#d6e4ec);border:2px solid #241c2e33;box-shadow:inset -3px -3px 0 #0000001f,0 3px 0 #0007}
+.card .btns.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+@media (max-width:560px){.card .btns.grid{grid-template-columns:repeat(2,1fr)}}
+.card .btns.grid button{min-height:52px;font-size:16px;text-align:center;display:flex;align-items:center;justify-content:center;padding:6px 8px;color:var(--ink)}
 #title{background:linear-gradient(180deg,rgba(28,22,38,.0) 30%,rgba(28,22,38,.55));place-items:end start;padding-bottom:calc(20px + env(safe-area-inset-bottom,0px))}
 #title .wrap{max-width:560px}
 #title h1{margin:0;font-family:var(--fancy);font-size:54px;line-height:.9;color:var(--paper);text-shadow:4px 4px 0 var(--ink);font-weight:400}
@@ -664,10 +669,10 @@ const hData=new Uint8Array(NVX*NVZ*4);
 for(let k=0;k<NVX*NVZ;k++){const v=Math.round(clamp((HGT[k]+60)/120,0,1)*65535);hData[k*4]=v>>8;hData[k*4+1]=v&255;hData[k*4+3]=255;}
 const hTex=new THREE.DataTexture(hData,NVX,NVZ,THREE.RGBAFormat);hTex.minFilter=hTex.magFilter=THREE.LinearFilter;hTex.needsUpdate=true;
 const waterMat=new THREE.ShaderMaterial({
-  uniforms:{hTex:{value:hTex},uTime:{value:0},sunDir:{value:sunDir},fogColor:{value:new THREE.Color()},fogNear:{value:700},fogFar:{value:5600},
+  uniforms:{hTex:{value:hTex},uTime:{value:0},uCamY:{value:100},sunDir:{value:sunDir},fogColor:{value:new THREE.Color()},fogNear:{value:700},fogFar:{value:5600},
     cDeep:{value:new THREE.Color()},cMid:{value:new THREE.Color()},cShal:{value:new THREE.Color()},cGlint:{value:new THREE.Color()}},
   vertexShader:`varying vec3 vW;varying float vD;void main(){vec4 w=modelMatrix*vec4(position,1.);vW=w.xyz;vec4 mv=viewMatrix*w;vD=-mv.z;gl_Position=projectionMatrix*mv;}`,
-  fragmentShader:`uniform sampler2D hTex;uniform float uTime,fogNear,fogFar;uniform vec3 sunDir,fogColor,cDeep,cMid,cShal,cGlint;varying vec3 vW;varying float vD;
+  fragmentShader:`uniform sampler2D hTex;uniform float uTime,fogNear,fogFar,uCamY;uniform vec3 sunDir,fogColor,cDeep,cMid,cShal,cGlint;varying vec3 vW;varying float vD;
   float hs(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
   float vn(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(hs(i),hs(i+vec2(1,0)),f.x),mix(hs(i+vec2(0,1)),hs(i+vec2(1,1)),f.x),f.y);}
   float caus(vec2 uv,float time){vec2 p=mod(uv*6.2831853,6.2831853)-250.,i=p;float c=1.;
@@ -697,7 +702,10 @@ const waterMat=new THREE.ShaderMaterial({
     float sp=hs(floor(vW.xz/2.)+floor(uTime*3.));
     float spark=step(.82,sp)*smoothstep(.985,.996,g);
     c=mix(c,cGlint,max(max(core,step(bay,halo*.85)*.85),spark*.75));
-    float f=smoothstep(fogNear,fogFar,vD);gl_FragColor=vec4(mix(c,fogColor,f),1.);}`});
+    // haze by distance, plus sky reflection (Fresnel-style) that grows as the view gets flatter, so the far sea melts into the sky
+    // over many pixels instead of meeting it at a hard line
+    float f=smoothstep(fogNear,fogFar,vD);float gz=max(uCamY,1.)/max(vD,1.);
+    f=max(f,pow(1.-clamp(gz,0.,1.),7.)*.9);gl_FragColor=vec4(mix(c,fogColor,f),1.);}`});
 const water=new THREE.Mesh(new THREE.PlaneGeometry(64000,40000).rotateX(-Math.PI/2),waterMat);scene.add(water);
 
 /* ---------------- strips ---------------- */
@@ -791,7 +799,7 @@ const parked=buildPlane({body:0xe9eef0,trim:0x3f7f8f}); scene.add(parked);
 const anims=[];
 /* things the horn startles: each flock registers a spot; honk() stamps its time and the flock's animation reads scareOf() */
 const SCARE=[];let animNow=0;anims.push(t=>{animNow=t;});
-function scareSpot(x,y,z){const e={x,y,z,at:-1e9};SCARE.push(e);return e;}
+function scareSpot(x,y,z,kind='flock'){const e={x,y,z,at:-1e9,kind};SCARE.push(e);return e;}
 function scareOf(e,t){const s=t-e.at;if(s<0||s>6)return 0;return Math.min(1,s/.35)*(1-s/6)**2;}
 var harbor={x:0,z:0}, smokeSpots=[], villageC={x:0,z:0}, farmSpots=[];
 const H=STRIPS[0];
@@ -1027,14 +1035,14 @@ var townSpots=[];
       const i=n++,g=new THREE.Group(),sc=sailC[i%6];
       g.add(new THREE.Mesh(merge([{geo:BOX(2.6,1.1,8),m:M([0,.35,0]),color:hullC[i%5]},{geo:BOX(2.7,.3,8.1),m:M([0,-.1,0]),color:0xf8f4ee},{geo:BOX(1.6,.8,2.2),m:M([0,1.2,1.4]),color:0xe8d8b8},{geo:BOX(.25,12,.25),m:M([0,6.6,-.6]),color:0xe8e4dc},
         {geo:tri(4.4,10.4).rotateY(-Math.PI/2),m:M([0,1.4,-.4]),color:sc},{geo:tri(2.6,8.6).rotateY(Math.PI/2),m:M([0,1.4,-1]),color:sc===0xf8f4ee?0xf0e2a8:0xf8f4ee}]),toon({side:THREE.DoubleSide},false)));
-      g.add(wake());g.scale.setScalar(1.3);scene.add(g);const sp=(.035+rnd()*.025)*(rnd()<.5?1:-1),ph=rnd()*TAU;
-      anims.push(t=>{const q=ph+t*sp;g.position.set(x+Math.cos(q)*r,0,z+Math.sin(q)*r);g.rotation.y=-q+(sp>0?Math.PI:0);g.rotation.z=(sp>0?-1:1)*.12+Math.sin(t*1.1+ph)*.04;});break;}}
+      g.add(wake());g.scale.setScalar(1.3);scene.add(g);const sp=(.035+rnd()*.025)*(rnd()<.5?1:-1),ph=rnd()*TAU,bsc=scareSpot(x,0,z,'sail');
+      anims.push(t=>{const q=ph+t*sp,s=scareOf(bsc,t);g.position.set(x+Math.cos(q)*r,s*Math.abs(Math.sin(t*5))*.8,z+Math.sin(q)*r);g.rotation.y=-q+(sp>0?Math.PI:0);g.rotation.z=(sp>0?-1:1)*.12+Math.sin(t*1.1+ph)*.04+s*Math.sin(t*4.5)*.22;});break;}}
   // fishing boats sitting off the shore with gulls wheeling over them
   const gm=new THREE.MeshBasicMaterial({color:0xf8f4ee,side:THREE.DoubleSide});
   let f=0;for(const S of STRIPS){if(f>=12)break;for(let k=0;k<40;k++){const a=rnd()*TAU,d=300+rnd()*700,x=S.x+Math.cos(a)*d,z=S.z+Math.sin(a)*d;if(!isSea(x,z,-5)||!ringSea(x,z,40))continue;f++;
       const b=new THREE.Mesh(merge([{geo:BOX(3.4,1.6,10),m:M([0,.5,0]),color:[0xd2493c,0x3f6f8f,0x3f8f5a,0xe8a33a][f%4]},{geo:BOX(3.5,.4,10.1),m:M([0,-.2,0]),color:0x2c2833},{geo:BOX(2.4,2.2,3),m:M([0,2.2,2]),color:0xf8f4ee},{geo:BOX(2.5,.3,3.1),m:M([0,3.4,2]),color:0x3f6f8f},
         {geo:BOX(.2,7,.2),m:M([0,4.5,-2.4]),color:0xe8e4dc},{geo:BOX(.15,.15,7),m:M([0,7.2,-5]),color:0xe8e4dc,},{geo:BOX(1.2,.8,1.2),m:M([.6,1.7,-3]),color:0xe8a33a}]),toon({},false));b.scale.setScalar(1.3);b.position.set(x,0,z);const ry=rnd()*TAU;b.rotation.y=ry;scene.add(b);
-      anims.push(t=>{b.position.y=Math.sin(t*1.2+f)*.18;b.rotation.z=Math.sin(t*.9+f)*.05;b.rotation.x=Math.sin(t*.7+f*2)*.03;});addLight(x,4.4,z,0xffe0a0);
+      const fsc=scareSpot(x,0,z,'boat');anims.push(t=>{const s=scareOf(fsc,t);b.position.y=Math.sin(t*1.2+f)*.18+s*Math.abs(Math.sin(t*5))*.6;b.rotation.z=Math.sin(t*.9+f)*.05+s*Math.sin(t*4)*.16;b.rotation.x=Math.sin(t*.7+f*2)*.03;});addLight(x,4.4,z,0xffe0a0);
       const gsc=scareSpot(x,12,z);for(let k=0;k<4;k++){const gg=new THREE.Group(),wl=new THREE.Group(),wr=new THREE.Group();wl.add(new THREE.Mesh(new THREE.PlaneGeometry(2,.7).translate(-1,0,0).rotateX(-Math.PI/2),gm));wr.add(new THREE.Mesh(new THREE.PlaneGeometry(2,.7).translate(1,0,0).rotateX(-Math.PI/2),gm));gg.add(wl,wr);scene.add(gg);
         const rr=10+k*5,ph=k*1.6,hy=12+k*3;anims.push(t=>{const q=ph+t*.4*(k%2?1:-1),s=scareOf(gsc,t),da=k*1.57+.4;gg.position.set(x+Math.cos(q)*rr+Math.cos(da)*s*40,hy+Math.sin(t+k)*2+s*30,z+Math.sin(q)*rr+Math.sin(da)*s*40);gg.rotation.y=-q;const fl=Math.sin(t*(7+16*s)+k)*.5;wl.rotation.z=fl;wr.rotation.z=-fl;});}
       break;}}
@@ -1957,7 +1965,8 @@ const GOALS=[
   {id:'land_kettle',name:'Land at Crater Shelf',hint:'The cinder strip on the volcano, far to the northeast.'},
   {id:'land_farhold',name:'Land at Farhold',hint:'The lit runway on the foggy island far to the northwest.'},
   {id:'hopper',name:'Island hopper',hint:'Land at every airfield in the islands.'},
-  {id:'tailwind',name:'Riding the wind',hint:'Stack all three tailwinds into one gale.'},
+  {id:'tailwind',name:'Riding the wind',hint:'Stack three tailwinds into one gale.'},
+  {id:'gale5',name:'Full gale',hint:'Stack all five tailwinds at once.'},
   {id:'trip',name:'Make a trip',hint:'Take off from one field and land at another.'},
   {id:'butter',name:'Butter landing',hint:'Touch down on a runway at under 90 ft/min.'},
   {id:'checklist',name:'By the book',hint:'Land with the whole before-landing checklist done.'},
@@ -1978,7 +1987,7 @@ const GOALS=[
   {id:'errand',name:'Good neighbour',hint:'Finish an errand for an islander.'},
   {id:'errands',name:'Everybody\'s favourite',hint:'Finish every islander\'s errand.'},
 ];
-const DESC_ARCH={sisters:'Twin Sisters. Grass shelf beside two rock spires. Gusty off the rocks.',cleft:'Cleft Isle. Dirt strip on the plateau, beside a canyon.',apple:'Applecross. Paved, among the orchards. Easy and friendly.',
+const DESC_ARCH={hollow:'Hollowpeak. Grass on the western shoulder of the big green peak.',oyster:'Oyster Bay. Sand strip along the back of the crescent, calm bay beside it.',ridgeback:'Ridgeback. Dirt strip under the long ridge. Rough air when the wind crosses it.',fern:'Fernhollow. Grass in a wooded valley. Trees close on both sides.',bracken:'Brackenmoor. Long paved runway on the open moor, far out west.',sunrise:'Sunrise Cay. Hard sand through the palms.',anvil:'The Anvil. Dirt strip on top of a red rock tower. Cliffs at both ends.',creel:'Creel Isle. Grass strip above the fishing hamlet.',fiddler:'Fiddler\'s Reach. Grass along the inner shore of the crescent.',daybreak:'Daybreak Head. Paved runway on the headland, the farthest east.',sisters:'Twin Sisters. Grass shelf beside two rock spires. Gusty off the rocks.',cleft:'Cleft Isle. Dirt strip on the plateau, beside a canyon.',apple:'Applecross. Paved, among the orchards. Easy and friendly.',
   salt:'The Saltpans. Hard white salt, flat as a table. Glare at noon.',mirror:'Looking-Glass Isle. Grass beside the lake rim. Short-ish.',mesa:'Starwatch Mesa. Paved, on top of the mesa. Cliffs at both ends.',
   cascade:'Cascade Isle. Grass terrace under the cliffs. Mind the trees.',lantern:'Lantern Key. Paved, low and lit. Lovely at night.',quarry:'Greystone. Dirt strip on the quarry hill. Dusty.',windward:'Windward. Grass on the ridge flank. Always a breeze.'};
 const DESC={harbor:'Ferrow. Long paved runway by the village. The friendly one.',light:'Gull Point. Grass strip on the clifftop, sea at both ends.',ridge:'Tallpine. Short dirt strip on a mountain saddle. Slow down early.',
@@ -2230,19 +2239,19 @@ function updGates(){
 /* tailwind button: three charges, each a 6 s gust that carries you along fast and holds your height.
    Tap again while a gust is blowing and they stack: two gusts go faster, three faster still.
    Charges refill one every 5 s once every gust has died down. */
-const BOOST_V=55,BOOST_T=6,WIND_N=3,WIND_CD=5,STACK=[0,1,1.7,2.25];
+const BOOST_V=55,BOOST_T=6,WIND_N=5,WIND_CD=5,STACK=[0,1,1.7,2.25,2.75,3.2];
 let windCharges=WIND_N,windCD=0,windUiT=0,windWait=WIND_CD,windPeak=0;
 const glideAlt=(s,d)=>s.elev+AC.gearH+Math.tan(4*DEG)*d;
 function windBlock(){if(ac.ground||mode!=='fly')return 'IN THE AIR';const agl=ac.pos.y-AC.gearH-surfH(ac.pos.x,ac.pos.z);if(agl<40)return 'TOO LOW';
   return null;}
 function useWind(){const b=windBlock();
-  if(windCharges<=0){toast(ac.gusts&&ac.gusts.length?'All three are blowing. Ride it out.':`The wind is gathering. Next one in ${Math.ceil(windCD)} s.`,1.4);return;}
+  if(windCharges<=0){toast(ac.gusts&&ac.gusts.length?'All five are blowing. Ride it out, or hold BRAKE to stop it.':`The wind is gathering. Next one in ${Math.ceil(windCD)} s.`,1.4);return;}
   if(b){toast(b==='TOO LOW'?'Climb a little first. Tailwinds need some height.':'Tailwinds work once you\'re flying.',1.8);return;}
   if(!ac.gusts)ac.gusts=[];ac.gusts.push(BOOST_T);windCharges--;const n=ac.gusts.length;windPeak=Math.max(windPeak,n);
   windWait=WIND_CD;windCD=windWait;ac.boostT=Math.max(...ac.gusts);
   snd.beep(1320+n*180);setTimeout(()=>snd.beep(1760+n*220),90);
-  toast(n>1?`Tailwind ×${n}!${n===3?' Full gale.':''}`:windCharges?`Tailwind! ${windCharges} left.`:'Last tailwind for now.',1.4);
-  if(!log.goals.tailwind&&n===3)goal('tailwind');updWindUI();}
+  toast(n>1?`Tailwind ×${n}!${n===5?' FULL GALE!':n===3?' A proper gale.':''}`:windCharges?`Tailwind! ${windCharges} left.`:'Last tailwind for now.',1.4);
+  if(!log.goals.tailwind&&n>=3)goal('tailwind');if(n===5)goal('gale5');if(n>=2)tip('windstop','Going too fast? Hold BRAKE in the air and the tailwind stops at once.',1);updWindUI();}
 function updWindUI(){const b=$('wind');if(!b)return;const blk=windBlock(),cool=windCharges<=0,n=(ac.gusts||[]).length,fill=windCharges<WIND_N&&!n;
   b.innerHTML=`<img src="${RICON.wind}" alt="Tailwind">${n>1?'×'+n:''}<span>${'●'.repeat(windCharges)+'○'.repeat(WIND_N-windCharges)}</span>`;
   b.classList.toggle('cool',cool&&!n);b.classList.toggle('off',!!blk&&!cool);b.classList.toggle('on',n>0);
@@ -2253,9 +2262,12 @@ function updWind(dt){const blowing=ac.gusts&&ac.gusts.length;
 function stepBoost(dt){
   if(!ac.gusts)ac.gusts=[];const agl=ac.pos.y-AC.gearH-surfH(ac.pos.x,ac.pos.z);
   if(agl<30||ac.ground)ac.gusts.length=0;
+  /* holding BRAKE in the air calls off the tailwind straight away (and the extra speed bleeds off fast) */
+  if(ac.brakeHeld&&!ac.ground&&ac.gusts.length){ac.gusts.length=0;ac.windStop=1.2;snd.burst(.35,900,.5);toast('Tailwind off.',1.2);}
+  if(ac.windStop>0)ac.windStop-=dt;
   for(let i=ac.gusts.length-1;i>=0;i--){ac.gusts[i]-=dt;if(ac.gusts[i]<=0)ac.gusts.splice(i,1);}
   ac.boostT=ac.gusts.length?Math.max(...ac.gusts):0;const tgt=STACK[ac.gusts.length];
-  ac.bst=lerp(ac.bst||0,tgt,1-Math.exp(-dt*(tgt>(ac.bst||0)?2.5:1.1)));
+  ac.bst=lerp(ac.bst||0,tgt,1-Math.exp(-dt*(tgt>(ac.bst||0)?2.5:ac.windStop>0?5:1.1)));
   if(ac.bst<.005||ac.ground)return;
   axes();const hl=Math.hypot(_f.x,_f.z);if(hl<.2)return;
   ac.pos.x+=_f.x/hl*BOOST_V*ac.bst*dt;ac.pos.z+=_f.z/hl*BOOST_V*ac.bst*dt;
@@ -2664,7 +2676,8 @@ const snd={ctx:null,
   burst(v,lp,dur){if(!this.ctx)return;const c=this.ctx,s=c.createBufferSource();s.buffer=this.buf;const f=c.createBiquadFilter();f.type='lowpass';f.frequency.value=lp;const g=c.createGain(),t=c.currentTime;
     g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+dur);s.connect(f);f.connect(g);g.connect(this.master);s.start(t,Math.random());s.stop(t+dur+.05);},
   beep(f){if(!this.ctx)return;const c=this.ctx,o=c.createOscillator(),g=c.createGain(),t=c.currentTime;o.type='triangle';o.frequency.value=f;g.gain.setValueAtTime(.08,t);g.gain.exponentialRampToValueAtTime(.001,t+.18);o.connect(g);g.connect(this.master);o.start(t);o.stop(t+.2);},
-  thump(v=1){this.burst(.6*v,260,.25);},crash(){this.burst(.5,900,1.2);},click(){this.burst(.25,3000,.03);},honk(){if(!this.ctx)return;const c=this.ctx,t0=c.currentTime+.02;for(let k=0;k<2;k++){const t=t0+k*.27,g=c.createGain(),lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=2200;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.22,t+.015);g.gain.setValueAtTime(.22,t+.17);g.gain.linearRampToValueAtTime(0,t+.21);lp.connect(g);g.connect(this.master);
+  thump(v=1){this.burst(.6*v,260,.25);},crash(){this.burst(.5,900,1.2);},click(){this.burst(.25,3000,.03);},toot(){if(!this.ctx)return;const c=this.ctx;for(let k=0;k<2;k++){const t=c.currentTime+.02+k*.75,g=c.createGain(),lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=700;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.3,t+.08);g.gain.setValueAtTime(.3,t+.5);g.gain.linearRampToValueAtTime(0,t+.65);lp.connect(g);g.connect(this.master);
+    for(const f of [k?98:110,k?147:165]){const o=c.createOscillator();o.type='sawtooth';o.frequency.value=f;o.connect(lp);o.start(t);o.stop(t+.7);}}},honk(){if(!this.ctx)return;const c=this.ctx,t0=c.currentTime+.02;for(let k=0;k<2;k++){const t=t0+k*.27,g=c.createGain(),lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=2200;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.22,t+.015);g.gain.setValueAtTime(.22,t+.17);g.gain.linearRampToValueAtTime(0,t+.21);lp.connect(g);g.connect(this.master);
     for(const f of [415,523]){const o=c.createOscillator();o.type='square';o.frequency.setValueAtTime(f*(k?1:1.02),t);o.frequency.linearRampToValueAtTime(f*.97,t+.2);o.connect(lp);o.start(t);o.stop(t+.25);}}},squelch(){this.burst(.3,5200,.07);setTimeout(()=>this.burst(.12,2600,.05),70);},hiss(v=1){this.burst(.45*v,3600,.9);setTimeout(()=>this.burst(.3*v,900,.15),650);},flick(){this.burst(.4,7000,.012);setTimeout(()=>this.burst(.22,2200,.025),22);},clunk(){this.burst(.35,1400,.05);setTimeout(()=>this.burst(.25,600,.08),40);},
   setOn(v){if(this.master)this.master.gain.value=v?.5:0;if(this.ctx&&this.ctx.state==='suspended')this.ctx.resume();}};
 
@@ -2882,13 +2895,15 @@ function fixNums(root){const tw=document.createTreeWalker(root,NodeFilter.SHOW_T
 /* ---------- menus ---------- */
 /* menus: "Back"-type buttons sit in a bar at the top of the card; everything else stays at the bottom */
 const isBackBtn=(l,fn)=>fn===back||l==='Back to flying'||l==='All pages'||l==='Resume';
-function showCard(html,buttons){$('cardBody').innerHTML='<div class="topbar"></div>'+html+'<div class="btns"></div>';$('cardBody').classList.remove('wide');const b=$('cardBody').querySelector('.btns:last-child'),tb=$('cardBody').querySelector('.topbar');
-  (buttons||[]).forEach(([l,fn,p])=>{const el=document.createElement('button');const top=isBackBtn(l,fn);el.textContent=top?'‹ '+(l==='Done'?'Back':l):l;if(p&&!top)el.className='primary';if(top)el.classList.add('backbtn');el.addEventListener('click',fn);(top?tb:b).appendChild(el);});
+function showCard(html,buttons,opt){$('cardBody').innerHTML='<div class="topbar"></div>'+html+'<div class="btns'+(opt&&opt.grid?' grid':'')+'"></div>';$('cardBody').classList.remove('wide');const b=$('cardBody').querySelector('.btns:last-child'),tb=$('cardBody').querySelector('.topbar');
+  (buttons||[]).forEach(([l,fn,p])=>{const el=document.createElement('button');const top=isBackBtn(l,fn);el.textContent=top?'‹ '+(l==='Done'?'Back':l):l;if(p&&!top)el.className='primary';if(top)el.classList.add('backbtn');if(opt&&opt.colors&&opt.colors[l])el.style.setProperty('--bc',opt.colors[l]);el.addEventListener('click',fn);(top?tb:b).appendChild(el);});
   if(!tb.children.length)tb.remove();if(!b.children.length)b.remove();$('modal').hidden=false;$('cardBody').scrollTop=0;scriptify($('cardBody'));fixNums($('cardBody'));}
 function hideModal(){$('modal').hidden=true;}
 function back(){hideModal();if(mode==='title')$('title').hidden=false;else if(mode==='paused'||mode==='card')openMenu();}
 function openMenu(){if(mode==='fly')mode='paused';showCard(`<h2>Paused</h2><div class="sub">${dest?'HEADING FOR '+dest.name.toUpperCase():''}${mail.active?' · '+mail.bag.length+' IN THE BAG':''} · ${log.stamps} STAMPS</div>`,[
-  ['Resume',()=>{hideModal();mode='fly';},true],...(mail.active?[['Mail bag',()=>mailCard()]]:[]),["Bea's chart",()=>bigMap()],["Bea's logbook",()=>bea(-1)],['Practice a landing',()=>picker('practice')],['Start at a field',()=>picker('start')],['Your logbook',()=>logbook()],['Settings',()=>settingsCard()],['Title screen',()=>{hideModal();toTitle();}]]);}
+  ['Resume',()=>{hideModal();mode='fly';},true],...(mail.active?[['Mail bag',()=>mailCard()]]:[]),["Bea's chart",()=>bigMap()],["Bea's logbook",()=>bea(-1)],['Practice a landing',()=>picker('practice')],['Start at a field',()=>picker('start')],['Your logbook',()=>logbook()],['Settings',()=>settingsCard()],['Title screen',()=>{hideModal();toTitle();}]],{grid:true,colors:MENU_COL});$('cardBody').classList.add('wide');}
+/* each pause-menu button gets its own colour so they're easy to tell apart at a glance */
+const MENU_COL={'Mail bag':'#f2c25a',"Bea's chart":'#7cc4d4',"Bea's logbook":'#a6d38a','Practice a landing':'#c4aee6','Start at a field':'#f0a77c','Your logbook':'#9fc4ef','Settings':'#cfc6b4','Title screen':'#eaa6a6'};
 function picker(kind){
   const items=STRIPS.map(s=>{const F=log.fields[s.id];return `<button class="item" data-id="${s.id}"><span><b>${s.name}</b><span class="d">${DESC[s.id]}</span></span><span class="r">${F&&F.best?stars(F.best):'NOT YET'}</span></button>`;}).join('');
   showCard(`<h2>${kind==='practice'?'Practice a landing':'Start at a field'}</h2><div class="sub">${kind==='practice'?'START 1.5 KM OUT, LINED UP, ON THE GLIDE PATH':'START ON THE RUNWAY, ENGINE AT IDLE'}</div><div class="list">${items}</div>`,[['Back',back]]);
@@ -2910,7 +2925,7 @@ function settingsCard(){
   const mv=[['OFF',0],['SOFT',.5],['ON',1]].map(([n,v])=>`<button data-mv="${v}" class="${(settings.music??.5)==v?'primary':''}">${n}</button>`).join('');
   const st=STATIONS.map(S=>`<button data-st="${S.id}" class="${settings.station===S.id?'primary':''}">${S.fq} ${S.name.toUpperCase()}</button>`).join('');
   const lt=Object.keys(TOD).map(k=>`<button data-lt="${k}" class="${settings.light===k?'primary':''}">${TOD[k].name.toUpperCase()}</button>`).join('');
-  showCard(`<h2>Settings</h2><div class="sub">ASSISTS · TURN THEM OFF ONE AT A TIME AS YOU IMPROVE</div>${rows}<h3>ENGINE VOLUME</h3><div class="btns">${ev}</div><h3>RADIO VOLUME</h3><div class="btns">${mv}</div><h3>RADIO STATION · OR TAP THE DIAL UP TOP WHILE FLYING</h3><div class="btns">${st}</div><h3>TIME OF DAY</h3><div class="btns">${lt}</div><h3>PIXELS</h3><div class="btns">${px}</div><div class="sub" style="margin-top:14px">BUILD af34e05</div>`,[['Back',back,true]]);
+  showCard(`<h2>Settings</h2><div class="sub">ASSISTS · TURN THEM OFF ONE AT A TIME AS YOU IMPROVE</div>${rows}<h3>ENGINE VOLUME</h3><div class="btns">${ev}</div><h3>RADIO VOLUME</h3><div class="btns">${mv}</div><h3>RADIO STATION · OR TAP THE DIAL UP TOP WHILE FLYING</h3><div class="btns">${st}</div><h3>TIME OF DAY</h3><div class="btns">${lt}</div><h3>PIXELS</h3><div class="btns">${px}</div><div class="sub" style="margin-top:14px">BUILD 51d3695</div>`,[['Back',back,true]]);
   const cb=$('cardBody');
   cb.querySelectorAll('[data-k]').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.k;if(k==='tilt'){if(!settings.tilt){settings.tilt=true;saveS();enableTilt().then(()=>{updTiltUI();settingsCard();});}else{settings.tilt=false;saveS();disableTilt();updTiltUI();settingsCard();}return;}settings[k]=!settings[k];saveS();if(k==='sound')snd.setOn(settings.sound);if(k==='fps'){$('fps').hidden=!settings.fps;$('fps').textContent='FPS: measuring…';fpsN=fpsT=0;fpsLast=0;}if(k==='sound')music.setVol();settingsCard();}));
   cb.querySelectorAll('[data-px]').forEach(b=>b.addEventListener('click',()=>{settings.pixels=b.dataset.px;pixMode=settings.pixels;saveS();resize();settingsCard();}));
@@ -2993,14 +3008,15 @@ function approachMeter(){
   const gl=glide(dest),agl=(ac.pos.y-AC.gearH-surfH(ac.pos.x,ac.pos.z))*FT,over=stripAt(ac.pos.x,ac.pos.z,25);
   const w=LW,h=LH,S=Math.max(16,Math.min(Math.round(h*.12),28)),cx=Math.round(w/2),cy=Math.round(h*.3),K=rgba(0x241c2e);
   const txt=(t,x,y,c,left)=>{pb.text(t,x+1,y+1,K,1,!left);pb.text(t,x,y,c,1,!left);};
-  if(agl<38&&(over||(gl.active&&gl.along<350))){
+  /* landing only: not on the way up after takeoff (climbing, or just airborne) */
+  if(agl<38&&ac.vel.y<.4&&airT>6&&(over||(gl.active&&gl.along<350))){
     // FLARE: nose angle and sink rate, each with a green target band
     axes();const pitch=Math.asin(clamp(_f.y,-1,1))/DEG,sink=-ac.vel.y*196.85,bw=S*3,x0=cx-Math.round(bw/2),y0=cy-8;
     const bar=(y,lo,hi,g0,g1,v,lab,ok)=>{const X=t=>x0+Math.round((t-lo)/(hi-lo)*bw);pb.rect(x0-1,y-1,bw+2,6,K);pb.rect(x0,y,bw,4,C.face);pb.rect(X(g0),y,X(g1)-X(g0),4,C.green);
       const vx=clamp(X(v),x0,x0+bw-2);pb.rect(vx-2,y-3,5,10,K);pb.rect(vx-1,y-2,3,8,ok?C.white:C.orange);txt(lab,x0-19,y,C.tick,true);};
     const pOk=pitch>=2&&pitch<=8,sOk=sink<300;
-    txt(pOk&&sOk?'FLARE · GOOD':'FLARE',cx,y0-12,pOk&&sOk?C.green:C.tick);
-    bar(y0,-6,16,2,8,pitch,'NOSE',pOk);bar(y0+14,0,900,0,300,sink,'SINK',sOk);return true;}
+    txt(pOk&&sOk?'FLARE - GOOD':'FLARE',cx,y0-12,pOk&&sOk?C.green:C.tick);
+    bar(y0,-6,16,2,8,pitch,'NOSE',pOk);bar(y0+14,0,900,0,300,sink,'DROP',sOk);return true;}
   if(!gl.active||gl.along>3600)return false;
   // LINE UP: corner brackets, a ring for "on path", and a diamond showing where the path is. Fly toward the diamond.
   const brk=(sx,sy)=>{pb.rect(cx+sx*S-(sx>0?5:0),cy+sy*S,6,1,K);pb.rect(cx+sx*S-(sx>0?5:0),cy+sy*S-1,6,1,C.tick);pb.rect(cx+sx*S,cy+sy*S-(sy>0?5:0),1,6,C.tick);};
@@ -3609,10 +3625,13 @@ function honk(){if(mode!=='fly'||(honkT>=0&&honkT<.6))return;snd.honk();honkT=0;
   for(const [d,s] of SITES)if(s.react<0&&near(d.x,d.y,d.z))honkers.push({o:s.man,mv:false,y0:s.man.position.y,ph:.1});
   const people=honkers.length;let sheep=0,flocks=0;
   const SH=window.SHEEP;if(SH)SH.list.forEach((sp,i)=>{if(near(sp.x,sp.h,sp.z)){honkers.push({sheep:i,ph:Math.random()*.4});sheep++;}});
-  for(const e of SCARE)if(Math.hypot(e.x-P.x,e.z-P.z)<520&&P.y-e.y<350){e.at=animNow+Math.random()*.15;flocks++;}
+  let boats=0,fishers=0;
+  for(const e of SCARE)if(Math.hypot(e.x-P.x,e.z-P.z)<(e.kind==='flock'?520:600)&&P.y-e.y<350){e.at=animNow+Math.random()*.15;if(e.kind==='flock')flocks++;else{boats++;if(e.kind==='boat')fishers++;}}
+  if(fishers)setTimeout(()=>snd.toot(),900);
   const who=[people&&(people===1?'someone':people+' people'),sheep&&(sheep===1?'a sheep':sheep+' sheep')].filter(Boolean),n=people+sheep;
   const ground=who.length?who.join(' and ')+(n===1?' jumps':' jump'):'',air=flocks?(flocks===1?'a flock of birds scatters':flocks+' flocks of birds scatter'):'';
-  const line=[ground,air].filter(Boolean).join(', and ');if(line)toast('Honk honk! '+line[0].toUpperCase()+line.slice(1)+'.',2.2);
+  const sea=boats?(fishers?(boats===1?'a boat toots back':boats+' boats rock and toot back'):(boats===1?'a sailboat rocks':boats+' sailboats rock')):'';
+  const line=[ground,air,sea].filter(Boolean).join(', and ');if(line)toast('Honk honk! '+line[0].toUpperCase()+line.slice(1)+'.',2.2);
   setTimeout(()=>{if(mode==='fly'&&settings.dog!==false){dog.bark=1.3;snd.woof();}},520);
   if(n>=3)goal('honk',true);}
 function updHonk(dt){if(honkT<0)return;honkT+=dt;
@@ -3654,7 +3673,7 @@ function loop(now){
   else acc=0;
   if(toastT>0){toastT-=dt;if(toastT<=0)$('toast').hidden=true;}
   if(callT>0){callT-=dt;if(callT<=0)$('callout').hidden=true;}
-  updateVisuals(dt,t);updateCam(dt,t);cullChunks(camera.position);sky.position.copy(camera.position);
+  updateVisuals(dt,t);updateCam(dt,t);cullChunks(camera.position);waterMat.uniforms.uCamY.value=camera.position.y;sky.position.copy(camera.position);
   renderer.info.reset();renderer.setRenderTarget(rt);renderer.render(scene,camera);const tri=renderer.info.render.triangles,dc=renderer.info.render.calls;renderer.setRenderTarget(null);renderer.render(postScene,postCam);
   drawHUD(dt);
   if(settings.fps){fpsN++;fpsT+=now-(fpsLast||now);fpsLast=now;fpsMin=Math.min(fpsMin,1000/Math.max(now-(fpsPrev||now-16),1));fpsPrev=now;

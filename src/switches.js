@@ -130,10 +130,13 @@ function honk(){if(mode!=='fly'||(honkT>=0&&honkT<.6))return;snd.honk();honkT=0;
   for(const [d,s] of SITES)if(s.react<0&&near(d.x,d.y,d.z))honkers.push({o:s.man,mv:false,y0:s.man.position.y,ph:.1});
   const people=honkers.length;let sheep=0,flocks=0;
   const SH=window.SHEEP;if(SH)SH.list.forEach((sp,i)=>{if(near(sp.x,sp.h,sp.z)){honkers.push({sheep:i,ph:Math.random()*.4});sheep++;}});
-  for(const e of SCARE)if(Math.hypot(e.x-P.x,e.z-P.z)<520&&P.y-e.y<350){e.at=animNow+Math.random()*.15;flocks++;}
+  let boats=0,fishers=0;
+  for(const e of SCARE)if(Math.hypot(e.x-P.x,e.z-P.z)<(e.kind==='flock'?520:600)&&P.y-e.y<350){e.at=animNow+Math.random()*.15;if(e.kind==='flock')flocks++;else{boats++;if(e.kind==='boat')fishers++;}}
+  if(fishers)setTimeout(()=>snd.toot(),900);
   const who=[people&&(people===1?'someone':people+' people'),sheep&&(sheep===1?'a sheep':sheep+' sheep')].filter(Boolean),n=people+sheep;
   const ground=who.length?who.join(' and ')+(n===1?' jumps':' jump'):'',air=flocks?(flocks===1?'a flock of birds scatters':flocks+' flocks of birds scatter'):'';
-  const line=[ground,air].filter(Boolean).join(', and ');if(line)toast('Honk honk! '+line[0].toUpperCase()+line.slice(1)+'.',2.2);
+  const sea=boats?(fishers?(boats===1?'a boat toots back':boats+' boats rock and toot back'):(boats===1?'a sailboat rocks':boats+' sailboats rock')):'';
+  const line=[ground,air,sea].filter(Boolean).join(', and ');if(line)toast('Honk honk! '+line[0].toUpperCase()+line.slice(1)+'.',2.2);
   setTimeout(()=>{if(mode==='fly'&&settings.dog!==false){dog.bark=1.3;snd.woof();}},520);
   if(n>=3)goal('honk',true);}
 function updHonk(dt){if(honkT<0)return;honkT+=dt;

@@ -265,10 +265,10 @@ const hData=new Uint8Array(NVX*NVZ*4);
 for(let k=0;k<NVX*NVZ;k++){const v=Math.round(clamp((HGT[k]+60)/120,0,1)*65535);hData[k*4]=v>>8;hData[k*4+1]=v&255;hData[k*4+3]=255;}
 const hTex=new THREE.DataTexture(hData,NVX,NVZ,THREE.RGBAFormat);hTex.minFilter=hTex.magFilter=THREE.LinearFilter;hTex.needsUpdate=true;
 const waterMat=new THREE.ShaderMaterial({
-  uniforms:{hTex:{value:hTex},uTime:{value:0},sunDir:{value:sunDir},fogColor:{value:new THREE.Color()},fogNear:{value:700},fogFar:{value:5600},
+  uniforms:{hTex:{value:hTex},uTime:{value:0},uCamY:{value:100},sunDir:{value:sunDir},fogColor:{value:new THREE.Color()},fogNear:{value:700},fogFar:{value:5600},
     cDeep:{value:new THREE.Color()},cMid:{value:new THREE.Color()},cShal:{value:new THREE.Color()},cGlint:{value:new THREE.Color()}},
   vertexShader:`varying vec3 vW;varying float vD;void main(){vec4 w=modelMatrix*vec4(position,1.);vW=w.xyz;vec4 mv=viewMatrix*w;vD=-mv.z;gl_Position=projectionMatrix*mv;}`,
-  fragmentShader:`uniform sampler2D hTex;uniform float uTime,fogNear,fogFar;uniform vec3 sunDir,fogColor,cDeep,cMid,cShal,cGlint;varying vec3 vW;varying float vD;
+  fragmentShader:`uniform sampler2D hTex;uniform float uTime,fogNear,fogFar,uCamY;uniform vec3 sunDir,fogColor,cDeep,cMid,cShal,cGlint;varying vec3 vW;varying float vD;
   float hs(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
   float vn(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(hs(i),hs(i+vec2(1,0)),f.x),mix(hs(i+vec2(0,1)),hs(i+vec2(1,1)),f.x),f.y);}
   float caus(vec2 uv,float time){vec2 p=mod(uv*6.2831853,6.2831853)-250.,i=p;float c=1.;
@@ -298,7 +298,10 @@ const waterMat=new THREE.ShaderMaterial({
     float sp=hs(floor(vW.xz/2.)+floor(uTime*3.));
     float spark=step(.82,sp)*smoothstep(.985,.996,g);
     c=mix(c,cGlint,max(max(core,step(bay,halo*.85)*.85),spark*.75));
-    float f=smoothstep(fogNear,fogFar,vD);gl_FragColor=vec4(mix(c,fogColor,f),1.);}`});
+    // haze by distance, plus sky reflection (Fresnel-style) that grows as the view gets flatter, so the far sea melts into the sky
+    // over many pixels instead of meeting it at a hard line
+    float f=smoothstep(fogNear,fogFar,vD);float gz=max(uCamY,1.)/max(vD,1.);
+    f=max(f,pow(1.-clamp(gz,0.,1.),7.)*.9);gl_FragColor=vec4(mix(c,fogColor,f),1.);}`});
 const water=new THREE.Mesh(new THREE.PlaneGeometry(64000,40000).rotateX(-Math.PI/2),waterMat);scene.add(water);
 
 /* ---------------- strips ---------------- */
@@ -392,7 +395,7 @@ const parked=buildPlane({body:0xe9eef0,trim:0x3f7f8f}); scene.add(parked);
 const anims=[];
 /* things the horn startles: each flock registers a spot; honk() stamps its time and the flock's animation reads scareOf() */
 const SCARE=[];let animNow=0;anims.push(t=>{animNow=t;});
-function scareSpot(x,y,z){const e={x,y,z,at:-1e9};SCARE.push(e);return e;}
+function scareSpot(x,y,z,kind='flock'){const e={x,y,z,at:-1e9,kind};SCARE.push(e);return e;}
 function scareOf(e,t){const s=t-e.at;if(s<0||s>6)return 0;return Math.min(1,s/.35)*(1-s/6)**2;}
 var harbor={x:0,z:0}, smokeSpots=[], villageC={x:0,z:0}, farmSpots=[];
 const H=STRIPS[0];
