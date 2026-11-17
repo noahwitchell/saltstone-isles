@@ -102,6 +102,7 @@ button:focus-visible{outline:2px solid #fff;outline-offset:2px}
 .tsw.red .bat{background:linear-gradient(90deg,#8a1e18,#ff6a5a 45%,#a4281f)}.tsw.red.on em.u{color:#ff9a6a}
 #micBtn .grille{position:absolute;left:9px;right:9px;top:15px;height:26px;border-radius:5px;background:repeating-radial-gradient(circle at 50% 50%,#55505c 0 1.2px,#141118 1.2px 3px);box-shadow:0 0 0 1.5px #0b090d,0 2px 0 #000}
 #micBtn:active .grille{transform:translateY(2px);box-shadow:0 0 0 1.5px #0b090d}
+#micBtn.talk{animation:talkb .5s infinite}@keyframes talkb{50%{background:rgba(70,110,60,.9)}}
 #micBtn em{position:absolute;left:0;right:0;bottom:3px;font:normal 8px/1 var(--mono);color:#ffd36b;text-align:center}
 #dropUI{display:flex;flex-direction:column;gap:6px}
 #dropUI button{font-family:var(--mono);font-size:14px;line-height:1.1;padding:8px 10px;min-width:62px}
@@ -209,7 +210,7 @@ h3{font-family:var(--mono);font-size:15px;letter-spacing:.08em;color:var(--ink2)
       <button class="tsw" id="swSearch"><b class="lab">SEARCH LT</b><span class="nut"></span><span class="bat"></span><em class="u">ON</em><em class="d">OFF</em></button>
       <button class="tsw" id="swSmoke"><b class="lab">SMOKE</b><span class="nut"></span><span class="bat"></span><em class="u">ON</em><em class="d">OFF</em></button>
       <button class="tsw red" id="swFloat"><b class="lab">FLOATS</b><span class="nut"></span><span class="bat"></span><em class="u">OUT</em><em class="d">PULL</em></button>
-      <button id="micBtn" aria-label="Key the radio mic"><b class="lab">MIC</b><span class="grille"></span><em>×3</em></button>
+      <button id="micBtn" aria-label="Key the radio mic"><b class="lab">MIC</b><span class="grille"></span><em>○○○</em></button>
     </div>
     <div id="dropUI" hidden><button id="lookBtn" aria-label="Look straight down">LOOK<br>DOWN</button><button id="dropBtn" aria-label="Drop a parcel">DROP</button></div>
   </div>

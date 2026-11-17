@@ -102,6 +102,7 @@ button:focus-visible{outline:2px solid #fff;outline-offset:2px}
 .tsw.red .bat{background:linear-gradient(90deg,#8a1e18,#ff6a5a 45%,#a4281f)}.tsw.red.on em.u{color:#ff9a6a}
 #micBtn .grille{position:absolute;left:9px;right:9px;top:15px;height:26px;border-radius:5px;background:repeating-radial-gradient(circle at 50% 50%,#55505c 0 1.2px,#141118 1.2px 3px);box-shadow:0 0 0 1.5px #0b090d,0 2px 0 #000}
 #micBtn:active .grille{transform:translateY(2px);box-shadow:0 0 0 1.5px #0b090d}
+#micBtn.talk{animation:talkb .5s infinite}@keyframes talkb{50%{background:rgba(70,110,60,.9)}}
 #micBtn em{position:absolute;left:0;right:0;bottom:3px;font:normal 8px/1 var(--mono);color:#ffd36b;text-align:center}
 #dropUI{display:flex;flex-direction:column;gap:6px}
 #dropUI button{font-family:var(--mono);font-size:14px;line-height:1.1;padding:8px 10px;min-width:62px}
@@ -209,7 +210,7 @@ h3{font-family:var(--mono);font-size:15px;letter-spacing:.08em;color:var(--ink2)
       <button class="tsw" id="swSearch"><b class="lab">SEARCH LT</b><span class="nut"></span><span class="bat"></span><em class="u">ON</em><em class="d">OFF</em></button>
       <button class="tsw" id="swSmoke"><b class="lab">SMOKE</b><span class="nut"></span><span class="bat"></span><em class="u">ON</em><em class="d">OFF</em></button>
       <button class="tsw red" id="swFloat"><b class="lab">FLOATS</b><span class="nut"></span><span class="bat"></span><em class="u">OUT</em><em class="d">PULL</em></button>
-      <button id="micBtn" aria-label="Key the radio mic"><b class="lab">MIC</b><span class="grille"></span><em>×3</em></button>
+      <button id="micBtn" aria-label="Key the radio mic"><b class="lab">MIC</b><span class="grille"></span><em>○○○</em></button>
     </div>
     <div id="dropUI" hidden><button id="lookBtn" aria-label="Look straight down">LOOK<br>DOWN</button><button id="dropBtn" aria-label="Drop a parcel">DROP</button></div>
   </div>
@@ -2897,7 +2898,7 @@ function settingsCard(){
   const mv=[['OFF',0],['SOFT',.5],['ON',1]].map(([n,v])=>`<button data-mv="${v}" class="${(settings.music??.5)==v?'primary':''}">${n}</button>`).join('');
   const st=STATIONS.map(S=>`<button data-st="${S.id}" class="${settings.station===S.id?'primary':''}">${S.fq} ${S.name.toUpperCase()}</button>`).join('');
   const lt=Object.keys(TOD).map(k=>`<button data-lt="${k}" class="${settings.light===k?'primary':''}">${TOD[k].name.toUpperCase()}</button>`).join('');
-  showCard(`<h2>Settings</h2><div class="sub">ASSISTS · TURN THEM OFF ONE AT A TIME AS YOU IMPROVE</div>${rows}<h3>ENGINE VOLUME</h3><div class="btns">${ev}</div><h3>RADIO VOLUME</h3><div class="btns">${mv}</div><h3>RADIO STATION · OR TAP THE DIAL UP TOP WHILE FLYING</h3><div class="btns">${st}</div><h3>TIME OF DAY</h3><div class="btns">${lt}</div><h3>PIXELS</h3><div class="btns">${px}</div><div class="sub" style="margin-top:14px">BUILD 8f26eb3</div>`,[['Back',back,true]]);
+  showCard(`<h2>Settings</h2><div class="sub">ASSISTS · TURN THEM OFF ONE AT A TIME AS YOU IMPROVE</div>${rows}<h3>ENGINE VOLUME</h3><div class="btns">${ev}</div><h3>RADIO VOLUME</h3><div class="btns">${mv}</div><h3>RADIO STATION · OR TAP THE DIAL UP TOP WHILE FLYING</h3><div class="btns">${st}</div><h3>TIME OF DAY</h3><div class="btns">${lt}</div><h3>PIXELS</h3><div class="btns">${px}</div><div class="sub" style="margin-top:14px">BUILD 5d3c6a7</div>`,[['Back',back,true]]);
   const cb=$('cardBody');
   cb.querySelectorAll('[data-k]').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.k;if(k==='tilt'){if(!settings.tilt){settings.tilt=true;saveS();enableTilt().then(()=>{updTiltUI();settingsCard();});}else{settings.tilt=false;saveS();disableTilt();updTiltUI();settingsCard();}return;}settings[k]=!settings[k];saveS();if(k==='sound')snd.setOn(settings.sound);if(k==='fps'){$('fps').hidden=!settings.fps;$('fps').textContent='FPS: measuring…';fpsN=fpsT=0;fpsLast=0;}if(k==='sound')music.setVol();settingsCard();}));
   cb.querySelectorAll('[data-px]').forEach(b=>b.addEventListener('click',()=>{settings.pixels=b.dataset.px;pixMode=settings.pixels;saveS();resize();settingsCard();}));
@@ -2943,7 +2944,7 @@ function gameChecks(dt){
     const st=stripAt(ac.pos.x,ac.pos.z,10);if(st&&!ac.ground&&agl<7&&ac.vel.y<-.5)tip('flare','Just above the runway, ease the stick down (back) to soften the touchdown.');}
   if(ac.ground&&ac.td&&ac.u>8)tip('brake','Hold BRAKE to stop. The longer you hold, the harder it brakes.');
   const ck=$('check');if(showCheck){const c=checklistState();const row=(ok,t)=>`<span class="${ok?'ok':''}">${ok?'✓':'○'} ${t}</span><br>`;
-    ck.innerHTML=`<b>BEFORE LANDING</b>${row(c.carb,'CARB HEAT ON')}${row(c.mix,'MIXTURE RICH')}${row(c.flaps,'FLAPS 1 OR 2')}${c.needLight?row(c.light,'LANDING LIGHT'):''}${c.needLight&&typeof rwyLit==='function'?row(rwyLit(dest),'RWY LIGHTS (MIC ×3)'):''}`;ck.hidden=false;tip('checklist','Before-landing checklist: flick the switches and set the flap lever in the landing panel, bottom left. Bea\'s logbook explains each one.',1);}
+    ck.innerHTML=`<b>BEFORE LANDING</b>${row(c.carb,'CARB HEAT ON')}${row(c.mix,'MIXTURE RICH')}${row(c.flaps,'FLAPS 1 OR 2')}${c.needLight?row(c.light,'LANDING LIGHT'):''}${c.needLight&&typeof rwyLit==='function'?row(rwyLit(dest),'RUNWAY LIGHTS (MIC)'):''}`;ck.hidden=false;tip('checklist','Before-landing checklist: flick the switches and set the flap lever in the landing panel, bottom left. Bea\'s logbook explains each one.',1);}
   else ck.hidden=true;
   sightT+=dt;if(sightT>.3){sightT=0;
     for(const [k,v] of Object.entries(sights)){if(log.sights[k]||!sightOn(v))continue;if(Math.hypot(ac.pos.x-v.x,ac.pos.z-v.z)<450&&ac.pos.y-v.y<650){log.sights[k]=Date.now();stamp(1);addScore(100);saveL();
@@ -3481,19 +3482,47 @@ const RWY_ON=900,LEVELS=['','LOW','MEDIUM','HIGH'];
 function rwyLit(s){const r=s&&RWY[s.id];return !!r&&r.level>0;}
 function lightStrip(s,level,quiet){const r=RWY[s.id];if(!r)return;const was=r.level;r.level=Math.max(level,1);r.until=simT+RWY_ON;if(!was)r.on=0;
   r.m.material.size=r.level>=3?3:2;r.m.material.color.setScalar(1);if(!quiet){snd.clunk();toast(`${s.name}: runway lights ${LEVELS[r.level]}. They stay on for 15 minutes.`,2.6);}}
-let micN=0,micT=0;
-function keyMic(){if(mode!=='fly')return;micN++;micT=1.6;snd.squelch();updMicUI();}
-function micDone(){const n=micN;micN=0;updMicUI();if(n<3)return;const lvl=n>=7?3:n>=5?2:1;
-  const near=STRIPS.reduce((a,s)=>Math.hypot(s.x-ac.pos.x,s.z-ac.pos.z)<Math.hypot(a.x-ac.pos.x,a.z-ac.pos.z)?s:a);
-  if(Math.hypot(near.x-ac.pos.x,near.z-ac.pos.z)>12000){toast('Nothing answers. No airfield in radio range.',2);return;}
-  lightStrip(near,lvl);if(TOD[tod].lights<=0)tip('micday','The runway lights are on, but you\'ll only really see them from sunset on.');}
-function updMicUI(){const b=$('micBtn');if(b)b.querySelector('em').textContent=micN?'●'.repeat(Math.min(micN,7)):'×3';}
+/* ---- the radio call: press MIC once, you mumble a request through the static, the field mumbles back,
+   and the lights come up a step (low, then medium, then bright) ---- */
+let micBusy=false;
+/* a voice-ish mumble: a buzzy tone through a moving formant filter, chopped into syllables, squeezed through a
+   radio-sized band with a bed of static, ending in a squelch tail */
+function radioTalk(t0,dur,pitch,stat){const c=snd.ctx;if(!c)return;
+  const out=c.createGain();out.gain.value=0;const hp=c.createBiquadFilter();hp.type='highpass';hp.frequency.value=420;const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=2500;
+  const sh=c.createWaveShaper(),cv=new Float32Array(256);for(let i=0;i<256;i++){const x=i/128-1;cv[i]=Math.tanh(x*2.2);}sh.curve=cv;
+  hp.connect(lp);lp.connect(sh);sh.connect(out);out.connect(snd.master);
+  const o=c.createOscillator();o.type='sawtooth';const f1=c.createBiquadFilter();f1.type='bandpass';f1.Q.value=5;const f2=c.createBiquadFilter();f2.type='bandpass';f2.Q.value=6;
+  const vg=c.createGain();vg.gain.value=0;o.connect(f1);o.connect(f2);f1.connect(vg);f2.connect(vg);vg.connect(hp);
+  const n=c.createBufferSource();n.buffer=snd.buf;n.loop=true;const nb=c.createBiquadFilter();nb.type='bandpass';nb.frequency.value=2200;nb.Q.value=.6;const ng=c.createGain();ng.gain.value=0;n.connect(nb);nb.connect(ng);ng.connect(hp);
+  const end=t0+dur;out.gain.setValueAtTime(0,t0);out.gain.linearRampToValueAtTime(.55,t0+.03);out.gain.setValueAtTime(.55,end+.18);out.gain.linearRampToValueAtTime(0,end+.24);
+  ng.gain.setValueAtTime(.05*stat,t0);ng.gain.setValueAtTime(.05*stat,end);ng.gain.linearRampToValueAtTime(.4,end+.02);ng.gain.setValueAtTime(.4,end+.16);ng.gain.linearRampToValueAtTime(0,end+.22);
+  ng.gain.setValueAtTime(.35,t0);ng.gain.linearRampToValueAtTime(.05*stat,t0+.06);
+  let t=t0+.08;while(t<end-.05){const L=.07+Math.random()*.13,amp=Math.random()<.15?.03:.22+Math.random()*.2;
+    o.frequency.setValueAtTime(pitch*(.85+Math.random()*.35),t);o.frequency.linearRampToValueAtTime(pitch*(.8+Math.random()*.3),t+L);
+    f1.frequency.setValueAtTime(400+Math.random()*500,t);f2.frequency.setValueAtTime(1100+Math.random()*900,t);f1.frequency.linearRampToValueAtTime(400+Math.random()*500,t+L);
+    vg.gain.setValueAtTime(0,t);vg.gain.linearRampToValueAtTime(amp,t+L*.3);vg.gain.linearRampToValueAtTime(amp*.6,t+L*.75);vg.gain.linearRampToValueAtTime(0,t+L);
+    if(Math.random()<.18)ng.gain.setValueAtTime(.18*stat,t+L*.5),ng.gain.setValueAtTime(.05*stat,t+L*.5+.03);
+    t+=L+(Math.random()<.2?.12:.02);}
+  o.start(t0);n.start(t0,Math.random());o.stop(end+.3);n.stop(end+.3);}
+function keyMic(){if(mode!=='fly'||micBusy)return;
+  const near=STRIPS.reduce((a,s)=>Math.hypot(s.x-ac.pos.x,s.z-ac.pos.z)<Math.hypot(a.x-ac.pos.x,a.z-ac.pos.z)?s:a),far=Math.hypot(near.x-ac.pos.x,near.z-ac.pos.z)>12000;
+  const r=RWY[near.id],lvl=r?r.level:0,next=Math.min(3,lvl+1);
+  micBusy=true;updMicUI();const c=snd.ctx;
+  const ask=['lights please, over','could we have the lights a touch brighter','one more notch on the lights, please'][Math.min(lvl,2)];
+  toast(`You: "${near.name}, ${lvl>=3?'lights check, over':ask}."`,2);
+  if(c){const t=c.currentTime+.05;radioTalk(t,1+Math.random()*.4,105+Math.random()*15,.6);if(!far)radioTalk(t+1.85,1.1+Math.random()*.5,150+Math.random()*25,1.4);}
+  setTimeout(()=>{if(far){micBusy=false;updMicUI();toast('Only static comes back. No airfield in radio range.',2.2);return;}},1700);
+  if(far)return;
+  setTimeout(()=>{toast(`${near.name}: "${lvl>=3?'They\'re all the way up already. Good flying.':['Lights coming on now.','Brighter it is.','Full bright. Enjoy the view.'][next-1]}"`,2.4);},1900);
+  setTimeout(()=>{micBusy=false;lightStrip(near,next,true);snd.clunk();updMicUI(near);
+    if(TOD[tod].lights<=0)tip('micday','The runway lights are on, but you\'ll only really see them from sunset on.');},3400);}
+function updMicUI(){const b=$('micBtn');if(!b)return;const near=STRIPS.reduce((a,s)=>Math.hypot(s.x-ac.pos.x,s.z-ac.pos.z)<Math.hypot(a.x-ac.pos.x,a.z-ac.pos.z)?s:a),r=RWY[near.id],l=r?r.level:0;
+  b.querySelector('em').textContent=micBusy?'...':'●'.repeat(l)+'○'.repeat(3-l);b.classList.toggle('talk',micBusy);}
 function updRunwayLights(dt){const dark=TOD[tod].lights>0;
-  if(micT>0){micT-=dt;if(micT<=0)micDone();}
   for(const s of STRIPS){const r=RWY[s.id];if(!r)continue;if(r.level&&simT>r.until)r.level=0;
     const want=r.level&&dark;r.on=want?Math.min(1,r.on+dt/.8):0;r.m.visible=want;if(want)r.m.geometry.setDrawRange(0,Math.ceil(r.n*r.on));}
   if(dark&&mode==='fly'&&!ac.ground&&dest&&!rwyLit(dest)&&Math.hypot(dest.x-ac.pos.x,dest.z-ac.pos.z)<5000)
-    tip('pcl','Dark runway? Little airfields have pilot-controlled lights. Tap MIC three times quickly (five for brighter, seven for brightest) and the nearest runway lights up.');}
+    tip('pcl','Dark runway? Little airfields have pilot-controlled lights. Tap MIC (top right) to call the nearest field and they\'ll switch the runway lights on. Call again for brighter.');}
 
 /* ---- smoke trail ---- */
 const SMOKE_N=520,SMOKE_LIFE=42,SMOKE_EVERY=.08;let smokeOn=false,smokeAcc=0,smokeI=0;
@@ -3548,9 +3577,18 @@ $('swSearch').addEventListener('click',()=>{searchOn=!searchOn;snd.flick();updFu
 $('swSmoke').addEventListener('click',()=>{smokeOn=!smokeOn;snd.flick();if(smokeOn)snd.hiss(.5);updFunUI();if(smokeOn)tip('smoke','Smoke on! It hangs in the air for a while, so you can draw loops and letters in the sky.');});
 $('swFloat').addEventListener('click',()=>{setFloats(!floatsOn);});
 $('micBtn').addEventListener('pointerdown',e=>{e.preventDefault();keyMic();});
-function resetSwitches(){smokeOn=false;floatsOn=false;ac.floats=0;floatG.visible=false;micN=0;updFunUI();}
+function resetSwitches(){smokeOn=false;floatsOn=false;ac.floats=0;floatG.visible=false;micBusy=false;updFunUI();}
 function updSwitchesFx(dt){updRunwayLights(dt);updSmoke(dt);updSearch(dt);updFloats(dt);}
 updFunUI();
+
+/* ---- keep the sound alive: phones suspend the audio engine when the screen locks or the app goes to the background
+   (iOS calls it "interrupted") and don't restart it. Wake it when the page comes back, and on the very next touch,
+   since iOS only allows a restart from a tap. */
+function wakeAudio(){const c=snd.ctx;if(!c||c.state==='running'||c.state==='closed')return;try{c.resume().catch(()=>{});}catch(e){}}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){wakeAudio();setTimeout(wakeAudio,400);}});
+addEventListener('pageshow',wakeAudio);addEventListener('focus',wakeAudio);
+for(const ev of ['pointerdown','touchend','keydown'])addEventListener(ev,wakeAudio,{capture:true,passive:true});
+setInterval(()=>{const c=snd.ctx;if(c&&c.onstatechange==null)c.onstatechange=()=>{if(!document.hidden)wakeAudio();};},1000);
 
 
 /* ---------- main loop ---------- */
