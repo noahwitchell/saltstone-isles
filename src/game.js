@@ -827,8 +827,11 @@ function fixNums(root){const tw=document.createTreeWalker(root,NodeFilter.SHOW_T
     if(last<s.length)f.appendChild(document.createTextNode(s.slice(last)));n.parentNode.replaceChild(f,n);}}
 
 /* ---------- menus ---------- */
-function showCard(html,buttons){$('cardBody').innerHTML=html+'<div class="btns"></div>';$('cardBody').classList.remove('wide');const b=$('cardBody').querySelector('.btns:last-child');
-  (buttons||[]).forEach(([l,fn,p])=>{const el=document.createElement('button');el.textContent=l;if(p)el.className='primary';el.addEventListener('click',fn);b.appendChild(el);});$('modal').hidden=false;$('cardBody').scrollTop=0;scriptify($('cardBody'));fixNums($('cardBody'));}
+/* menus: "Back"-type buttons sit in a bar at the top of the card; everything else stays at the bottom */
+const isBackBtn=(l,fn)=>fn===back||l==='Back to flying'||l==='All pages'||l==='Resume';
+function showCard(html,buttons){$('cardBody').innerHTML='<div class="topbar"></div>'+html+'<div class="btns"></div>';$('cardBody').classList.remove('wide');const b=$('cardBody').querySelector('.btns:last-child'),tb=$('cardBody').querySelector('.topbar');
+  (buttons||[]).forEach(([l,fn,p])=>{const el=document.createElement('button');const top=isBackBtn(l,fn);el.textContent=top?'‹ '+(l==='Done'?'Back':l):l;if(p&&!top)el.className='primary';if(top)el.classList.add('backbtn');el.addEventListener('click',fn);(top?tb:b).appendChild(el);});
+  if(!tb.children.length)tb.remove();if(!b.children.length)b.remove();$('modal').hidden=false;$('cardBody').scrollTop=0;scriptify($('cardBody'));fixNums($('cardBody'));}
 function hideModal(){$('modal').hidden=true;}
 function back(){hideModal();if(mode==='title')$('title').hidden=false;else if(mode==='paused'||mode==='card')openMenu();}
 function openMenu(){if(mode==='fly')mode='paused';showCard(`<h2>Paused</h2><div class="sub">${dest?'HEADING FOR '+dest.name.toUpperCase():''}${mail.active?' · '+mail.bag.length+' IN THE BAG':''} · ${log.stamps} STAMPS</div>`,[
