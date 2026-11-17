@@ -353,7 +353,7 @@ const navPts=(()=>{const g=new THREE.BufferGeometry();g.setAttribute('position',
 const TG=new Map();for(const t of trees){const k=((t.x/60)|0)+','+((t.z/60)|0);if(!TG.has(k))TG.set(k,[]);TG.get(k).push(t);}
 function treeHit(x,y,z){const cx=(x/60)|0,cz=(z/60)|0;for(let i=-1;i<=1;i++)for(let j=-1;j<=1;j++){const L=TG.get((cx+i)+','+(cz+j));if(!L)continue;
   for(const t of L){const r=3.6*t.s+1.5;if((t.x-x)**2+(t.z-z)**2<r*r&&y<t.h+10.5*t.s)return true;}}return false;}
-let summit={x:0,z:0,h:0};{let m=-1e9,mi=0;for(let k=0;k<HGT.length;k++)if(HGT[k]>m){m=HGT[k];mi=k;}summit={x:-HALF+(mi%NV)*CELL,z:-HALF+Math.floor(mi/NV)*CELL,h:m};}
+let summit={x:0,z:0,h:0};{let m=-1e9,mi=0;for(let k=0;k<HGT.length;k++)if(HGT[k]>m){m=HGT[k];mi=k;}summit={x:-HALFX+(mi%NVX)*CELL,z:-HALFZ+Math.floor(mi/NVX)*CELL,h:m};}
 const stripAt=(x,z,m=2)=>STRIPS.find(s=>{const l=toLocal(s,x,z);return Math.abs(l.s)<s.len/2&&Math.abs(l.t)<s.wid/2+m;})||null;
 const stripById=id=>STRIPS.find(s=>s.id===id);
 
@@ -854,14 +854,14 @@ function setStation(id,quiet){if(id==='off'){if((settings.music??.5)>0)settings.
   const S=stationAt(id);if(!quiet)toast(`RADIO ${S.fq} · ${S.name}\n${S.desc}${settings.sound?'':'\n(Sound is off in Settings.)'}`,2.2);}
 function turnDial(){const i=dialIndex();setStation(DIAL[(i+1)%DIAL.length]);snd.click();}
 /* ---------- maps ---------- */
-const MAPW=SIZE,mapBase=(()=>{const N=512,c=document.createElement('canvas');c.width=c.height=N;const x=c.getContext('2d'),img=x.createImageData(N,N);
-  for(let j=0;j<N;j++)for(let i=0;i<N;i++){const wx=-MAPW/2+(i+.5)*MAPW/N,wz=-MAPW/2+(j+.5)*MAPW/N,h=groundH(wx,wz);let r,g,b;
+const MAPX=SIZEX,MAPZ=SIZEZ,mapBase=(()=>{const NX=1072,N=512,c=document.createElement('canvas');c.width=NX;c.height=N;const x=c.getContext('2d'),img=x.createImageData(NX,N);
+  for(let j=0;j<N;j++)for(let i=0;i<NX;i++){const wx=-MAPX/2+(i+.5)*MAPX/NX,wz=-MAPZ/2+(j+.5)*MAPZ/N,h=groundH(wx,wz);let r,g,b;
     if(h<0){const d=clamp(-h/40,0,1);r=lerp(70,30,d);g=lerp(150,72,d);b=lerp(170,120,d);}
     else if(h<4){r=226;g=205;b=150;}
     else{const t=clamp(h/600,0,1),sl=slopeAt(wx,wz);r=lerp(118,190,t*t);g=lerp(166,178,t);b=lerp(84,150,t*t);if(sl>.45){r=150;g=136;b=126;}
       if(isFarm(wx,wz,h,sl)){const fc=fieldColor(wx,wz);if(fc>=0){r=(fc>>16)&255;g=(fc>>8)&255;b=fc&255;}}
-      if(((h/60)|0)!==((groundH(wx+MAPW/N,wz)/60)|0)){r*=.82;g*=.82;b*=.82;}}
-    const k=(j*N+i)*4;img.data[k]=r;img.data[k+1]=g;img.data[k+2]=b;img.data[k+3]=255;}
+      if(((h/60)|0)!==((groundH(wx+MAPX/NX,wz)/60)|0)){r*=.82;g*=.82;b*=.82;}}
+    const k=(j*NX+i)*4;img.data[k]=r;img.data[k+1]=g;img.data[k+2]=b;img.data[k+3]=255;}
   x.putImageData(img,0,0);return c;})();
 const mctx=$('mapc').getContext('2d');
 function drawStripsOn(x,k,highlight){for(const s of STRIPS){const a=toWorld(s,-s.len/2,0),b=toWorld(s,s.len/2,0);const hi=s===highlight;
@@ -872,7 +872,7 @@ function drawMiniMap(dt){mapT-=dt;if(mapT>0)return;mapT=.08;const W=96,x=mctx;x.
   axes();const hdg=ac.ground?-ac.gYaw:Math.atan2(_f.x,-_f.z);
   const near=dest?Math.hypot(dest.x-ac.pos.x,dest.z-ac.pos.z):1e9,R=near<2600?1500:2800,k=(W/2)/R,cy=W/2+14;
   x.fillStyle='#1d2a44';x.fillRect(0,0,W,W);x.save();x.translate(W/2,cy);x.rotate(-hdg);x.scale(k,k);x.translate(-ac.pos.x,-ac.pos.z);
-  x.drawImage(mapBase,-MAPW/2,-MAPW/2,MAPW,MAPW);drawStripsOn(x,k,dest);
+  x.drawImage(mapBase,-MAPX/2,-MAPZ/2,MAPX,MAPZ);drawStripsOn(x,k,dest);
   x.fillStyle='#ffb02e';for(const [k_,v] of Object.entries(sights))if(log.sights[k_])x.fillRect(v.x-2/k,v.z-2/k,4/k,4/k);x.fillStyle='#8ff0e8';for(const g of FLYGATES)if(log.gates[g.id])x.fillRect(g.x-2/k,g.z-2/k,4/k,4/k);
   dropMarks(x,(a,b)=>[a,b],1/k);
   if(dest){x.fillStyle='#8ff0e8';x.beginPath();x.arc(dest.x,dest.z,3.5/k,0,TAU);x.fill();}
@@ -889,13 +889,13 @@ function bigMap(){hideModal();if(mode==='fly')mode='paused';let o=$('chartOv');
   $('chartLeg').innerHTML=`<b>BEA'S CHART</b> · ★ ${log.score.toLocaleString()}<br>${Object.keys(sights).filter(q=>log.sights[q]).length}/${Object.keys(sights).length} landmarks (orange) · ${FLYGATES.filter(g=>log.gates[g.id]).length}/${FLYGATES.length} gaps (cyan)${activeDrops().length?' · '+activeDrops().length+' air drops (orange rings)':''}${activeErrands().length?'<br>Errands: '+activeErrands().map(errLine).join(', '):''}`;
   drawChart();}
 function drawChart(){const c=$('bigmap'),r=c.getBoundingClientRect(),W=Math.max(200,Math.round(r.width)),H=Math.max(150,Math.round(r.height));c.width=W;c.height=H;
-  const x=c.getContext('2d');x.imageSmoothingEnabled=false;const k=Math.min(W/24000,H/20600),CX=150,CZ=500,sc=clamp(Math.min(W/512,H/384),1,2.2);
+  const x=c.getContext('2d');x.imageSmoothingEnabled=false;const k=Math.min(W/45200,H/20600),CX=0,CZ=500,sc=clamp(Math.min(W/512,H/384),1,2.2);
   x.fillStyle='#1e4878';x.fillRect(0,0,W,H);x.save();x.translate(W/2-CX*k,H/2-CZ*k);x.scale(k,k);
-  x.drawImage(mapBase,-MAPW/2,-MAPW/2,MAPW,MAPW);drawStripsOn(x,k/sc,dest);
+  x.drawImage(mapBase,-MAPX/2,-MAPZ/2,MAPX,MAPZ);drawStripsOn(x,k/sc,dest);
   x.restore();
   const P=(wx,wz)=>[W/2+(wx-CX)*k,H/2+(wz-CZ)*k];x.textBaseline='middle';
-  const label=(t,wx,wz,col,dy=-12)=>{const [a,b]=P(wx,wz);x.textAlign='center';x.fillStyle='#241c2e';x.fillText(t,a+1,b+dy*sc+1);x.fillStyle=col;x.fillText(t,a,b+dy*sc);};
   x.font=`${Math.round(13*sc)}px VT323, monospace`;
+  const label=(t,wx,wz,col,dy=-12)=>{let [a,b]=P(wx,wz);const hw=x.measureText(t).width/2+5;a=clamp(a,hw,W-hw);b=clamp(b+dy*sc,10*sc,H-10*sc)-dy*sc;x.textAlign='center';x.fillStyle='#241c2e';x.fillText(t,a+1,b+dy*sc+1);x.fillStyle=col;x.fillText(t,a,b+dy*sc);};
   for(const [k_,v] of Object.entries(sights)){if(!log.sights[k_])continue;const [a,b]=P(v.x,v.z);x.fillStyle='#241c2e';x.fillRect(a-3*sc,b-3*sc,6*sc,6*sc);x.fillStyle='#ffb02e';x.fillRect(a-2*sc,b-2*sc,4*sc,4*sc);}
   for(const g of FLYGATES){if(!log.gates[g.id])continue;const [a,b]=P(g.x,g.z),q=4*sc;x.fillStyle='#8ff0e8';x.beginPath();x.moveTo(a,b-q);x.lineTo(a+q,b);x.lineTo(a,b+q);x.lineTo(a-q,b);x.closePath();x.fill();}
   dropMarks(x,P,sc);
@@ -1170,7 +1170,7 @@ function loop(now){
   else acc=0;
   if(toastT>0){toastT-=dt;if(toastT<=0)$('toast').hidden=true;}
   if(callT>0){callT-=dt;if(callT<=0)$('callout').hidden=true;}
-  updateVisuals(dt,t);updateCam(dt,t);sky.position.copy(camera.position);
+  updateVisuals(dt,t);updateCam(dt,t);cullChunks(camera.position);sky.position.copy(camera.position);
   renderer.info.reset();renderer.setRenderTarget(rt);renderer.render(scene,camera);const tri=renderer.info.render.triangles,dc=renderer.info.render.calls;renderer.setRenderTarget(null);renderer.render(postScene,postCam);
   drawHUD(dt);
   if(settings.fps){fpsN++;fpsT+=now-(fpsLast||now);fpsLast=now;fpsMin=Math.min(fpsMin,1000/Math.max(now-(fpsPrev||now-16),1));fpsPrev=now;
