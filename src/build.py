@@ -1,7 +1,7 @@
 import os
 os.chdir(os.path.dirname(os.path.abspath(__file__))+'/..')
 head=open('src/head.html').read()
-world=open('src/world.js').read().replace('/*@ISLES@*/',open('src/isles.js').read()).replace('/*@ISLEPROPS@*/',open('src/isleprops.js').read()+'\n'+open('src/formations.js').read()).replace('/*@TOWN@*/',open('src/town.js').read())
+world=open('src/world.js').read().replace('/*@ISLES@*/',open('src/isles.js').read()).replace('/*@ISLEPROPS@*/',open('src/isleprops.js').read()+'\n'+open('src/formations.js').read()+'\n'+open('src/nightglow.js').read()).replace('/*@TOWN@*/',open('src/town.js').read())
 game=open('src/game.js').read().replace('/*@PLAY@*/',open('src/play.js').read()+'\n'+open('src/drops.js').read())
 out0=head+'\n<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>\n<script>\n'+world+'\n</script>\n<script>\n'+game+'\n</script>\n'
 import hashlib

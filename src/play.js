@@ -117,9 +117,9 @@ function askBiscuit(){if(mode!=='fly'||barkCD>0)return;barkCD=1.5;const P=ac.pos
     if(e.set){FINDS[e.set].forEach((p,i)=>{if(!st.found.includes(i))pick({x:p.x,z:p.z,d:dist(p.x,p.z),say:e.one});});
       if(st.found.length===FINDS[e.set].length)pick({x:home.x,z:home.z,d:dist(home.x,home.z)+5000,say:`${g.name.split(' ')[0]} at ${home.name}, waiting for your report`});}
     else{const v=sights[e.sight];if(!log.sights[e.sight])pick({x:v.x,z:v.z,d:dist(v.x,v.z),say:e.what});else pick({x:home.x,z:home.z,d:dist(home.x,home.z)+5000,say:`${g.name.split(' ')[0]} at ${home.name}, waiting for your report`});}}
-  if(!best){for(const [k,v] of Object.entries(sights))if(!log.sights[k]&&dist(v.x,v.z)<3500)pick({x:v.x,z:v.z,d:dist(v.x,v.z),say:'something down there worth a look'});
+  if(!best){for(const [k,v] of Object.entries(sights))if(!log.sights[k]&&sightOn(v)&&dist(v.x,v.z)<3500)pick({x:v.x,z:v.z,d:dist(v.x,v.z),say:'something down there worth a look'});
     for(const g of FLYGATES)if(!log.gates[g.id]&&dist(g.x,g.z)<3500)pick({x:g.x,z:g.z,d:dist(g.x,g.z),say:`a gap to fly through: ${g.name}`});
-    if(parcelsLeft)for(const d of DROPS)if(!log.drops[d.id]&&dist(d.x,d.z)<3500)pick({x:d.x,z:d.z,d:dist(d.x,d.z),say:`a drop target with orange smoke: ${d.name}`});}
+    for(const d of activeDrops())pick({x:d.seen?d.x:d.hx,z:d.seen?d.z:d.hz,d:dist(d.x,d.z)*.8,say:d.seen?`the drop camp: ${d.place}`:`orange smoke somewhere on ${ISLES[d.isle].name}`});}
   if(!best&&dest)best={x:dest.x,z:dest.z,d:dist(dest.x,dest.z),say:`${dest.name}, your next stop`};
   dog.bark=1.6;snd.woof();if(!best){toast('Biscuit sniffs about and wags. Nothing new around here.',2.4);dogTarget=null;return;}
   dogTarget=best;const d=dist(best.x,best.z),how=d<350?', right below':d<1000?`, about ${Math.round(d/100)*100} m`:`, about ${(d/1000).toFixed(1)} km`;
@@ -129,9 +129,9 @@ function askBiscuit(){if(mode!=='fly'||barkCD>0)return;barkCD=1.5;const P=ac.pos
 const barked={};let autoCD=10,autoT=0;
 function dogAuto(dt){autoCD-=dt;autoT+=dt;if(autoT<1)return;autoT=0;if(!settings.dog||mode!=='fly'||ac.ground||autoCD>0||dog.bark>0)return;
   const P=ac.pos,cand=[];
-  for(const [k,v] of Object.entries(sights))if(!log.sights[k]&&!barked['s'+k]&&Math.hypot(P.x-v.x,P.z-v.z)<1100&&P.y-v.y<900)cand.push({key:'s'+k,x:v.x,z:v.z,say:'something down there worth a look'});
+  for(const [k,v] of Object.entries(sights))if(!log.sights[k]&&sightOn(v)&&!barked['s'+k]&&Math.hypot(P.x-v.x,P.z-v.z)<1100&&P.y-v.y<900)cand.push({key:'s'+k,x:v.x,z:v.z,say:'something down there worth a look'});
   for(const g of FLYGATES)if(!log.gates[g.id]&&!barked['g'+g.id]&&Math.hypot(P.x-g.x,P.z-g.z)<1000)cand.push({key:'g'+g.id,x:g.x,z:g.z,say:`a gap to fly through: ${g.name}`});
-  for(const d of DROPS)if(!log.drops[d.id]&&!barked['d'+d.id]&&Math.hypot(P.x-d.x,P.z-d.z)<1300)cand.push({key:'d'+d.id,x:d.x,z:d.z,say:`orange smoke, a drop target: ${d.name}`});
+  for(const d of activeDrops())if(!barked['d'+d.x]&&Math.hypot(P.x-d.x,P.z-d.z)<1300)cand.push({key:'d'+d.x,x:d.x,z:d.z,say:`orange smoke: ${d.place}`});
   if(!cand.length)return;const best=cand.reduce((a,c)=>Math.hypot(P.x-c.x,P.z-c.z)<Math.hypot(P.x-a.x,P.z-a.z)?c:a);
   barked[best.key]=1;autoCD=30;dogTarget=best;dog.bark=1.6;snd.woof();toast(`Woof! Biscuit's nose points ${dirWord(best.x,best.z)}: ${best.say}.`,3.2);}
 function updDog(dt,t){if(lookDown){dog.root.visible=false;return;}const U=plane.userData,cock=!U.bodyM.visible&&mode!=='crashed';dog.bark=Math.max(0,dog.bark-dt);const b=dog.bark>0?1:0;
@@ -189,7 +189,7 @@ const spark=(()=>{const MAX=80,g=new THREE.BufferGeometry(),pos=new Float32Array
   const m=new THREE.Points(g,new THREE.PointsMaterial({size:4,sizeAttenuation:false,vertexColors:true,fog:false}));m.frustumCulled=false;scene.add(m);return {g,pos,col,MAX,list:[],t:0};})();
 function updSpark(dt,t){spark.t-=dt;const P=camera.position;
   if(spark.t<=0){spark.t=.4;const L=[];const far=(x,z)=>Math.hypot(P.x-x,P.z-z)>2800;
-    for(const [k,v] of Object.entries(sights)){if(log.sights[k]||far(v.x,v.z))continue;L.push({x:v.x,y:Math.max(v.y,groundH(v.x,v.z),0)+30,z:v.z,c:[1,.82,.35],ph:hash2(k.length,k.charCodeAt(0),7)});}
+    for(const [k,v] of Object.entries(sights)){if(log.sights[k]||!sightOn(v)||far(v.x,v.z))continue;L.push({x:v.x,y:Math.max(v.y,groundH(v.x,v.z),0)+30,z:v.z,c:[1,.82,.35],ph:hash2(k.length,k.charCodeAt(0),7)});}
     for(const id of activeErrands()){const e=ERRANDS[id];if(!e.set)continue;FINDS[e.set].forEach((p,i)=>{if(errState(id).found.includes(i))return;if(!far(p.x,p.z))L.push({o:p,dy:22,c:[.75,1,1],ph:i*.37,fast:1});});}
     spark.list=L.slice(0,spark.MAX);}
   const show=mode!=='title';

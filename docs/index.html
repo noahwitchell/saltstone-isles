@@ -54,37 +54,62 @@ button:focus-visible{outline:2px solid #fff;outline-offset:2px}
   box-shadow:4px 4px 0 #0008;pointer-events:none;text-align:center;text-wrap:balance}
 
 
-/* controls */
-#thr{position:fixed;left:var(--sl);top:calc(var(--st) + 50px);bottom:var(--sb);width:58px;background:var(--glass);border:2px solid var(--line);touch-action:none}
-#thrFill{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(#e2703f,#b5512b);opacity:.55}
-#thrKnob{position:absolute;left:-4px;right:-4px;height:14px;background:var(--paper);box-shadow:0 3px 0 #0008;transform:translateY(50%)}
-#thr span{position:absolute;left:0;right:0;top:6px;text-align:center;font-family:var(--mono);font-size:14px;color:var(--paper)}
-#thrPct{top:auto!important;bottom:6px}
-#lcol{position:fixed;left:calc(var(--sl) + 68px);top:calc(var(--st) + 50px);width:124px;display:flex;flex-direction:column;gap:6px}
-#mapc{width:124px;height:124px;image-rendering:pixelated;border:2px solid var(--line);background:#1d2a44;display:block;box-sizing:border-box;cursor:pointer}
-#sw{display:flex;gap:4px}
-#sw button{flex:1;font-family:var(--mono);font-size:13px;padding:7px 0;line-height:1.1;background:#3a3344;color:var(--paper);box-shadow:inset -2px -2px 0 #241c2e, 0 2px 0 #0007}
-#sw button.on{background:var(--good);color:#fff;box-shadow:inset -2px -2px 0 #3e7334, 0 2px 0 #0007}
-#sw button.warn{background:var(--warn);color:var(--ink)}
-#wind{font-family:var(--mono);font-size:14px;padding:8px 0;line-height:1.1;color:var(--ink);background:linear-gradient(to right,#ffd36b var(--w,0%),#fff0c4 var(--w,0%));box-shadow:inset -2px -2px 0 #b8902e, 0 2px 0 #0007;pointer-events:auto}
-#score{font-family:var(--mono);font-size:16px;text-align:center;background:var(--glass);border:2px solid var(--line);color:#ffd36b;padding:3px 0;pointer-events:none}
-#score.pop{animation:pop .5s}@keyframes pop{30%{transform:scale(1.12);color:#fff}}
-#errand{font-family:var(--mono);font-size:12px;line-height:1.15;background:rgba(36,28,46,.74);border:2px solid #b8902e;color:#ffd890;padding:3px 5px;pointer-events:none}
-#wind span{display:block;font-size:12px;letter-spacing:.2em;color:#a0601e}
-#wind.on{background:#ffd36b;color:#241c2e}
+/* controls: an analog panel. Throttle quadrant lever on the left, a rail of little toggle buttons beside it, and
+   panels (map, today's jobs, landing controls, air drop) that fold away so you can just look at the view */
+#thr{position:fixed;left:var(--sl);top:calc(var(--st) + 50px);bottom:var(--sb);width:58px;touch-action:none;z-index:2;
+  background:linear-gradient(90deg,#3b3542,#2c2733 45%,#24202b);border:2px solid #15121a;box-shadow:inset 2px 2px 0 #4d4656,inset -2px -2px 0 #1a161f}
+#thr .lab{position:absolute;left:0;right:0;top:4px;text-align:center;font:9px/1 var(--mono);letter-spacing:.08em;color:#cfc4b2}
+#thrSlot{position:absolute;left:50%;top:22px;bottom:36px;width:8px;margin-left:-4px;background:#0d0b10;box-shadow:inset 2px 0 0 #000,1px 0 0 #4d4656}
+#thrTicks{position:absolute;right:4px;top:22px;bottom:36px;width:6px;background:repeating-linear-gradient(#cfc4b2 0 1px,transparent 1px 10%)}
+#thrKnob{position:absolute;left:3px;right:3px;height:24px;transform:translateY(50%);border-radius:7px 7px 4px 4px;
+  background:linear-gradient(#55505c,#18151c 40%,#0b090d);box-shadow:inset 0 2px 0 #8a8492,0 3px 0 #000a;pointer-events:none}
+#thrKnob::after{content:'';position:absolute;left:6px;right:6px;top:9px;height:2px;background:#e2703f}
+#thrPct{position:absolute;left:0;right:0;bottom:6px;text-align:center;font-family:var(--mono);font-size:14px;color:#ffd36b}
+#rail{position:fixed;left:calc(var(--sl) + 64px);top:calc(var(--st) + 50px);display:flex;flex-direction:column;gap:5px;z-index:2}
+.rb{width:36px;height:36px;padding:2px;line-height:0;background:#2c2733;box-shadow:inset 2px 2px 0 #4d4656,inset -2px -2px 0 #16131b,0 2px 0 #0008;opacity:.75}
+.rb img{width:32px;height:32px;image-rendering:pixelated}
+.rb.on{background:#4a4255;opacity:1;box-shadow:inset 2px 2px 0 #6b6276,inset -2px -2px 0 #241f2a,0 2px 0 #0008}
+.rb.nudge{animation:nudge 1s infinite}@keyframes nudge{50%{background:#e2703f;opacity:1}}
+#wind{width:36px;height:52px;padding:0;font-family:var(--mono);font-size:10px;line-height:1;color:var(--ink);background:linear-gradient(to top,#ffd36b var(--w,0%),#fff0c4 var(--w,0%));box-shadow:inset -2px -2px 0 #b8902e, 0 2px 0 #0007;pointer-events:auto}
+#wind img{width:28px;height:28px;image-rendering:pixelated;display:block;margin:2px auto 1px}
+#wind span{display:block;font-size:10px;color:#a0601e}
+#wind.on{background:#ffd36b}
 #wind.off{opacity:.55}
-#wind.cool{background:linear-gradient(to right,#c9a85a var(--w,0%),#6a5a48 var(--w,0%));color:var(--paper)}
+#wind.cool{background:linear-gradient(to top,#c9a85a var(--w,0%),#6a5a48 var(--w,0%));color:var(--paper)}
 #wind.cool span{color:var(--paper)}
-#lbtn{position:fixed;left:calc(var(--sl) + 68px);bottom:var(--sb);display:flex;gap:6px;width:124px}
-#lbtn button{flex:1;font-family:var(--mono);font-size:14px;padding:11px 0;position:relative;overflow:hidden}
-#brake{background:linear-gradient(to top, var(--bad) var(--b,0%), var(--paper) var(--b,0%))}
-#brake.on{color:#fff}
-#check{position:fixed;left:calc(var(--sl) + 200px);top:calc(var(--st) + 50px);background:var(--glass);border:2px solid var(--line);padding:6px 9px;font-family:var(--mono);font-size:14px;line-height:1.6;pointer-events:none}
+#pcol{position:fixed;left:calc(var(--sl) + 106px);top:calc(var(--st) + 50px);width:124px;display:flex;flex-direction:column;gap:6px;z-index:2}
+#mapc{width:124px;height:124px;image-rendering:pixelated;border:2px solid var(--line);background:#1d2a44;display:block;box-sizing:border-box;cursor:pointer}
+#job{background:var(--glass);border:2px solid #b8902e;padding:3px 5px 4px;font-family:var(--mono);font-size:13px;line-height:1.15;color:#ffd890;cursor:pointer;pointer-events:auto;width:150px;box-sizing:border-box}
+#job .jh{display:flex;justify-content:space-between;gap:6px;font-size:11px;color:var(--paper);opacity:.85;letter-spacing:.04em}
+#score{color:#ffd36b}#score.pop{animation:pop .5s}@keyframes pop{30%{transform:scale(1.15);color:#fff}}
+#jDrop.done{color:#8fe08a}#jDrop{color:#ff9a6a}
+#eng{position:fixed;left:calc(var(--sl) + 106px);bottom:var(--sb);display:flex;gap:4px;align-items:stretch;z-index:2;padding:4px;
+  background:linear-gradient(#3b3542,#2c2733 50%,#24202b);border:2px solid #15121a;box-shadow:inset 2px 2px 0 #4d4656,inset -2px -2px 0 #1a161f}
+#eng .lab{position:absolute;left:-2px;right:-2px;top:3px;text-align:center;font:9px/1 var(--mono);letter-spacing:.02em;color:#cfc4b2;white-space:nowrap}
+.tsw,#brake,#flapL{position:relative;width:44px;height:92px;padding:0;background:#211d27;box-shadow:inset 1px 1px 0 #15121a,inset -1px -1px 0 #4d4656;touch-action:none}
+.tsw:active,#brake:active{transform:none;box-shadow:inset 1px 1px 0 #15121a,inset -1px -1px 0 #4d4656}
+.tsw .nut{position:absolute;left:50%;top:54px;width:16px;height:16px;margin:-8px 0 0 -8px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#f0eef4,#9a96a2 55%,#55515c);box-shadow:0 0 0 2px #15121a}
+.tsw .bat{position:absolute;left:50%;width:8px;margin-left:-4px;border-radius:4px;background:linear-gradient(90deg,#8c8896,#f4f2f8 45%,#a4a0ac);box-shadow:0 0 0 1px #15121a;transition:top .07s,height .07s}
+.tsw.on .bat{top:28px;height:26px}.tsw:not(.on) .bat{top:54px;height:22px;filter:brightness(.8)}
+.tsw em{position:absolute;left:0;right:0;font:normal 10px/1 var(--mono);text-align:center;color:#7b7385}
+.tsw em.u{top:16px}.tsw em.d{bottom:4px}
+.tsw.on em.u{color:#8fe08a}.tsw:not(.on) em.d{color:var(--paper)}
+.tsw.warn{animation:warnb .6s infinite}@keyframes warnb{50%{background:#6a5218}}
+#flapL{width:50px;cursor:ns-resize}
+#flapL .fslot{position:absolute;left:12px;top:22px;bottom:12px;width:6px;background:#0d0b10}
+#flapL .fd{position:absolute;right:6px;font:12px/1 var(--mono);color:#7b7385;transform:translateY(-50%);pointer-events:none}
+#flapL .fd.on{color:#ffd36b}
+#flapH{position:absolute;left:3px;width:28px;height:12px;transform:translateY(-50%);transition:top .12s;pointer-events:none;
+  background:linear-gradient(#ffffff,#d8d2c8);clip-path:polygon(0 30%,20% 0,100% 35%,100% 65%,20% 100%,0 70%);filter:drop-shadow(0 2px 0 #000)}
+#brake{width:52px;background:linear-gradient(to top, #7a2a24 var(--b,0%), #211d27 var(--b,0%))}
+#brake .ped{position:absolute;left:8px;right:8px;top:24px;bottom:10px;border-radius:3px;background:repeating-linear-gradient(#55505c 0 3px,#2a2630 3px 6px);box-shadow:0 0 0 2px #15121a}
+#brake.on .ped{background:repeating-linear-gradient(#e5483b 0 3px,#8a2a22 3px 6px)}
+#check{position:fixed;left:calc(var(--sl) + 240px);top:calc(var(--st) + 50px);background:var(--glass);border:2px solid var(--line);padding:6px 9px;font-family:var(--mono);font-size:14px;line-height:1.6;pointer-events:none;z-index:2}
 #check b{display:block;font-size:9px;opacity:.75;letter-spacing:.06em}
+@media (max-height:520px){#pcol{flex-direction:row;align-items:flex-start;width:auto}#check{left:calc(var(--sl) + 392px)}}
 #check .ok{color:#8fe08a}
 #fps{position:fixed;left:50%;transform:translateX(-50%);top:calc(var(--st) + 46px);white-space:nowrap;background:var(--glass);color:var(--paper);font-family:var(--mono);font-size:13px;padding:3px 6px;pointer-events:none;z-index:1}
-#bag{position:fixed;right:var(--sr);top:calc(var(--st) + 50px);background:var(--glass);border:2px solid var(--line);padding:5px 8px;font-family:var(--mono);font-size:14px;pointer-events:auto;cursor:pointer;color:var(--paper);border-radius:0}
-#dropUI{position:fixed;right:var(--sr);top:calc(var(--st) + 94px);display:flex;flex-direction:column;gap:6px;z-index:3}
+#dropUI{position:fixed;right:var(--sr);top:calc(var(--st) + 50px);display:flex;flex-direction:column;gap:6px;z-index:3}
 #dropUI button{font-family:var(--mono);font-size:14px;line-height:1.1;padding:8px 10px;min-width:62px}
 #lookBtn.on{background:var(--good);color:#fff;box-shadow:inset -3px -3px 0 #3e7334, 0 3px 0 #0007}
 #dropBtn{background:#e2703f;color:#fff8ec;box-shadow:inset -3px -3px 0 #b5512b, 0 3px 0 #0007}#dropBtn.empty{opacity:.55}
@@ -162,13 +187,24 @@ h3{font-family:var(--mono);font-size:15px;letter-spacing:.08em;color:var(--ink2)
   </div>
   <div id="stallBan" hidden>STALL</div>
   <div id="callout" hidden></div>
-  <div id="thr" aria-label="Throttle"><div id="thrFill"></div><div id="thrKnob"></div><span>PWR</span><span id="thrPct">0%</span></div>
-  <div id="lcol"><canvas id="mapc" width="96" height="96" aria-label="Map. Tap for the full chart."></canvas>
-    <div id="sw"><button id="swCarb">CARB<br>HEAT</button><button id="swMix">MIX<br>RICH</button><button id="swLight">LAND<br>LIGHT</button></div>
-    <button id="wind" aria-label="Tailwind boost">TAILWIND</button><div id="score" aria-label="Score">★ 0</div><div id="errand" hidden></div></div>
-  <div id="lbtn"><button id="flaps">FLAPS 0</button><button id="brake">BRAKE</button></div>
+  <div id="thr" aria-label="Throttle lever"><b class="lab">THROTTLE</b><div id="thrSlot"></div><div id="thrTicks"></div><div id="thrKnob"></div><span id="thrPct">0%</span></div>
+  <div id="rail">
+    <button class="rb on" id="rMap" aria-label="Show or hide the map"></button>
+    <button class="rb on" id="rJob" aria-label="Show or hide today's jobs"></button>
+    <button class="rb on" id="rEng" aria-label="Show or hide the landing controls"></button>
+    <button class="rb" id="rDrop" aria-label="Show or hide the air-drop controls" hidden></button>
+    <button id="wind" aria-label="Tailwind boost"></button>
+  </div>
+  <div id="pcol"><canvas id="mapc" width="96" height="96" aria-label="Map. Tap for the full chart."></canvas>
+    <div id="job" aria-label="Today's jobs. Tap for the mail bag."><div class="jh"><span id="jDay">FREE FLIGHT</span><span id="score" aria-label="Score">★ 0</span></div><div id="bag" hidden></div><div id="jDrop" hidden></div><div id="errand" hidden></div></div></div>
+  <div id="eng">
+    <div id="flapL" aria-label="Flap lever"><b class="lab">FLAPS</b><div class="fslot"></div><span class="fd" data-f="0">0</span><span class="fd" data-f="1">1</span><span class="fd" data-f="2">2</span><div id="flapH"></div></div>
+    <button class="tsw" id="swCarb"><b class="lab">CARB HEAT</b><span class="nut"></span><span class="bat"></span><em class="u">ON</em><em class="d">OFF</em></button>
+    <button class="tsw" id="swMix"><b class="lab">MIXTURE</b><span class="nut"></span><span class="bat"></span><em class="u">RICH</em><em class="d">LEAN</em></button>
+    <button class="tsw" id="swLight"><b class="lab">LAND LIGHT</b><span class="nut"></span><span class="bat"></span><em class="u">ON</em><em class="d">OFF</em></button>
+    <button id="brake"><b class="lab">BRAKE</b><span class="ped"></span></button>
+  </div>
   <div id="check" hidden></div>
-  <button id="bag" hidden></button>
   <div id="dropUI" hidden><button id="lookBtn" aria-label="Look straight down">LOOK<br>DOWN</button><button id="dropBtn" aria-label="Drop a parcel">DROP</button></div>
   <div id="stick"><div id="ring" class="idle"><div id="knob"></div><div id="ringHint">STICK · DRAG ANYWHERE</div></div></div>
 </div>
@@ -1430,6 +1466,61 @@ const FORMS=[];
     anims.push(t=>{fm.material.opacity=.42+Math.sin(t*1.7)*.13;});}
 })();
 
+/* ---------------- night finds: things that only glow after dark ----------------
+   Landmarks (sights with night:true) you can't see in daylight. They light up at blue hour and night, and only count
+   as discovered then. All the glows are one Points cloud with a small shader: each point has a colour, a size, a
+   phase and a motion kind (0 twinkle in place, 1 firefly drift, 2 sea glow that pulses in waves, 3 slow wandering wisp). */
+const NIGHT_GLOW=(function nightGlow(){
+  let ns=31337;const r=()=>{ns=(Math.imul(ns,1664525)+1013904223)>>>0;return ns/4294967296;};
+  const P=[],Cl=[],Ph=[],Sz=[],Kd=[];
+  const add=(x,y,z,c,sz,kind)=>{P.push(x,y,z);Cl.push(((c>>16)&255)/255,((c>>8)&255)/255,(c&255)/255);Ph.push(r()*TAU);Sz.push(sz);Kd.push(kind);};
+  const far=(x,z,d)=>!Object.values(sights).some(s=>Math.hypot(s.x-x,s.z-z)<d)&&!STRIPS.some(s=>Math.hypot(s.x-x,s.z-z)<400);
+  function find(isle,test,tries=3000,fd=500,R0){const I=ISLES[isle],R=R0||(I.r||900)*1.1;for(let n=0;n<tries;n++){const a=r()*TAU,rr=Math.sqrt(r())*R,x=I.x+Math.cos(a)*rr,z=I.z+Math.sin(a)*rr;if(far(x,z,fd)&&test(x,z))return {x,z};}return null;}
+  const slope=(x,z)=>Math.hypot(groundH(x+6,z)-groundH(x-6,z),groundH(x,z+6)-groundH(x,z-6))/12;
+  const flat=(x,z,lo,hi)=>{const h=groundH(x,z);return h>lo&&h<hi&&slope(x,z)<.12;};
+  const put=(id,p,y,name,desc)=>{sights[id]={x:p.x,z:p.z,y,name,desc,night:true};};
+
+  /* Glow Bay: a cove where the water lights up blue where the waves stir it */
+  {const p=find('marram',(x,z)=>{const h=groundH(x,z);if(h>-1.5||h<-7)return false;let land=0;for(let k=0;k<8;k++){const a=k/8*TAU;if(groundH(x+Math.cos(a)*160,z+Math.sin(a)*160)>0)land++;}return land>=3&&land<=6;});
+    if(p){put('glowbay',p,0,'Glow Bay','The water lights up blue wherever it moves. Rosa says swimming in it feels like flying.');
+      for(let i=0;i<520;i++){const a=r()*TAU,d=Math.sqrt(r())*150,x=p.x+Math.cos(a)*d,z=p.z+Math.sin(a)*d;if(groundH(x,z)>-.3)continue;add(x,.25,z,r()<.7?0x3fe8ff:0x7affd8,1+(r()<.25?1:0),2);}}}
+  /* Firefly Meadow: a low field full of blinking yellow-green */
+  {const p=find('apple',(x,z)=>flat(x,z,8,45)&&flat(x+60,z,8,50)&&flat(x-60,z+40,8,50));
+    if(p){put('fireflies',p,groundH(p.x,p.z),'Firefly Meadow','Thousands of them, every summer night. Nobody on Applecross goes to bed early in July.');
+      for(let i=0;i<420;i++){const a=r()*TAU,d=Math.sqrt(r())*130,x=p.x+Math.cos(a)*d,z=p.z+Math.sin(a)*d,h=groundH(x,z);if(h<2)continue;add(x,h+1+r()*7,z,r()<.8?0xd8ff5a:0xffe46a,1,1);}}}
+  /* Fairy Ring: a perfect circle of glowing mushrooms deep in the pines */
+  {const p=find('tall',(x,z)=>{const h=groundH(x,z);return h>15&&h<300&&slope(x,z)<.2&&slope(x+14,z)<.3&&slope(x-14,z)<.3;},6000,280,1500);
+    if(p){const y=groundH(p.x,p.z);put('fairyring',p,y,'The Fairy Ring','A ring of mushrooms that glow green at night. Step inside and you owe the fairies a song.');
+      const caps=[];for(let i=0;i<26;i++){const a=i/26*TAU+r()*.08,d=12+r()*1.2,x=p.x+Math.cos(a)*d,z=p.z+Math.sin(a)*d,h=groundH(x,z);add(x,h+.9,z,0x7dffb0,2,0);
+        caps.push({geo:new THREE.CylinderGeometry(.12,.16,.8,5),m:M([x,h+.4,z]),color:0xe9e0cc},{geo:new THREE.SphereGeometry(.55,6,3,0,TAU,0,Math.PI/2),m:M([x,h+.75,z]),color:0xd8e8c8});}
+      for(let i=0;i<60;i++){const a=r()*TAU,d=r()*14;add(p.x+Math.cos(a)*d,y+1+r()*6,p.z+Math.sin(a)*d,0xb8ffd8,1,3);}
+      scene.add(new THREE.Mesh(merge(caps),toon()));}}
+  /* Glow-worm Cliffs: a steep face speckled with tiny blue lights, like a sky of its own */
+  {const p=find('cleft',(x,z)=>slope(x,z)>.9&&groundH(x,z)>20,6000);
+    if(p){const y=groundH(p.x,p.z);put('glowworms',p,y,'Glow-worm Cliffs','A whole cliff of glow-worms. From the sea it looks like the stars have fallen into the rock.');
+      let n=0;for(let k=0;k<4000&&n<480;k++){const x=p.x+(r()-.5)*220,z=p.z+(r()-.5)*220,h=groundH(x,z);if(slope(x,z)<.6||h<4)continue;
+        const gx=groundH(x+2,z)-groundH(x-2,z),gz=groundH(x,z+2)-groundH(x,z-2),L=Math.hypot(gx,gz)||1;add(x-gx/L*.8,h+.4,z-gz/L*.8,r()<.8?0x5ab8ff:0x9ad8ff,1,0);n++;}}}
+  /* Wisp Marsh: low flats where pale lights wander about and never quite stay put */
+  {const p=find('salt',(x,z)=>flat(x,z,.5,8));
+    if(p){put('wisps',p,groundH(p.x,p.z),'Wisp Marsh','Pale lights drifting over the salt flats. Marsh gas, says Dr. Varga. Ghosts, says everybody else.');
+      for(let i=0;i<22;i++){const a=r()*TAU,d=Math.sqrt(r())*170,x=p.x+Math.cos(a)*d,z=p.z+Math.sin(a)*d;add(x,Math.max(0,groundH(x,z))+2+r()*4,z,0xd8fff0,2+(r()<.3?1:0),3);}}}
+
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(P,3));g.setAttribute('color',new THREE.Float32BufferAttribute(Cl,3));
+  g.setAttribute('aPh',new THREE.Float32BufferAttribute(Ph,1));g.setAttribute('aSz',new THREE.Float32BufferAttribute(Sz,1));g.setAttribute('aKd',new THREE.Float32BufferAttribute(Kd,1));
+  const mat=new THREE.ShaderMaterial({uniforms:{uT:{value:0},uOn:{value:0}},transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,
+    vertexShader:`attribute float aPh,aSz,aKd;attribute vec3 color;uniform float uT,uOn;varying vec3 vC;varying float vA;
+      void main(){vec3 p=position;float a=1.;
+        if(aKd<.5){a=.55+.45*sin(uT*2.3+aPh*7.);}
+        else if(aKd<1.5){p+=vec3(sin(uT*.7+aPh*3.)*2.,sin(uT*1.1+aPh)*1.2,cos(uT*.6+aPh*5.)*2.);a=pow(max(0.,sin(uT*1.6+aPh*9.)),3.);}
+        else if(aKd<2.5){float w=sin(p.x*.06+p.z*.045-uT*1.4)+sin(p.x*-.04+p.z*.07-uT*.9+aPh);a=clamp(w*.5+.35,0.,1.)*(.6+.4*sin(uT*5.+aPh*11.));}
+        else{p+=vec3(sin(uT*.21+aPh*4.)*18.,sin(uT*.5+aPh)*1.5,cos(uT*.17+aPh*6.)*18.);a=.6+.4*sin(uT*.8+aPh);}
+        vec4 mv=modelViewMatrix*vec4(p,1.);gl_Position=projectionMatrix*mv;float d=-mv.z;
+        gl_PointSize=clamp(aSz*420./d,1.,aSz*2.5);vC=color;vA=a*uOn;}`,
+    fragmentShader:`varying vec3 vC;varying float vA;void main(){if(vA<.02)discard;gl_FragColor=vec4(vC*vA*1.4,1.);}`});
+  const pts=new THREE.Points(g,mat);pts.frustumCulled=false;pts.renderOrder=4;pts.visible=false;scene.add(pts);
+  anims.push(t=>{mat.uniforms.uT.value=t;});
+  return {pts,mat,set(on){mat.uniforms.uOn.value=on;pts.visible=on>0;}};})();
+
 /* ---------------- trees ---------------- */
 const trees=[];
 (function plant(){
@@ -1679,9 +1770,10 @@ function setTOD(k){tod=k;const T=TOD[k];
   const w=waterMat.uniforms;w.fogColor.value.setHex(T.hor);w.fogNear.value=T.fogN;w.fogFar.value=T.fogF;w.cDeep.value.setHex(T.deep);w.cMid.value.setHex(T.mid);w.cShal.value.setHex(T.shal);w.cGlint.value.setHex(T.glint);
   const pu=postMat.uniforms;pu.con.value=T.con;pu.sat.value=T.sat;pu.vig.value=T.vig;
   lightPts.visible=T.lights>0;lightPts.material.color.setScalar(T.lights);navPts.visible=T.lights>0;
-  bakeTerrainShadow(sunDir,{noon:0,golden:0,sunset:0,dusk:.6,night:.3}[k]||0);fogK=-1;}
+  NIGHT_GLOW.set(T.lights>=1?1:0);bakeTerrainShadow(sunDir,{noon:0,golden:0,sunset:0,dusk:.6,night:.3}[k]||0);fogK=-1;}
 
 /* ---------- save data ---------- */
+const sightOn=v=>!v.night||TOD[tod].lights>=1;
 const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}};
 const settings=Object.assign({steady:true,stallGuard:true,autoTrim:true,tips:true,dog:true,invert:false,sound:true,engVol:1,music:.5,fps:false,shadows:true,tilt:false,pixels:'classic',light:'golden',station:'lofi'},store.get('tac-settings',{}));
 if(!TOD[settings.light])settings.light='golden';
@@ -1712,7 +1804,7 @@ const GOALS=[
   {id:'threader',name:'Needle threader',hint:'Fly through every gap, arch and bridge in the islands.'},
   {id:'drop1',name:'Special delivery',hint:'Air-drop a parcel onto one of the bullseye drop targets.'},
   {id:'bullseye',name:'Bullseye',hint:'Land a parcel within 5 m of the middle of a drop target.'},
-  {id:'drops',name:'Every doorstep',hint:'Land a parcel on every drop target in the islands.'},
+  {id:'drops',name:'Air mail',hint:'Deliver ten air drops.'},
   {id:'errand',name:'Good neighbour',hint:'Finish an errand for an islander.'},
   {id:'errands',name:'Everybody\'s favourite',hint:'Finish every islander\'s errand.'},
 ];
@@ -1907,8 +1999,13 @@ const MEET={
 const mail=log.mail;
 const bagFor=stripId=>mail.bag.filter(it=>CHARS[it.to].home===stripId);
 function mailDest(){if(!mail.active)return null;const it=mail.bag[0];if(it)return stripById(CHARS[it.to].home);return STRIPS[0];}
-function refreshBag(){const b=$('bag');if(!mail.active){b.hidden=true;return;}
-  const n=mail.bag.length,nx=mailDest();b.hidden=false;b.textContent=n?`✉ ${n} · NEXT ${nx.name.toUpperCase()} ›`:'✉ BAG EMPTY · HOME ›';}
+function refreshBag(){const b=$('bag');updJob();if(!mail.active){b.hidden=true;return;}
+  const n=mail.bag.length,nx=mailDest();b.hidden=false;b.textContent=n?`✉ ${n} → ${nx.name.toUpperCase()}`:'✉ BAG EMPTY → HOME';}
+/* the little "today's jobs" panel: mail, air drops, errands. Tap it for the mail bag */
+function updJob(){const jd=$('jDay');if(!jd)return;jd.textContent=mail.active?'DAY '+mail.day:'FREE FLIGHT';
+  const dr=$('jDrop'),A=mail.active?mail.drops:[];dr.hidden=!A.length;
+  dr.innerHTML=A.map(d=>d.done?`<span class="done">✓ DROPPED: ${d.place.toUpperCase()}</span>`:d.seen?`▼ DROP: ${d.place.toUpperCase()}`:`▼ DROP ON ${ISLES[d.isle].name.toUpperCase()}`).join('<br>');
+  if(typeof updErrandUI==='function')updErrandUI();const r=$('rDrop');if(r)r.hidden=!activeDrops().length;}
 function mailRoute(){const stops=[];for(const it of mail.bag){const h=CHARS[it.to].home;let st=stops.find(x=>x.id===h);if(!st){st={id:h,items:[]};stops.push(st);}st.items.push(it);}return stops;}
 function mailCard(){const wasFly=mode==='fly';if(wasFly)mode='paused';
   const stops=mailRoute(),day=DAYS[mail.day-1];let html='';
@@ -1977,7 +2074,7 @@ function useWind(){const b=windBlock();
   toast(n>1?`Tailwind ×${n}!${n===3?' Full gale.':''}`:windCharges?`Tailwind! ${windCharges} left.`:'Last tailwind for now.',1.4);
   if(!log.goals.tailwind&&n===3)goal('tailwind');updWindUI();}
 function updWindUI(){const b=$('wind');if(!b)return;const blk=windBlock(),cool=windCharges<=0,n=(ac.gusts||[]).length,fill=windCharges<WIND_N&&!n;
-  b.innerHTML=`TAILWIND${n>1?' ×'+n:''} <span>${'●'.repeat(windCharges)+'○'.repeat(WIND_N-windCharges)}</span>`;
+  b.innerHTML=`<img src="${RICON.wind}" alt="Tailwind">${n>1?'×'+n:''}<span>${'●'.repeat(windCharges)+'○'.repeat(WIND_N-windCharges)}</span>`;
   b.classList.toggle('cool',cool&&!n);b.classList.toggle('off',!!blk&&!cool);b.classList.toggle('on',n>0);
   b.style.setProperty('--w',fill?Math.round((1-windCD/windWait)*100)+'%':'0%');}
 function updWind(dt){const blowing=ac.gusts&&ac.gusts.length;
@@ -2242,12 +2339,12 @@ function offerDay(after){
   const meet=!log.met.mabel;if(meet)log.met.mabel=1;saveL();
   const list=day.items.map(it=>`<b>${it.item}</b> for ${CHARS[it.to].name}, ${stripById(CHARS[it.to].home).name}`).join('<br>');
   showCard(`<div class="who"><img src="${portrait('mabel')}" alt=""><div><b>Mabel Ostrander</b><span>POSTMASTER · ${mail.day>6?'WEEK '+Math.ceil(mail.day/6)+' · DAY '+((mail.day-1)%6+1):'DAY '+mail.day} OF 6</span></div></div>
-    ${meet?`<p class="say">“${MEET.mabel}”</p>`:''}<p class="say">“${day.intro}”</p><p>${list}</p>`,
-    [['Load the bag',()=>{mail.bag=day.items.map(x=>({...x}));mail.active=true;saveL();refreshBag();after();},true],['Just flying today',()=>{mail.active=false;saveL();refreshBag();after();}]]);
+    ${meet?`<p class="say">“${MEET.mabel}”</p>`:''}<p class="say">“${day.intro}”</p><p>${list}</p>${(spawnDrops(),dropLine())}`,
+    [['Load the bag',()=>{mail.bag=day.items.map(x=>({...x}));mail.active=true;saveL();syncSites();parcelsLeft=parcelCap();updParcelUI();refreshBag();after();},true],['Just flying today',()=>{mail.active=false;clearDrops();saveL();refreshBag();after();}]]);
 }
 function meetBea(){if(mode!=='fly'||log.met.bea)return;log.met.bea=1;saveL();mode='card';
   showCard(`<div class="who"><img src="${portrait('bea')}" alt=""><div><b>Bea Hollis</b><span>RETIRED MAIL PILOT · HARBOR FIELD</span></div></div><p class="say">“${MEET.bea}”</p><p>Bea's logbook is in the pause menu whenever you want it.</p>`,[['Thanks, Bea',()=>{hideModal();mode='fly';},true],['Open the logbook',()=>bea(-1)]]);}
-function endDay(){const day=DAYS[mail.day-1];mail.active=false;mail.bag=[];mail.day++;stamp(2);if(mail.day>6)goal('week',true);if(mail.day>12)goal('week2',true);if(mail.day>18)goal('week3',true);saveL();refreshBag();
+function endDay(){const day=DAYS[mail.day-1];mail.active=false;mail.bag=[];clearDrops();mail.day++;stamp(2);if(mail.day>6)goal('week',true);if(mail.day>12)goal('week2',true);if(mail.day>18)goal('week3',true);saveL();refreshBag();
   showCard(`<div class="who"><img src="${portrait('mabel')}" alt=""><div><b>Mabel Ostrander</b><span>END OF DAY · +2 STAMPS</span></div></div><p class="say">“${day?day.outro:'Good flying.'}”</p><div class="got">${log.stamps} STAMPS ON YOUR ROUTE CARD</div>`,
     [[mail.day<=DAYS.length?'Start the next day':'Keep flying',()=>{if(mail.day<=DAYS.length)offerDay(()=>spawnField(STRIPS[0]));else{hideModal();mode='fly';}},true],['Free flight',()=>{hideModal();mode='fly';pickDest('harbor');}]]);}
 function goal(id,quiet){if(log.goals[id])return false;log.goals[id]=Date.now();saveL();if(!quiet){const g=GOALS.find(x=>x.id===id);toast('Logbook: '+g.name,2.5);}return true;}
@@ -2302,34 +2399,63 @@ stickEl.addEventListener('pointermove',e=>{if(e.pointerId!==stick.id)return;let 
   stick.x=dx;stick.y=dy;knob.style.transform=`translate(${dx*R_STICK}px,${dy*R_STICK}px)`;});
 const endStick=e=>{if(e.pointerId!==stick.id)return;stick.id=null;stick.x=stick.y=0;placeRingIdle();};
 stickEl.addEventListener('pointerup',endStick);stickEl.addEventListener('pointercancel',endStick);
-const thrEl=$('thr');let thrId=null;
-function thrFromY(y){const r=thrEl.getBoundingClientRect();ac.throttle=clamp(1-(y-r.top-14)/(r.height-28),0,1);setThrottleUI();}
-thrEl.addEventListener('pointerdown',e=>{thrId=e.pointerId;try{thrEl.setPointerCapture(e.pointerId);}catch(_){}thrFromY(e.clientY);e.preventDefault();});
-thrEl.addEventListener('pointermove',e=>{if(e.pointerId===thrId)thrFromY(e.clientY);});
+/* throttle quadrant lever: grab the knob and push it up or pull it back; tap the track to jump it there */
+const thrEl=$("thr"),THR_T=22,THR_B=36;let thrId=null,thrGrab=null;
+const thrSpan=()=>thrEl.getBoundingClientRect().height-THR_T-THR_B;
+function thrYOf(t){const r=thrEl.getBoundingClientRect();return r.bottom-THR_B-t*thrSpan();}
+function thrFromY(y){const r=thrEl.getBoundingClientRect();ac.throttle=clamp((r.bottom-THR_B-y)/thrSpan(),0,1);setThrottleUI();}
+thrEl.addEventListener('pointerdown',e=>{thrId=e.pointerId;try{thrEl.setPointerCapture(e.pointerId);}catch(_){}
+  const ky=thrYOf(ac.throttle);thrGrab=Math.abs(e.clientY-ky)<26?e.clientY-ky:0;if(!thrGrab&&Math.abs(e.clientY-ky)>=26)thrFromY(e.clientY);e.preventDefault();});
+thrEl.addEventListener('pointermove',e=>{if(e.pointerId===thrId)thrFromY(e.clientY-thrGrab);});
 thrEl.addEventListener('pointerup',e=>{if(e.pointerId===thrId)thrId=null;});thrEl.addEventListener('pointercancel',()=>thrId=null);
-function setThrottleUI(){const r=thrEl.getBoundingClientRect(),h=r.height-28;$('thrKnob').style.bottom=(14+ac.throttle*h)+'px';$('thrFill').style.height=(14+ac.throttle*h)+'px';$('thrPct').textContent=Math.round(ac.throttle*100)+'%';}
-function updFlaps(){$('flaps').textContent='FLAPS '+ac.flaps;}
-$('flaps').addEventListener('pointerdown',e=>{ac.flaps=(ac.flaps+1)%3;updFlaps();e.preventDefault();if(ac.flaps)tip('flaps','Flaps give more lift and more drag, so you can fly slower. 1 for takeoff and approach, 2 for landing. Bea\'s logbook has the details.');});
+function setThrottleUI(){$('thrKnob').style.bottom=(THR_B+ac.throttle*thrSpan())+'px';$('thrPct').textContent=Math.round(ac.throttle*100)+'%';}
+/* flap lever: three notches, 0 at the top (up), 2 at the bottom (full). Drag or tap a notch; F steps through them */
+const flapEl=$('flapL'),FLAP_Y=[24,50,76];let flapId=null;
+function setFlaps(n){n=clamp(n,0,2);if(n===ac.flaps)return;ac.flaps=n;updFlaps();snd.clunk();
+  if(n)tip('flaps','Flaps give more lift and more drag, so you can fly slower. 1 for takeoff and approach, 2 for landing. Bea\'s logbook has the details.');}
+function flapFromY(y){const r=flapEl.getBoundingClientRect(),ly=y-r.top;let bi=0;FLAP_Y.forEach((v,i)=>{if(Math.abs(ly-v)<Math.abs(ly-FLAP_Y[bi]))bi=i;});setFlaps(bi);}
+flapEl.addEventListener('pointerdown',e=>{flapId=e.pointerId;try{flapEl.setPointerCapture(e.pointerId);}catch(_){}flapFromY(e.clientY);e.preventDefault();});
+flapEl.addEventListener('pointermove',e=>{if(e.pointerId===flapId)flapFromY(e.clientY);});
+flapEl.addEventListener('pointerup',()=>flapId=null);flapEl.addEventListener('pointercancel',()=>flapId=null);
+flapEl.querySelectorAll('.fd').forEach((el,i)=>el.style.top=FLAP_Y[i]+'px');
+function updFlaps(){$('flapH').style.top=FLAP_Y[ac.flaps]+'px';flapEl.querySelectorAll('.fd').forEach((el,i)=>el.classList.toggle('on',i===ac.flaps));}
 const brk=$('brake');const bOn=e=>{ac.brakeHeld=true;brk.classList.add('on');if(e&&e.preventDefault)e.preventDefault();},bOff=()=>{ac.brakeHeld=false;brk.classList.remove('on');};
 brk.addEventListener('pointerdown',bOn);brk.addEventListener('pointerup',bOff);brk.addEventListener('pointercancel',bOff);brk.addEventListener('pointerleave',bOff);
+/* metal toggle switches: bat handle up = on */
 function updSwitches(){$('swCarb').classList.toggle('on',ac.carb);$('swCarb').classList.toggle('warn',!ac.carb&&ac.ice>.25);
-  $('swMix').innerHTML=ac.lean?'MIX<br>LEAN':'MIX<br>RICH';$('swMix').classList.toggle('on',!ac.lean);$('swLight').classList.toggle('on',ac.light);}
-$('swCarb').addEventListener('click',()=>{ac.carb=!ac.carb;updSwitches();snd.click();});
-$('swMix').addEventListener('click',()=>{ac.lean=!ac.lean;updSwitches();snd.click();if(ac.lean)tip('lean','Leaning the mixture gives a little more power up high. Below 2,000 ft, keep it RICH.');});
-$('swLight').addEventListener('click',()=>{ac.light=!ac.light;updSwitches();snd.click();});
+  $('swMix').classList.toggle('on',!ac.lean);$('swLight').classList.toggle('on',ac.light);}
+$('swCarb').addEventListener('click',()=>{ac.carb=!ac.carb;updSwitches();snd.flick();});
+$('swMix').addEventListener('click',()=>{ac.lean=!ac.lean;updSwitches();snd.flick();if(ac.lean)tip('lean','Leaning the mixture gives a little more power up high. Below 2,000 ft, keep it RICH.');});
+$('swLight').addEventListener('click',()=>{ac.light=!ac.light;updSwitches();snd.flick();});
+/* the rail: little buttons down the left edge that fold the panels away so you can take in the view */
+function railIcon(rows,pal){const c=document.createElement('canvas');c.width=c.height=16;const x=c.getContext('2d');rows.forEach((r,j)=>{for(let i=0;i<r.length;i++){const k=r[i];if(k!=='.'&&pal[k]){x.fillStyle=pal[k];x.fillRect(i,j,1,1);}}});return c.toDataURL();}
+const RICON={
+  map:railIcon(['................','..aaa..bbb..aaa.','..aca..bcb..aca.','..acaa.bcb.aaca.','..acca.bccbacca.','..accab.bccbcca.','..acdcbbbccdcca.','..accdbccbcdcca.','..acccbdcbbccca.','..acccbcdcbccca.','..acccbccdbccca.','..aaaabbbbbaaaa.','................','................','................','................'].slice(0,16),{a:'#e9d3b0',b:'#c9b08a',c:'#7fae4f',d:'#e5483b'}),
+  job:railIcon(['................','................','.aaaaaaaaaaaaaa.','.abbaaaaaaaabba.','.abcbbaaaabbcba.','.abccdbbbbdccba.','.abcccdddddccba.','.abccccccccccba.','.abccccccccccba.','.abccccccccccba.','.abccccccccccba.','.abbbbbbbbbbbba.','.aaaaaaaaaaaaaa.','................','................','................'],{a:'#241c2e',b:'#e9d3b0',c:'#f5e8cf',d:'#e2703f'}),
+  eng:railIcon(['................','.......aa.......','.......ab.......','.......ab.......','......aabb......','.....aabbbb.....','......a..b......','....cccccccc....','...cddddddddc...','..cdde....eddc..','..cde.ffff.edc..','..cde.ffff.edc..','..cdde....eddc..','...cddddddddc...','....cccccccc....','................'],{a:'#9a96a2',b:'#d8d2c8',c:'#15121a',d:'#3a3344',e:'#55505c',f:'#cfc4b2'}),
+  drop:railIcon(['.....aabbaa.....','...abbaabbaab...','..abbaabbaabba..','.aaaaaaaaaaaaaa.','.c....c..c....c.','..c...c..c...c..','...c..c..c..c...','....c.c..c.c....','.....cc..cc.....','.....dddddd.....','.....dedded.....','.....eeeeee.....','.....dedded.....','.....dddddd.....','................','................'],{a:'#d8463a',b:'#f6f1e4',c:'#3a3030',d:'#b07a48',e:'#f4e4c8'}),
+  wind:railIcon(['................','................','.......aaaa.....','..........aa....','...........a....','.aaaaaaaaaa.....','................','..aaaaaaaaaaaa..','..............a.','.............a..','.aaaaaaaaaaa....','................','....aaaaaa......','..........a.....','.........a......','................'],{a:'#7a4a1a'})};
+const PANELS={map:['rMap','mapc'],job:['rJob','job'],eng:['rEng','eng'],drop:['rDrop','dropUI']};
+if(!settings.panels)settings.panels={map:true,job:true,eng:true,drop:true};
+function applyPanels(){for(const [k,[b,el]] of Object.entries(PANELS)){$(b).classList.toggle('on',!!settings.panels[k]);if(k!=='drop')$(el).hidden=!settings.panels[k];}updPanels();}
+function updPanels(){const ad=activeDrops().length>0,air=mode==='fly'&&!ac.ground,du=$('dropUI'),show=ad&&air&&!!settings.panels.drop;if(du.hidden===show)du.hidden=!show;
+  const rd=$('rDrop');if(rd.hidden===ad)rd.hidden=!ad;
+  const near=ad&&nearestDrop(ac.pos.x,ac.pos.z).dist<2200;rd.classList.toggle('nudge',near&&!settings.panels.drop);
+  $('rEng').classList.toggle('nudge',!settings.panels.eng&&!$('check').hidden);}
+for(const [k,[b]] of Object.entries(PANELS)){$(b).innerHTML=`<img src="${RICON[k]}" alt="">`;$(b).addEventListener('click',e=>{e.stopPropagation();settings.panels[k]=!settings.panels[k];saveS();applyPanels();snd.click();});}
 const VIEWS=['chase','cockpit'],VNAME={chase:'CHASE',cockpit:'COCKPIT'};
 function setView(v){camMode=v;$('view').textContent=VNAME[v];snapCam=true;camera.fov=v==='chase'?58:70;camera.near=v==='chase'?.4:.15;camera.updateProjectionMatrix();postMat.uniforms.cNear.value=camera.near;
   if(v==='cockpit')tip('cockpit','Cockpit view. Left: speed, attitude, heading. Right: altitude, climb, engine RPM. The line-up meter appears up top on approach.');}
 $('view').addEventListener('click',()=>setView(VIEWS[(VIEWS.indexOf(camMode)+1)%VIEWS.length]));
 $('pause').addEventListener('click',()=>{if(mode==='fly')openMenu();});
-$('bag').addEventListener('click',()=>{if(mode==='fly'&&mail.active)mailCard();});
+$('job').addEventListener('click',()=>{if(mode!=='fly')return;if(mail.active)mailCard();else{mode='paused';bigMap();}});
 $('center').addEventListener('click',()=>{recenterTilt();toast('Tilt centered. Hold the phone like this to fly level.',2);});
 $('dest').addEventListener('click',()=>{const i=STRIPS.indexOf(dest);dest=STRIPS[(i+1)%STRIPS.length];toast('Heading for '+dest.name,1.6);});
 $('mapc').addEventListener('click',()=>{if(mode==='fly'){mode='paused';bigMap();}});
 const keys={};
 addEventListener('keydown',e=>{keys[e.code]=true;if(mode!=='fly')return;
-  if(e.code==='KeyF')$('flaps').dispatchEvent(new Event('pointerdown'));if(e.code==='KeyV')$('view').click();if(e.code==='KeyL')toggleLook();if(e.code==='KeyG')doDrop();if(e.code==='KeyB')bOn();if(e.code==='KeyM'){mode='paused';bigMap();}
-  if(e.code==='KeyC')$('swCarb').click();if(e.code==='KeyT')recenterTilt();if(e.code==='KeyL')$('swLight').click();
+  if(e.code==='KeyF')setFlaps((ac.flaps+1)%3);if(e.code==='KeyV')$('view').click();if(e.code==='KeyL')toggleLook();if(e.code==='KeyG')doDrop();if(e.code==='KeyB')bOn();if(e.code==='KeyM'){mode='paused';bigMap();}
+  if(e.code==='KeyC')$('swCarb').click();if(e.code==='KeyT')recenterTilt();if(e.code==='KeyH')$('swLight').click();
   if(e.code==='Escape'||e.code==='KeyP')openMenu();if(e.code.startsWith('Arrow'))e.preventDefault();});
 addEventListener('keyup',e=>{keys[e.code]=false;if(e.code==='KeyB')bOff();});
 const kb={p:0,r:0};
@@ -2367,7 +2493,7 @@ const snd={ctx:null,
   burst(v,lp,dur){if(!this.ctx)return;const c=this.ctx,s=c.createBufferSource();s.buffer=this.buf;const f=c.createBiquadFilter();f.type='lowpass';f.frequency.value=lp;const g=c.createGain(),t=c.currentTime;
     g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+dur);s.connect(f);f.connect(g);g.connect(this.master);s.start(t,Math.random());s.stop(t+dur+.05);},
   beep(f){if(!this.ctx)return;const c=this.ctx,o=c.createOscillator(),g=c.createGain(),t=c.currentTime;o.type='triangle';o.frequency.value=f;g.gain.setValueAtTime(.08,t);g.gain.exponentialRampToValueAtTime(.001,t+.18);o.connect(g);g.connect(this.master);o.start(t);o.stop(t+.2);},
-  thump(v=1){this.burst(.6*v,260,.25);},crash(){this.burst(.5,900,1.2);},click(){this.burst(.25,3000,.03);},
+  thump(v=1){this.burst(.6*v,260,.25);},crash(){this.burst(.5,900,1.2);},click(){this.burst(.25,3000,.03);},flick(){this.burst(.4,7000,.012);setTimeout(()=>this.burst(.22,2200,.025),22);},clunk(){this.burst(.35,1400,.05);setTimeout(()=>this.burst(.25,600,.08),40);},
   setOn(v){if(this.master)this.master.gain.value=v?.5:0;if(this.ctx&&this.ctx.state==='suspended')this.ctx.resume();}};
 
 /* ---------- the radio: five generative stations (all WebAudio), one dial on the flight screen ---------- */
@@ -2505,14 +2631,14 @@ function drawMiniMap(dt){mapT-=dt;if(mapT>0)return;mapT=.08;const W=96,x=mctx;x.
   x.fillStyle='#1d2a44';x.fillRect(0,0,W,W);x.save();x.translate(W/2,cy);x.rotate(-hdg);x.scale(k,k);x.translate(-ac.pos.x,-ac.pos.z);
   x.drawImage(mapBase,-MAPW/2,-MAPW/2,MAPW,MAPW);drawStripsOn(x,k,dest);
   x.fillStyle='#ffb02e';for(const [k_,v] of Object.entries(sights))if(log.sights[k_])x.fillRect(v.x-2/k,v.z-2/k,4/k,4/k);x.fillStyle='#8ff0e8';for(const g of FLYGATES)if(log.gates[g.id])x.fillRect(g.x-2/k,g.z-2/k,4/k,4/k);
-  for(const d of DROPS){x.strokeStyle=log.drops[d.id]?'#ffd36b':'#e5483b';x.lineWidth=1.6/k;x.beginPath();x.arc(d.x,d.z,3.2/k,0,TAU);x.stroke();x.fillStyle=x.strokeStyle;x.fillRect(d.x-.8/k,d.z-.8/k,1.6/k,1.6/k);}
+  dropMarks(x,(a,b)=>[a,b],1/k);
   if(dest){x.fillStyle='#8ff0e8';x.beginPath();x.arc(dest.x,dest.z,3.5/k,0,TAU);x.fill();}
   x.restore();
   x.fillStyle='#fff8ec';x.strokeStyle='#241c2e';x.lineWidth=1;x.beginPath();x.moveTo(W/2,cy-6);x.lineTo(W/2-4,cy+4);x.lineTo(W/2,cy+2);x.lineTo(W/2+4,cy+4);x.closePath();x.fill();x.stroke();
   const na=-hdg;x.fillStyle='#ffb02e';x.font='13px VT323, monospace';x.textAlign='center';x.textBaseline='middle';x.fillText('N',clamp(W/2+Math.sin(na)*40,6,W-6),clamp(cy-Math.cos(na)*40,6,W-6));
   if(dest&&near>R*.9){const brg=Math.atan2(dest.x-ac.pos.x,-(dest.z-ac.pos.z))-hdg;x.fillStyle='#8ff0e8';x.beginPath();x.arc(clamp(W/2+Math.sin(brg)*44,4,W-4),clamp(cy-Math.cos(brg)*44,4,W-4),3,0,TAU);x.fill();}}
 function bigMap(){
-  showCard(`<h2>Bea's chart</h2><div class="sub">★ ${log.score.toLocaleString()} · ${Object.keys(sights).filter(q=>log.sights[q]).length}/${Object.keys(sights).length} LANDMARKS (ORANGE) · ${FLYGATES.filter(g=>log.gates[g.id]).length}/${FLYGATES.length} GAPS FLOWN (CYAN) · ${DROPS.filter(d=>log.drops[d.id]).length}/${DROPS.length} DROPS (RED RINGS)${activeErrands().length?' · ERRANDS: '+activeErrands().map(errLine).join(', ').toUpperCase():''}</div><canvas id="bigmap" width="512" height="384"></canvas>`,[['Back to flying',()=>{hideModal();mode='fly';},true]]);
+  showCard(`<h2>Bea's chart</h2><div class="sub">★ ${log.score.toLocaleString()} · ${Object.keys(sights).filter(q=>log.sights[q]).length}/${Object.keys(sights).length} LANDMARKS (ORANGE) · ${FLYGATES.filter(g=>log.gates[g.id]).length}/${FLYGATES.length} GAPS FLOWN (CYAN) · ${activeDrops().length?activeDrops().length+' AIR DROPS TO DO (ORANGE)':log.dropStats.n+' AIR DROPS DELIVERED'}${activeErrands().length?' · ERRANDS: '+activeErrands().map(errLine).join(', ').toUpperCase():''}</div><canvas id="bigmap" width="512" height="384"></canvas>`,[['Back to flying',()=>{hideModal();mode='fly';},true]]);
   $('cardBody').parentElement.querySelector('.card').classList.add('wide');
   const c=$('bigmap'),x=c.getContext('2d');x.imageSmoothingEnabled=false;const k=384/19400,CX=150,CZ=250;x.fillStyle='#1d2a44';x.fillRect(0,0,512,384);x.save();x.translate(256-CX*k,192-CZ*k);x.scale(k,k);
   x.drawImage(mapBase,-MAPW/2,-MAPW/2,MAPW,MAPW);drawStripsOn(x,k,dest);
@@ -2522,7 +2648,7 @@ function bigMap(){
   x.font='13px VT323, monospace';
   for(const [k_,v] of Object.entries(sights)){if(!log.sights[k_])continue;const [a,b]=P(v.x,v.z);x.fillStyle='#241c2e';x.fillRect(a-3,b-3,6,6);x.fillStyle='#ffb02e';x.fillRect(a-2,b-2,4,4);}
   for(const g of FLYGATES){if(!log.gates[g.id])continue;const [a,b]=P(g.x,g.z);x.fillStyle='#8ff0e8';x.beginPath();x.moveTo(a,b-4);x.lineTo(a+4,b);x.lineTo(a,b+4);x.lineTo(a-4,b);x.closePath();x.fill();}
-  for(const d of DROPS){const [a,b]=P(d.x,d.z),c=log.drops[d.id]?'#ffd36b':'#e5483b';x.strokeStyle='#241c2e';x.lineWidth=3;x.beginPath();x.arc(a,b,4,0,TAU);x.stroke();x.strokeStyle=c;x.lineWidth=1.5;x.beginPath();x.arc(a,b,4,0,TAU);x.stroke();x.fillStyle=c;x.fillRect(a-1,b-1,2,2);}
+  dropMarks(x,P,1);
   for(const I of Object.values(ISLES))label(I.name.toUpperCase(),I.x,I.z+(I.r?Math.min(I.r*.6,600)+260:1500),'#ffd890',0);
   if(dest)label(dest.name.toUpperCase(),dest.x,dest.z,'#8ff0e8',-11);
   const [px,pz]=P(ac.pos.x,ac.pos.z);axes();const hdg=ac.ground?-ac.gYaw:Math.atan2(_f.x,-_f.z);x.save();x.translate(px,pz);x.rotate(hdg);x.fillStyle='#fff8ec';x.strokeStyle='#241c2e';x.lineWidth=1.5;x.beginPath();x.moveTo(0,-9);x.lineTo(-6,6);x.lineTo(0,3);x.lineTo(6,6);x.closePath();x.fill();x.stroke();x.restore();
@@ -2544,8 +2670,8 @@ const BEA=[
   {t:'Before-landing checklist',h:`<p>I did this every single landing for forty years. Four things:</p><table><tr><td>CARB HEAT</td><td>ON. Low power on approach is when carb ice forms.</td></tr><tr><td>MIXTURE</td><td>RICH, so full power is there if you need to go around.</td></tr><tr><td>FLAPS</td><td>1 or 2.</td></tr><tr><td>LANDING LIGHT</td><td>ON at sunset, blue hour and night.</td></tr></table><p>The checklist box shows up on approach. Land with all of it done and Mabel adds a bonus stamp.</p>`},
   {t:'Carb heat and mixture',h:`<p><b>Carb ice.</b> The carburetor mixes fuel and air, and it gets cold inside, cold enough to freeze damp air. At low power it can ice up and the engine runs rough and weak. CARB HEAT warms the air going in and melts it, at the cost of a little power. Running rough on a long descent? Carb heat on.</p><p><b>Mixture.</b> Higher up the air is thinner, so the engine wants less fuel. Leaning (MIX LEAN) above 2,000 ft gives a little more power. Down low, lean means too little fuel: keep it RICH.</p>`},
   {t:'Flying by the gauges',h:`<p>In cloud or fog you can't trust your body; it will swear you're level when you're turning. Trust the attitude gauge.</p><ul><li>Keep the orange wings level on the horizon line.</li><li>On approach, the <b>line-up meter</b> at the top: the diamond is where the path is. Fly gently toward it until it sits in the ring.</li></ul>`},
-  {t:'Air drops',h:`<p>Some folk live too far from a runway for the mail. For them we drop parcels on little parachutes.</p><ul><li>Look for <b>orange smoke</b>. Under it is a painted <b>bullseye</b> and someone waiting. Red rings on the chart.</li><li>Fly over it low and steady, 300 to 400 ft up. Tap <b>LOOK DOWN</b> on the right: you see straight below, and the <b>crosshair is where a parcel would land</b> if you let go now.</li><li>Steer the crosshair onto the bullseye and tap <b>DROP</b>.</li><li>The chute opens and the wind carries it a little, so let go slightly upwind.</li></ul><p>Within 5 m is a bullseye. You carry three parcels; Mabel loads three more every time you land at a field.</p>`},
-  {t:'Night flying',h:`<ul><li>Runways have edge lights at night. Amber ones mark the ends.</li><li>Turn on your landing light on approach: it lights the runway in front of you.</li><li>The approach lights work just the same at night, so trust them over your eyes.</li></ul>`},
+  {t:'Air drops',h:`<p>Some folk camp out too far from a runway for the mail. For them we drop parcels on little parachutes.</p><ul><li>When you load the bag, Mabel may hand you one, two or three air drops. She'll only know which <b>island</b> they're on, so it's a dashed circle on the chart. Keep a lookout for <b>orange smoke</b>: under it is a painted <b>bullseye</b> and someone waving.</li><li>Tap the <b>target</b> button on the left to bring up LOOK DOWN and DROP.</li><li>Fly over low and steady, 300 to 400 ft up. With LOOK DOWN on, the <b>crosshair is where the parcel lands</b> if you let go now. It falls a long way forward, so let go well before you're over the rings.</li><li>The moment it's out you'll be told if it's heading for the rings or going wide, and which way. The chute pops low, so it's down in a few seconds.</li><li>A good drop: they cheer, and the camp packs itself up. Land at any field for more parcels.</li></ul>`},
+  {t:'Night flying',h:`<ul><li>Runways have edge lights at night. Amber ones mark the ends.</li><li>Turn on your landing light on approach: it lights the runway in front of you.</li><li>The approach lights work just the same at night, so trust them over your eyes.</li><li>Some things on the islands only show themselves after dark. Go looking at blue hour or night: a few of them glow.</li></ul>`},
 ];
 function bea(i){if(mode==='fly')mode='paused';const p=BEA[i];
   if(i<0){const list=BEA.map((b,j)=>`<button class="item" data-p="${j}"><span><b>${j+1}. ${b.t}</b></span><span class="r">READ</span></button>`).join('');
@@ -2592,7 +2718,7 @@ function picker(kind){
 function logbook(){
   const f=STRIPS.map(s=>{const F=log.fields[s.id]||{};return `<div class="item ${F.landings?'done':''}"><span><b>${s.name}</b><span class="d">${F.landings?F.landings+' landing'+(F.landings>1?'s':''):'Not visited yet'}</span></span><span class="r">${F.best?stars(F.best):''}</span></div>`;}).join('');
   const ppl=Object.keys(CHARS).map(id=>log.met[id]?`<div class="item done"><span style="display:flex;gap:10px;align-items:center"><img src="${portrait(id)}" alt="" style="width:40px;height:40px;image-rendering:pixelated"><span><b>${CHARS[id].name}</b><span class="d">${CHARS[id].role}</span></span></span></div>`:`<div class="item"><span><b>???</b><span class="d">Someone you haven't met yet.</span></span></div>`).join('');
-  const si=Object.entries(sights).map(([k,v])=>`<div class="item ${log.sights[k]?'done':''}"><span><b>${log.sights[k]?v.name:'???'}</b><span class="d">${log.sights[k]?(v.desc||'Spotted'):'Something worth seeing. Fly over it to put it on the chart.'}</span></span><span class="chk">${log.sights[k]?'✓':''}</span></div>`).join('');
+  const si=Object.entries(sights).map(([k,v])=>`<div class="item ${log.sights[k]?'done':''}"><span><b>${log.sights[k]?v.name:'???'}</b><span class="d">${log.sights[k]?(v.desc||'Spotted'):v.night?'Something out there only shows itself after dark.':'Something worth seeing. Fly over it to put it on the chart.'}</span></span><span class="chk">${log.sights[k]?'✓':''}</span></div>`).join('');
   const go=GOALS.map(g=>`<div class="item ${log.goals[g.id]?'done':''}"><span><b>${g.name}</b><span class="d">${g.hint}</span></span><span class="chk">${log.goals[g.id]?'✓':''}</span></div>`).join('');
   const done=GOALS.filter(g=>log.goals[g.id]).length;
   showCard(`<h2>Your logbook</h2><div class="sub">${log.flights} FLIGHTS · ${log.trips} TRIPS · ${log.stamps} STAMPS · ${done}/${GOALS.length} GOALS</div><h3>PEOPLE</h3><div class="list">${ppl}</div><h3>FIELDS</h3><div class="list">${f}</div><h3>SIGHTS</h3><div class="list">${si}</div><h3>GOALS</h3><div class="list">${go}</div>`,[['Back',back,true]]);}
@@ -2606,7 +2732,7 @@ function settingsCard(){
   const mv=[['OFF',0],['SOFT',.5],['ON',1]].map(([n,v])=>`<button data-mv="${v}" class="${(settings.music??.5)==v?'primary':''}">${n}</button>`).join('');
   const st=STATIONS.map(S=>`<button data-st="${S.id}" class="${settings.station===S.id?'primary':''}">${S.fq} ${S.name.toUpperCase()}</button>`).join('');
   const lt=Object.keys(TOD).map(k=>`<button data-lt="${k}" class="${settings.light===k?'primary':''}">${TOD[k].name.toUpperCase()}</button>`).join('');
-  showCard(`<h2>Settings</h2><div class="sub">ASSISTS · TURN THEM OFF ONE AT A TIME AS YOU IMPROVE</div>${rows}<h3>ENGINE VOLUME</h3><div class="btns">${ev}</div><h3>RADIO VOLUME</h3><div class="btns">${mv}</div><h3>RADIO STATION · OR TAP THE DIAL UP TOP WHILE FLYING</h3><div class="btns">${st}</div><h3>TIME OF DAY</h3><div class="btns">${lt}</div><h3>PIXELS</h3><div class="btns">${px}</div><div class="sub" style="margin-top:14px">BUILD ee33e1b</div>`,[['Back',back,true]]);
+  showCard(`<h2>Settings</h2><div class="sub">ASSISTS · TURN THEM OFF ONE AT A TIME AS YOU IMPROVE</div>${rows}<h3>ENGINE VOLUME</h3><div class="btns">${ev}</div><h3>RADIO VOLUME</h3><div class="btns">${mv}</div><h3>RADIO STATION · OR TAP THE DIAL UP TOP WHILE FLYING</h3><div class="btns">${st}</div><h3>TIME OF DAY</h3><div class="btns">${lt}</div><h3>PIXELS</h3><div class="btns">${px}</div><div class="sub" style="margin-top:14px">BUILD df6cd87</div>`,[['Back',back,true]]);
   const cb=$('cardBody');
   cb.querySelectorAll('[data-k]').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.k;if(k==='tilt'){if(!settings.tilt){settings.tilt=true;saveS();enableTilt().then(()=>{updTiltUI();settingsCard();});}else{settings.tilt=false;saveS();disableTilt();updTiltUI();settingsCard();}return;}settings[k]=!settings[k];saveS();if(k==='sound')snd.setOn(settings.sound);if(k==='fps'){$('fps').hidden=!settings.fps;$('fps').textContent='FPS: measuring…';fpsN=fpsT=0;fpsLast=0;}if(k==='sound')music.setVol();settingsCard();}));
   cb.querySelectorAll('[data-px]').forEach(b=>b.addEventListener('click',()=>{settings.pixels=b.dataset.px;pixMode=settings.pixels;saveS();resize();settingsCard();}));
@@ -2616,7 +2742,7 @@ function settingsCard(){
   cb.querySelectorAll('[data-lt]').forEach(b=>b.addEventListener('click',()=>{settings.light=b.dataset.lt;saveS();setTOD(settings.light);updTodBtn();settingsCard();}));}
 function showHowTo(){mode='card';
   showCard(`<h2>How to fly</h2><div class="sub">TWO THUMBS</div>
-    <div class="rows"><span class="k">LEFT</span><span><b>Throttle (PWR).</b> Slide up for more power. Beside it: the chart (tap for a big one), three switches, flaps and brake.</span><span></span>
+    <div class="rows"><span class="k">LEFT</span><span><b>Throttle lever.</b> Push it up for more power. Beside it, a rail of little buttons folds things away: the map, today's jobs, the landing panel (flap lever, switches, brake), air drops, and the tailwind.</span><span></span>
     <span class="k">RIGHT</span><span><b>Stick.</b> Touch anywhere on the right and drag. Drag down to raise the nose, up to lower it, sideways to bank and turn.</span><span></span>
     <span class="k">TOP</span><span>Speed on the left, <b>height above the ground</b> on the right. On approach they turn green when you're on the numbers. <b>VIEW</b> switches chase, cockpit and gauges.</span><span></span></div>
     <p>To take off: full power, roll down the runway, and at about 45 knots drag the stick down gently. Everything else is in Bea's logbook.</p>`,[['Got it',()=>{hideModal();mode='fly';if(mail.active&&!log.met.bea)setTimeout(meetBea,300);},true]]);}
@@ -2645,17 +2771,17 @@ function gameChecks(dt){
   if(!ac.ground&&Math.abs(bank)>20*DEG&&ac.vel.y<-1.5)tip('turn','In a turn, hold the stick a little down (back) to keep from sinking.');
   if(airT>45)tip('pitchpower','Good to know: the stick mostly sets your speed. Power decides whether you climb or descend.');
   let showCheck=false;
-  if(!ac.ground&&dest&&airT>8&&Math.hypot(dest.x-ac.pos.x,dest.z-ac.pos.z)>3500)tip('tailwind','Long way to go? Tap TAILWIND under the map for a short gust that carries you fast and level. Tap again while it blows to stack gusts and go faster. Charges come back one every 5 seconds once the wind dies down.',.5);
+  if(!ac.ground&&dest&&airT>8&&Math.hypot(dest.x-ac.pos.x,dest.z-ac.pos.z)>3500)tip('tailwind','Long way to go? Tap the wind button on the left for a short gust that carries you fast and level. Tap again while it blows to stack gusts and go faster. Charges come back one every 5 seconds once the wind dies down.',.5);
   if(dest){const gl=glide(dest);if(!ac.ground&&Math.hypot(dest.x-ac.pos.x,dest.z-ac.pos.z)<5500)tip('gates','See the cyan gates? They show the way in. Start lining up at the first one, 2 km out and about 450 ft up.');
     if(gl.active&&gl.along<3200){showCheck=true;tip('approach','Fly through the three cyan gates. Keep the diamond in the ring at the top of the screen. Flaps down, power back, about 55 knots.');
       if(gl.along<1800)tip('papi','The four lights beside the runway: two white and two red means you\'re on the glide path. All white is too high, all red too low.',3);}
     const st=stripAt(ac.pos.x,ac.pos.z,10);if(st&&!ac.ground&&agl<7&&ac.vel.y<-.5)tip('flare','Just above the runway, ease the stick down (back) to soften the touchdown.');}
   if(ac.ground&&ac.td&&ac.u>8)tip('brake','Hold BRAKE to stop. The longer you hold, the harder it brakes.');
   const ck=$('check');if(showCheck){const c=checklistState();const row=(ok,t)=>`<span class="${ok?'ok':''}">${ok?'✓':'○'} ${t}</span><br>`;
-    ck.innerHTML=`<b>BEFORE LANDING</b>${row(c.carb,'CARB HEAT ON')}${row(c.mix,'MIXTURE RICH')}${row(c.flaps,'FLAPS 1 OR 2')}${c.needLight?row(c.light,'LANDING LIGHT'):''}`;ck.hidden=false;tip('checklist','Before-landing checklist: tap the switches beside the chart. Bea\'s logbook explains each one.',1);}
+    ck.innerHTML=`<b>BEFORE LANDING</b>${row(c.carb,'CARB HEAT ON')}${row(c.mix,'MIXTURE RICH')}${row(c.flaps,'FLAPS 1 OR 2')}${c.needLight?row(c.light,'LANDING LIGHT'):''}`;ck.hidden=false;tip('checklist','Before-landing checklist: flick the switches and set the flap lever in the landing panel, bottom left. Bea\'s logbook explains each one.',1);}
   else ck.hidden=true;
   sightT+=dt;if(sightT>.3){sightT=0;
-    for(const [k,v] of Object.entries(sights)){if(log.sights[k])continue;if(Math.hypot(ac.pos.x-v.x,ac.pos.z-v.z)<450&&ac.pos.y-v.y<650){log.sights[k]=Date.now();stamp(1);addScore(100);saveL();
+    for(const [k,v] of Object.entries(sights)){if(log.sights[k]||!sightOn(v))continue;if(Math.hypot(ac.pos.x-v.x,ac.pos.z-v.z)<450&&ac.pos.y-v.y<650){log.sights[k]=Date.now();stamp(1);addScore(100);saveL();
       const n=Object.keys(sights).filter(q=>log.sights[q]).length;snd.beep(990);setTimeout(()=>snd.beep(1320),110);setTimeout(()=>snd.beep(1760),220);
       toast(`Discovered: ${v.name} (${n}/${Object.keys(sights).length}) · +100\n${v.desc||''}`,4);tip('discover','Landmarks you discover go on Bea\'s chart, with a stamp for each. Fly over anything that looks interesting.',4.5);}}
     if(!ac.ground&&Math.hypot(ac.pos.x-summit.x,ac.pos.z-summit.z)<320&&ac.pos.y>summit.h+10)goal('summit');}
@@ -2771,7 +2897,7 @@ function updateVisuals(dt,t){
     blob.material.opacity=(settings.shadows?.42:.55)*(1-smooth(4,200,agl))+(ac.ground?.08:0);}
   if(dest){beacon.visible=mode==='fly'||mode==='paused';beacon.position.set(dest.x,dest.elev,dest.z);const d=Math.hypot(dest.x-ac.pos.x,dest.z-ac.pos.z);beacon.material.opacity=.13*smooth(500,1600,d);}
   spot.intensity=ac.light&&mode!=='title'?(TOD[tod].lights>0?1.35:.3):0;
-  updPAPI();updGates();updWind(dt);updFog();updDrops(dt);updDog(dt,t);updSpark(dt,t);
+  updPAPI();updGates();updWind(dt);updFog();updDrops(dt);updPanels();updDog(dt,t);updSpark(dt,t);
   {const fb=(lookDown?64:camMode==='chase'?58:70)+(ac.bst||0)*6;if(Math.abs(camera.fov-fb)>.05){camera.fov=fb;camera.updateProjectionMatrix();}}
   sunL.castShadow=settings.shadows;const fo=mode==='title'?ac.pos:camera.position;
   axes();_sc.set(fo.x+_f.x*SHADOW_HALF*.5,surfH(fo.x,fo.z),fo.z+_f.z*SHADOW_HALF*.5);snapShadow(_sc);sunL.target.position.copy(_sc);sunL.position.copy(_sc).addScaledVector(sunDir,1500);
@@ -2899,9 +3025,9 @@ function askBiscuit(){if(mode!=='fly'||barkCD>0)return;barkCD=1.5;const P=ac.pos
     if(e.set){FINDS[e.set].forEach((p,i)=>{if(!st.found.includes(i))pick({x:p.x,z:p.z,d:dist(p.x,p.z),say:e.one});});
       if(st.found.length===FINDS[e.set].length)pick({x:home.x,z:home.z,d:dist(home.x,home.z)+5000,say:`${g.name.split(' ')[0]} at ${home.name}, waiting for your report`});}
     else{const v=sights[e.sight];if(!log.sights[e.sight])pick({x:v.x,z:v.z,d:dist(v.x,v.z),say:e.what});else pick({x:home.x,z:home.z,d:dist(home.x,home.z)+5000,say:`${g.name.split(' ')[0]} at ${home.name}, waiting for your report`});}}
-  if(!best){for(const [k,v] of Object.entries(sights))if(!log.sights[k]&&dist(v.x,v.z)<3500)pick({x:v.x,z:v.z,d:dist(v.x,v.z),say:'something down there worth a look'});
+  if(!best){for(const [k,v] of Object.entries(sights))if(!log.sights[k]&&sightOn(v)&&dist(v.x,v.z)<3500)pick({x:v.x,z:v.z,d:dist(v.x,v.z),say:'something down there worth a look'});
     for(const g of FLYGATES)if(!log.gates[g.id]&&dist(g.x,g.z)<3500)pick({x:g.x,z:g.z,d:dist(g.x,g.z),say:`a gap to fly through: ${g.name}`});
-    if(parcelsLeft)for(const d of DROPS)if(!log.drops[d.id]&&dist(d.x,d.z)<3500)pick({x:d.x,z:d.z,d:dist(d.x,d.z),say:`a drop target with orange smoke: ${d.name}`});}
+    for(const d of activeDrops())pick({x:d.seen?d.x:d.hx,z:d.seen?d.z:d.hz,d:dist(d.x,d.z)*.8,say:d.seen?`the drop camp: ${d.place}`:`orange smoke somewhere on ${ISLES[d.isle].name}`});}
   if(!best&&dest)best={x:dest.x,z:dest.z,d:dist(dest.x,dest.z),say:`${dest.name}, your next stop`};
   dog.bark=1.6;snd.woof();if(!best){toast('Biscuit sniffs about and wags. Nothing new around here.',2.4);dogTarget=null;return;}
   dogTarget=best;const d=dist(best.x,best.z),how=d<350?', right below':d<1000?`, about ${Math.round(d/100)*100} m`:`, about ${(d/1000).toFixed(1)} km`;
@@ -2911,9 +3037,9 @@ function askBiscuit(){if(mode!=='fly'||barkCD>0)return;barkCD=1.5;const P=ac.pos
 const barked={};let autoCD=10,autoT=0;
 function dogAuto(dt){autoCD-=dt;autoT+=dt;if(autoT<1)return;autoT=0;if(!settings.dog||mode!=='fly'||ac.ground||autoCD>0||dog.bark>0)return;
   const P=ac.pos,cand=[];
-  for(const [k,v] of Object.entries(sights))if(!log.sights[k]&&!barked['s'+k]&&Math.hypot(P.x-v.x,P.z-v.z)<1100&&P.y-v.y<900)cand.push({key:'s'+k,x:v.x,z:v.z,say:'something down there worth a look'});
+  for(const [k,v] of Object.entries(sights))if(!log.sights[k]&&sightOn(v)&&!barked['s'+k]&&Math.hypot(P.x-v.x,P.z-v.z)<1100&&P.y-v.y<900)cand.push({key:'s'+k,x:v.x,z:v.z,say:'something down there worth a look'});
   for(const g of FLYGATES)if(!log.gates[g.id]&&!barked['g'+g.id]&&Math.hypot(P.x-g.x,P.z-g.z)<1000)cand.push({key:'g'+g.id,x:g.x,z:g.z,say:`a gap to fly through: ${g.name}`});
-  for(const d of DROPS)if(!log.drops[d.id]&&!barked['d'+d.id]&&Math.hypot(P.x-d.x,P.z-d.z)<1300)cand.push({key:'d'+d.id,x:d.x,z:d.z,say:`orange smoke, a drop target: ${d.name}`});
+  for(const d of activeDrops())if(!barked['d'+d.x]&&Math.hypot(P.x-d.x,P.z-d.z)<1300)cand.push({key:'d'+d.x,x:d.x,z:d.z,say:`orange smoke: ${d.place}`});
   if(!cand.length)return;const best=cand.reduce((a,c)=>Math.hypot(P.x-c.x,P.z-c.z)<Math.hypot(P.x-a.x,P.z-a.z)?c:a);
   barked[best.key]=1;autoCD=30;dogTarget=best;dog.bark=1.6;snd.woof();toast(`Woof! Biscuit's nose points ${dirWord(best.x,best.z)}: ${best.say}.`,3.2);}
 function updDog(dt,t){if(lookDown){dog.root.visible=false;return;}const U=plane.userData,cock=!U.bodyM.visible&&mode!=='crashed';dog.bark=Math.max(0,dog.bark-dt);const b=dog.bark>0?1:0;
@@ -2971,7 +3097,7 @@ const spark=(()=>{const MAX=80,g=new THREE.BufferGeometry(),pos=new Float32Array
   const m=new THREE.Points(g,new THREE.PointsMaterial({size:4,sizeAttenuation:false,vertexColors:true,fog:false}));m.frustumCulled=false;scene.add(m);return {g,pos,col,MAX,list:[],t:0};})();
 function updSpark(dt,t){spark.t-=dt;const P=camera.position;
   if(spark.t<=0){spark.t=.4;const L=[];const far=(x,z)=>Math.hypot(P.x-x,P.z-z)>2800;
-    for(const [k,v] of Object.entries(sights)){if(log.sights[k]||far(v.x,v.z))continue;L.push({x:v.x,y:Math.max(v.y,groundH(v.x,v.z),0)+30,z:v.z,c:[1,.82,.35],ph:hash2(k.length,k.charCodeAt(0),7)});}
+    for(const [k,v] of Object.entries(sights)){if(log.sights[k]||!sightOn(v)||far(v.x,v.z))continue;L.push({x:v.x,y:Math.max(v.y,groundH(v.x,v.z),0)+30,z:v.z,c:[1,.82,.35],ph:hash2(k.length,k.charCodeAt(0),7)});}
     for(const id of activeErrands()){const e=ERRANDS[id];if(!e.set)continue;FINDS[e.set].forEach((p,i)=>{if(errState(id).found.includes(i))return;if(!far(p.x,p.z))L.push({o:p,dy:22,c:[.75,1,1],ph:i*.37,fast:1});});}
     spark.list=L.slice(0,spark.MAX);}
   const show=mode!=='title';
@@ -3011,110 +3137,140 @@ const streaks=(()=>{const SRC=[[-5.2,.8,.3,1],[5.2,.8,.3,1],[-5.2,.95,.3,1],[5.2
       RP.set([r.x,r.y,r.z,r.x,r.y,r.z-r.l*(.6+k)],i*6);}rg.attributes.position.needsUpdate=true;});
   return {L};})();
 
-
 /* ---------- air drops: parcels on little parachutes, onto bullseyes at remote camps ----------
-   You carry three parcels and get three more every time you land at a field. Each drop target is a painted
-   bullseye with orange smoke going up (so it's easy to spot from altitude) and someone waiting by a tent.
-   LOOK DOWN points the camera straight down under the plane, with a crosshair and a dotted ring where the parcel
-   would land if you let go now (it falls, the chute opens, then it drifts with the wind). */
-const PARCELS=3;let parcelsLeft=PARCELS,lookDown=false;const airParcels=[];log.drops=log.drops||{};
-const DROPS=[];const cMesh=(geo,color,o)=>new THREE.Mesh(merge([{geo,m:M([0,0,0]),color}]),toon(o||{}));
-(function dropSites(){
-  let ds=4242;const r=()=>{ds=(Math.imul(ds,1664525)+1013904223)>>>0;return ds/4294967296;};
-  const WHO=[['Shepherd\'s hut','Old Tam the shepherd','Feed for the flock! The ewes thank you, in their way.'],
-    ['Birdwatchers\' camp','The birdwatchers','Biscuits and spare batteries. Bless you. Don\'t scare the terns.'],
-    ['Painter\'s camp','Ines, painting','Fresh paints! I was down to brown. Everything was turning out brown.'],
-    ['Weather post','The weather post','Barometer parts, just in time. Rain by Thursday, probably.'],
-    ['Hermit\'s hollow','The hermit','...Thank you. Please don\'t land.'],
-    ['Beach camp','The campers','Marshmallows! We were rationing them. It was getting tense.'],
-    ['Survey tent','The surveyors','Spare pencils, finally. We\'d been measuring with string.'],
-    ['Fishing shack','Old Morag','Line and hooks. Supper is saved.'],
-    ['Picnic spot','The picnic party','The cake! We forgot the cake and you brought the cake!'],
-    ['Lookout post','The lookout','A flask of tea and yesterday\'s paper. A very good drop.'],
-    ['Goat pen','The goatherd','Salt licks. The goats are beside themselves.'],
-    ['Stone circle','The archaeologists','A new trowel! Gently, gently, it\'s all very old round here.'],
-    ['Bee hives','The beekeeper','New frames for the hives. Mind, they\'re a bit buzzy today.'],
-    ['Ranger\'s tent','The ranger','First-aid kit restocked. Not that anyone ever needs it out here.']];
-  const keys=Object.keys(ISLES).filter(k=>k!=='ferrow');let wi=0;
-  for(const k of keys){const I=ISLES[k],R=Math.min(I.r||700,1200);let best=null;
-    for(let n=0;n<400;n++){const a=r()*TAU,rr=Math.sqrt(r())*R*.8,x=I.x+Math.cos(a)*rr,z=I.z+Math.sin(a)*rr,h=groundH(x,z);if(h<5||isleAt(x,z)!==k&&I.r)continue;
-      let ok=true,flat=0;for(let q=0;q<10&&ok;q++){const b=q/10*TAU,hh=groundH(x+Math.cos(b)*36,z+Math.sin(b)*36);if(hh<3)ok=false;flat=Math.max(flat,Math.abs(hh-h));}if(!ok||flat>4)continue;
-      const ds_=Math.min(...STRIPS.map(s=>Math.hypot(s.x-x,s.z-z)));if(ds_<650)continue;
-      if(Object.values(sights).some(s=>Math.hypot(s.x-x,s.z-z)<220))continue;if(FLYGATES.some(g=>Math.hypot(g.x-x,g.z-z)<200))continue;
-      const score=ds_-flat*60;if(!best||score>best.score)best={x,z,y:h,score};}
-    if(!best)continue;const W=WHO[wi++%WHO.length];DROPS.push({id:'d_'+k,isle:k,x:best.x,z:best.z,y:best.y,name:`${W[0]}, ${I.name}`,who:W[1],line:W[2]});}
+   Drops are part of the day's mail. When you load the bag, Mabel hands over one to three air-drop parcels for folk
+   camped far from any runway. Each camp is put down at a random flat spot on a random outer island, so you get told
+   which island and have to keep a lookout for the orange smoke. A camp is only there until its parcel lands or the day ends.
+   LOOK DOWN points the camera at where a parcel let go now would come down (crosshair = landing spot).
+   The moment a parcel leaves the door you're told whether it's on its way to the rings or going wide; the chute opens
+   low, so it's down within a few seconds. A delivered camp cheers, hops, then packs itself away. */
+const PARCEL_SPARE=2;let parcelsLeft=0,lookDown=false;const airParcels=[];
+if(!log.dropStats)log.dropStats={n:0,bull:0,best:1e9};if(!mail.drops)mail.drops=[];
+const DROP_WHO=[['Shepherd\'s hut','Old Tam the shepherd','Sack of sheep feed','Feed for the flock! The ewes thank you, in their way.'],
+  ['Birdwatchers\' camp','The birdwatchers','Biscuits and batteries','Biscuits and spare batteries. Bless you. Don\'t scare the terns.'],
+  ['Painter\'s camp','Ines, painting','Box of paints','Fresh paints! I was down to brown. Everything was turning out brown.'],
+  ['Weather post','The weather post','Barometer parts','Barometer parts, just in time. Rain by Thursday, probably.'],
+  ['Hermit\'s hollow','The hermit','Tinned peaches','...Thank you. Please don\'t land.'],
+  ['Beach camp','The campers','Marshmallows','Marshmallows! We were rationing them. It was getting tense.'],
+  ['Survey tent','The surveyors','Pencils','Spare pencils, finally. We\'d been measuring with string.'],
+  ['Fishing shack','Old Morag','Line and hooks','Line and hooks. Supper is saved.'],
+  ['Picnic spot','The picnic party','A cake','The cake! We forgot the cake and you brought the cake!'],
+  ['Lookout post','The lookout','Tea and a paper','A flask of tea and yesterday\'s paper. A very good drop.'],
+  ['Goat pen','The goatherd','Salt licks','Salt licks. The goats are beside themselves.'],
+  ['Dig site','The archaeologists','A new trowel','A new trowel! Gently, gently, it\'s all very old round here.'],
+  ['Bee hives','The beekeeper','Hive frames','New frames for the hives. Mind, they\'re a bit buzzy today.'],
+  ['Ranger\'s tent','The ranger','First-aid kit','First-aid kit restocked. Not that anyone ever needs it out here.'],
+  ['Kite camp','The kite club','Spools of string','String! Miles of it! Watch the sky this afternoon.'],
+  ['Stargazers\' camp','The stargazers','Star charts','New charts. We\'d been naming the stars ourselves. Badly.']];
+const DROP_ISLES=Object.keys(ISLES).filter(k=>k!=='ferrow');
+function findDropSpot(k){const I=ISLES[k],R=Math.min(I.r||700,1200);let best=null;
+  for(let n=0;n<300;n++){const a=Math.random()*TAU,rr=Math.sqrt(Math.random())*R*.8,x=I.x+Math.cos(a)*rr,z=I.z+Math.sin(a)*rr,h=groundH(x,z);if(h<5||isleAt(x,z)!==k&&I.r)continue;
+    let ok=true,flat=0;for(let q=0;q<10&&ok;q++){const b=q/10*TAU,hh=groundH(x+Math.cos(b)*36,z+Math.sin(b)*36);if(hh<3)ok=false;flat=Math.max(flat,Math.abs(hh-h));}if(!ok||flat>4)continue;
+    const ds=Math.min(...STRIPS.map(s=>Math.hypot(s.x-x,s.z-z)));if(ds<650)continue;
+    if(Object.values(sights).some(s=>Math.hypot(s.x-x,s.z-z)<220))continue;if(FLYGATES.some(g=>Math.hypot(g.x-x,g.z-z)<200))continue;
+    const score=Math.min(ds,1500)-flat*60+Math.random()*300;if(!best||score>best.score)best={x,z,y:h,score};}
+  return best;}
+/* new drops for the day: 1 to 3, each on a different island, each at a fresh random spot */
+function spawnDrops(){const n=1+(Math.random()<.55?1:0)+(Math.random()<.3?1:0),isles=DROP_ISLES.slice().sort(()=>Math.random()-.5),who=DROP_WHO.slice().sort(()=>Math.random()-.5),out=[];
+  for(const k of isles){if(out.length>=n)break;const p=findDropSpot(k);if(!p)continue;const W=who[out.length];
+    const ha=Math.random()*TAU,hr=150+Math.random()*250;
+    out.push({isle:k,x:Math.round(p.x),z:Math.round(p.z),y:p.y,place:W[0],who:W[1],item:W[2],line:W[3],hx:Math.round(p.x+Math.cos(ha)*hr),hz:Math.round(p.z+Math.sin(ha)*hr),seen:false,done:false});}
+  mail.drops=out;saveL();syncSites();parcelsLeft=parcelCap();updParcelUI();return out;}
+function clearDrops(){mail.drops=[];syncSites();parcelsLeft=0;updParcelUI();}
+const activeDrops=()=>mail.active?mail.drops.filter(d=>!d.done):[];
+const parcelCap=()=>activeDrops().length?activeDrops().length+PARCEL_SPARE:0;
+function dropLine(){if(!mail.drops.length)return '';return `<p class="say">“And ${['','one','two','three'][mail.drops.length]} for the air: folk camped out where there's no runway. They go out of the door on a parachute. Look for orange smoke.”</p><p>`+
+  mail.drops.map(d=>`<b>${d.item}</b> for ${d.who}, somewhere on ${ISLES[d.isle].name}`).join('<br>')+'</p>';}
 
-  /* bullseye rings draped over the ground, a tent, someone waving, and a column of orange smoke */
-  const rings=[],props=[],extras=[];
-  const BANDS=[[22,30,0xf6f1e4],[14,22,0xd8463a],[7,14,0xf6f1e4],[.01,7,0xd8463a]];
-  const smokeM=new THREE.MeshBasicMaterial({color:0xff7424,transparent:true,opacity:.6,depthWrite:false,fog:false});
-  const smokeG=new THREE.InstancedMesh(new THREE.DodecahedronGeometry(1,0),smokeM,DROPS.length*7);smokeG.renderOrder=3;smokeG.frustumCulled=false;scene.add(smokeG);
-  for(const d of DROPS){
-    for(const [a,b,c] of BANDS){const g=new THREE.RingGeometry(a,b,28,3).rotateX(-Math.PI/2),p=g.attributes.position;
-      for(let i=0;i<p.count;i++){const x=d.x+p.getX(i),z=d.z+p.getZ(i);p.setXYZ(i,x,groundH(x,z)+.35,z);}g.computeVertexNormals();rings.push({geo:g,m:M([0,0,0]),color:c});}
-    const items=props,tp=fromA(d,38,.6),th=groundH(tp.x,tp.z);
-    items.push({geo:new THREE.ConeGeometry(4,4.4,4),m:M([tp.x,th+2.2,tp.z],[0,.6,0]),color:[0x3f8f8a,0xe2703f,0x8a5a3a,0x5c7fb0][DROPS.indexOf(d)%4]});
-    const pp=fromA(d,32,1.1),ph=groundH(pp.x,pp.z);items.push({geo:BOX(.7,1.2,.45),m:M([pp.x,ph+1,pp.z]),color:0x2f4f7a},{geo:BOX(.5,.5,.5),m:M([pp.x,ph+1.9,pp.z]),color:0xf0c7a4});
-    for(const s of [-1,1]){const q=fromA(d,31,1.1+s*.2);items.push({geo:BOX(.35,2.6,.35),m:M([q.x,ph+.3,q.z]),color:0x6b4a36});}
-    const pole=fromA(d,30,.2),plh=groundH(pole.x,pole.z);items.push({geo:BOX(.3,9,.3),m:M([pole.x,plh+4.5,pole.z]),color:0xf4f0e6});
-    d.arm=cMesh(BOX(.25,1.1,.25).translate(0,.5,0),0xf0c7a4);d.arm.position.set(pp.x+.5,ph+1.8,pp.z);extras.push(d.arm);scene.add(d.arm);
-    d.flag=cMesh(BOX(2.6,1.5,.12).translate(1.3,0,0),0xd8463a);d.flag.position.set(pole.x,plh+8.1,pole.z);extras.push(d.flag);scene.add(d.flag);
-    d.si=DROPS.indexOf(d)*7;}
-  const rm=new THREE.Mesh(merge(rings),new THREE.MeshBasicMaterial({vertexColors:true,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2}));rm.renderOrder=1;scene.add(rm);
-  scene.add(shadowy(new THREE.Mesh(merge(props),toon())));
-  const _sm=new THREE.Matrix4(),_sq=new THREE.Quaternion(),_ss=new V3(),_sp=new V3();
-  anims.push(t=>{const P=camera.position;for(const d of DROPS){const done=!!log.drops[d.id],dd=Math.hypot(P.x-d.x,P.z-d.z),far=dd>9000;
-    for(let i=0;i<7;i++){const u=(t*.09+i/7)%1;if(done||far)_ss.setScalar(0);else _ss.setScalar(2+u*9);_sp.set(d.x+Math.sin(t*.4+u*5)*3+u*24*WIND.x/3,d.y+2+u*70,d.z+Math.cos(t*.3+u*4)*3+u*24*WIND.z/3);
-      _sq.setFromAxisAngle(_wy,i*1.3+u);smokeG.setMatrixAt(d.si+i,_sm.compose(_sp,_sq,_ss));}
-    const near=dd<2500;d.arm.visible=d.flag.visible=near;if(near){d.arm.rotation.z=Math.sin(t*6+d.x)*.7-.4;d.flag.rotation.y=Math.sin(t*2.3+d.z)*.25;}}
-    smokeG.instanceMatrix.needsUpdate=true;
-    });
-  function fromA(d,dist,ang){return {x:d.x+Math.cos(ang)*dist,z:d.z+Math.sin(ang)*dist};}
-})();
+/* ---- camp meshes, built when a drop is handed out and removed once it's delivered ---- */
+const SITES=new Map();const cMesh=(geo,color,o)=>new THREE.Mesh(merge([{geo,m:M([0,0,0]),color}]),toon(o||{}));
+const smokeM=new THREE.MeshBasicMaterial({color:0xff7424,transparent:true,opacity:.6,depthWrite:false,fog:false}),smokeGeo=new THREE.DodecahedronGeometry(1,0);
+const ringMat=new THREE.MeshBasicMaterial({vertexColors:true,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2});
+function buildSite(d){const g=new THREE.Group();g.position.set(d.x,d.y,d.z);const rings=[],props=[],L=(x,z)=>groundH(d.x+x,d.z+z)-d.y;
+  for(const [a,b,c] of [[22,30,0xf6f1e4],[14,22,0xd8463a],[7,14,0xf6f1e4],[.01,7,0xd8463a]]){const gg=new THREE.RingGeometry(a,b,28,3).rotateX(-Math.PI/2),p=gg.attributes.position;
+    for(let i=0;i<p.count;i++){const x=p.getX(i),z=p.getZ(i);p.setY(i,L(x,z)+.35);}gg.computeVertexNormals();rings.push({geo:gg,m:M([0,0,0]),color:c});}
+  const at=(dist,ang)=>{const x=Math.cos(ang)*dist,z=Math.sin(ang)*dist;return {x,z,y:L(x,z)};},k=(d.x*7+d.z*3)&3;
+  const tp=at(38,.6);props.push({geo:new THREE.ConeGeometry(4,4.4,4),m:M([tp.x,tp.y+2.2,tp.z],[0,.6,0]),color:[0x3f8f8a,0xe2703f,0x8a5a3a,0x5c7fb0][k]});
+  for(const s of [-1,1]){const q=at(31,1.1+s*.2);props.push({geo:BOX(.35,2.6,.35),m:M([q.x,q.y+.3,q.z]),color:0x6b4a36});}
+  const pole=at(30,.2);props.push({geo:BOX(.3,9,.3),m:M([pole.x,pole.y+4.5,pole.z]),color:0xf4f0e6});
+  const rm=new THREE.Mesh(merge(rings),ringMat);rm.renderOrder=1;g.add(rm);g.add(shadowy(new THREE.Mesh(merge(props),toon())));
+  const pp=at(32,1.1),man=new THREE.Group();man.position.set(pp.x,pp.y,pp.z);
+  man.add(new THREE.Mesh(merge([{geo:BOX(.7,1.2,.45),m:M([0,1,0]),color:0x2f4f7a},{geo:BOX(.5,.5,.5),m:M([0,1.9,0]),color:0xf0c7a4},{geo:BOX(.22,.7,.22),m:M([-.18,.2,0]),color:0x3a3040},{geo:BOX(.22,.7,.22),m:M([.18,.2,0]),color:0x3a3040}]),toon()));
+  const arm=cMesh(BOX(.25,1.1,.25).translate(0,.5,0),0xf0c7a4);arm.position.set(.5,1.5,0);man.add(arm);g.add(man);
+  const flag=cMesh(BOX(2.6,1.5,.12).translate(1.3,0,0),0xd8463a);flag.position.set(pole.x,pole.y+8.1,pole.z);g.add(flag);
+  const smoke=new THREE.InstancedMesh(smokeGeo,smokeM,7);smoke.renderOrder=3;smoke.frustumCulled=false;g.add(smoke);
+  scene.add(g);return {g,man,arm,flag,smoke,react:-1,ring:rm,y0:pp.y};}
+function syncSites(){const want=new Set(activeDrops());for(const [d,s] of SITES){if(!want.has(d)&&s.react<0){scene.remove(s.g);SITES.delete(d);}}
+  for(const d of want)if(!SITES.has(d))SITES.set(d,buildSite(d));}
+const _sm=new THREE.Matrix4(),_sq=new THREE.Quaternion(),_ss=new V3(),_sp=new V3();
+function animSites(t,dt){const P=camera.position;
+  for(const [d,s] of SITES){const dd=Math.hypot(P.x-d.x,P.z-d.z),near=dd<2500;let puff=1;
+    if(s.react>=0){s.react+=dt;const r=s.react,w=Math.max(0,1-r/2);puff=Math.max(0,1-r/1.2);
+      s.man.position.y=s.y0+(r<2?Math.abs(Math.sin(r*9))*1.3:0);s.arm.rotation.z=Math.sin(r*22)*1.1-.6;s.flag.rotation.y+=dt*8;
+      s.ring.scale.set(1+.14*Math.sin(r*9)*w,1,1+.14*Math.sin(r*9)*w);
+      if(r>2&&!s.popped){s.popped=1;celebrate({x:d.x,y:d.y,z:d.z});snd.beep(1568);}
+      const u=clamp((r-2)/.55,0,1);s.g.scale.setScalar(Math.max(.001,1+.25*Math.sin(u*Math.PI)-u));
+      if(r>2.6){scene.remove(s.g);SITES.delete(d);continue;}}
+    else if(near){s.arm.rotation.z=Math.sin(t*6+d.x)*.7-.4;s.flag.rotation.y=Math.sin(t*2.3+d.z)*.25;}
+    for(let i=0;i<7;i++){const u=(t*.09+i/7)%1;_ss.setScalar(dd>9000?0:(2+u*9)*puff);_sp.set(Math.sin(t*.4+u*5)*3+u*24*WIND.x/3,2+u*70,Math.cos(t*.3+u*4)*3+u*24*WIND.z/3);
+      _sq.setFromAxisAngle(_wy,i*1.3+u);s.smoke.setMatrixAt(i,_sm.compose(_sp,_sq,_ss));}
+    s.smoke.instanceMatrix.needsUpdate=true;
+    if(!d.seen&&!d.done&&dd<1500&&mode==='fly'){d.seen=true;saveL();updJob();snd.beep(990);toast(`Orange smoke! ${d.place}: ${d.item} for ${d.who}.`,2.6);}}}
 
 /* ---- parcels in the air ---- */
 const parcelGeo=(()=>{const crate=new THREE.Mesh(merge([{geo:BOX(1,1,1),m:M([0,0,0]),color:0xb07a48},{geo:BOX(1.04,.16,1.04),m:M([0,0,0]),color:0xf4e4c8},{geo:BOX(.16,1.04,1.04),m:M([0,0,0]),color:0xf4e4c8}]),toon());
   const chute=new THREE.Group(),seg=8;for(let i=0;i<seg;i++){const g=new THREE.SphereGeometry(4,2,3,i/seg*TAU,TAU/seg,0,Math.PI/2.2);chute.add(cMesh(g,i%2?0xf6f1e4:0xd8463a,{side:THREE.DoubleSide}));}
   const lines=new THREE.BufferGeometry().setFromPoints([0,1,2,3].flatMap(k=>{const a=k/4*TAU+.4;return [new V3(0,-5.4,0),new V3(Math.cos(a)*3.6,-.8,Math.sin(a)*3.6)];}));
   chute.add(new THREE.LineSegments(lines,new THREE.LineBasicMaterial({color:0x3a3030})));return {crate,chute};})();
+/* falls free (a little air drag) until it's about 40 m off the ground, then the chute pops and it drifts with the wind */
+const CHUTE_AGL=40;
 function stepParcel(o,dt){o.age+=dt;const v=o.vel;
-  if(o.age<.9){v.y-=9.8*dt;v.multiplyScalar(1-.05*dt);}
-  else{const k=1-Math.exp(-dt/1.1),kv=1-Math.exp(-dt/.5);v.x+=(WIND.x-v.x)*k;v.z+=(WIND.z-v.z)*k;v.y+=(-6-v.y)*kv;}
+  if(!o.chuteOn&&o.age>.6&&o.pos.y-Math.max(0,groundH(o.pos.x,o.pos.z))<CHUTE_AGL)o.chuteOn=true;
+  if(!o.chuteOn){v.y-=9.8*dt;const dr=Math.exp(-.35*dt);v.x*=dr;v.z*=dr;v.y*=Math.exp(-.18*dt);}
+  else{const k=1-Math.exp(-dt/1.1),kv=1-Math.exp(-dt/.4);v.x+=(WIND.x-v.x)*k;v.z+=(WIND.z-v.z)*k;v.y+=(-7-v.y)*kv;}
   o.pos.addScaledVector(v,dt);}
-const _pr={pos:new V3(),vel:new V3(),age:0};
-function predictDrop(){_pr.pos.copy(ac.pos).y-=1.2;_pr.vel.copy(ac.vel);_pr.age=0;for(let i=0;i<900;i++){stepParcel(_pr,.06);if(_pr.pos.y<420){const g=Math.max(0,groundH(_pr.pos.x,_pr.pos.z));if(_pr.pos.y<=g+.4){_pr.pos.y=g;return _pr.pos;}}}return _pr.pos;}
-function updParcelUI(){const b=$('dropBtn');if(!b)return;b.innerHTML=`DROP<br>${'●'.repeat(parcelsLeft)+'○'.repeat(PARCELS-parcelsLeft)}`;b.classList.toggle('empty',!parcelsLeft);$('lookBtn').classList.toggle('on',lookDown);}
-function refillParcels(){if(parcelsLeft<PARCELS){parcelsLeft=PARCELS;updParcelUI();}}
+const _pr={pos:new V3(),vel:new V3(),age:0,chuteOn:false};
+function predictDrop(){_pr.pos.copy(ac.pos).y-=1.2;_pr.vel.copy(ac.vel);_pr.age=0;_pr.chuteOn=false;for(let i=0;i<1500;i++){stepParcel(_pr,.04);const g=Math.max(0,groundH(_pr.pos.x,_pr.pos.z));if(_pr.pos.y<=g+.5){_pr.pos.y=g;return _pr.pos;}}return _pr.pos;}
+function updParcelUI(){const b=$('dropBtn');if(!b)return;const cap=Math.max(parcelCap(),parcelsLeft);b.innerHTML=`DROP<br>${'●'.repeat(parcelsLeft)+'○'.repeat(Math.max(0,cap-parcelsLeft))}`;b.classList.toggle('empty',!parcelsLeft);$('lookBtn').classList.toggle('on',lookDown);}
+function refillParcels(){const c=parcelCap();if(parcelsLeft<c){parcelsLeft=c;updParcelUI();}}
 function toggleLook(){if(mode!=='fly')return;if(ac.ground&&!lookDown){toast('Look down works once you\'re in the air.',1.6);return;}lookDown=!lookDown;snapCam=true;if(lookDown){predP.copy(predictDrop());predT=.05;}snd.click();updParcelUI();
-  if(lookDown)tip('lookdown','Looking straight down. Up on the screen is the way you\'re flying. The dotted ring is where a parcel would land if you let go now: put it on the bullseye and tap DROP.');}
+  if(lookDown)tip('lookdown','Looking straight down. Up on the screen is the way you\'re flying. The crosshair is where a parcel would land if you let go now: put it on the bullseye and tap DROP.');}
+function nearestDrop(x,z){let b=null,bd=1e9;for(const d of activeDrops()){const q=Math.hypot(d.x-x,d.z-z);if(q<bd){bd=q;b=d;}}return {d:b,dist:bd};}
+/* where it's going, said the moment it leaves the door, in the pilot's terms (long/short, left/right) */
+function dropVerdict(p){const {d,dist}=nearestDrop(p.x,p.z);if(!d||dist>1200)return null;
+  const f=_c1.copy(_f);f.y=0;f.normalize();const ox=p.x-d.x,oz=p.z-d.z,along=ox*f.x+oz*f.z,lat=ox*-f.z+oz*f.x;
+  if(dist<45)return {good:true,d,dist,txt:dist<8?'Ooh, that looks dead on...':'Looking good. It\'s heading for the rings.'};
+  const parts=[];if(Math.abs(along)>20)parts.push(`${Math.round(Math.abs(along)/10)*10} m ${along>0?'long':'short'}`);if(Math.abs(lat)>20)parts.push(`${Math.round(Math.abs(lat)/10)*10} m ${lat>0?'right':'left'}`);
+  return {good:false,d,dist,txt:`Going wide: about ${parts.join(' and ')||Math.round(dist)+' m off'}. Circle round for another go.`};}
 function doDrop(){if(mode!=='fly')return;if(ac.ground){toast('Get airborne first. Parcels go out of the door in flight.',2);return;}
-  if(!parcelsLeft){toast('Out of parcels. Land at any field and Mabel loads three more.',2.4);return;}
+  if(!activeDrops().length){toast('No air drops in the bag right now.',2);return;}
+  if(!parcelsLeft){toast('Out of parcels. Land at any field and they\'ll load more.',2.4);return;}
   parcelsLeft--;updParcelUI();snd.click();snd.thump(.4);
-  const o={pos:ac.pos.clone(),vel:ac.vel.clone(),age:0,crate:parcelGeo.crate.clone(),chute:parcelGeo.chute.clone(),open:0,landed:-1};o.pos.y-=1.2;
+  const o={pos:ac.pos.clone(),vel:ac.vel.clone(),age:0,chuteOn:false,crate:parcelGeo.crate.clone(),chute:parcelGeo.chute.clone(),open:0,landed:-1};o.pos.y-=1.2;
+  o.pred=predictDrop().clone();const v=dropVerdict(o.pred);o.verdict=v;if(v)toast(v.txt,v.good?2.2:3.2);
   o.chute.scale.setScalar(.01);scene.add(o.crate);scene.add(o.chute);airParcels.push(o);}
-function nearestDrop(x,z){let b=null,bd=1e9;for(const d of DROPS){const q=Math.hypot(d.x-x,d.z-z);if(q<bd){bd=q;b=d;}}return {d:b,dist:bd};}
 function parcelDown(o,water){const {d,dist}=nearestDrop(o.pos.x,o.pos.z);
   if(water){toast(dist<600?`Splash! ${Math.round(dist)} m off. That one's for the fish.`:'Splash! One parcel for the fish.',2.4);return;}
   if(!d||dist>45){toast(dist<600?`Missed by ${Math.round(dist)} m. Biscuit gives you a look.`:'The parcel lands in the middle of nowhere. A lucky sheep, maybe.',2.4);return;}
   const tier=dist<5?[500,'BULLSEYE!']:dist<12?[300,'Right on the mark!']:dist<24?[150,'On target!']:[60,'Just about in the field.'];
-  const st=log.drops[d.id],first=!st;log.drops[d.id]={n:(st?st.n:0)+1,best:Math.min(st?st.best:1e9,dist)};
-  let pts=tier[0];if(first){pts+=200;stamp(1);}addScore(pts);saveL();snd.beep(1175);setTimeout(()=>snd.beep(1568),110);if(dist<12)celebrate({x:d.x,y:d.y,z:d.z});
-  goal('drop1',true);if(dist<5)goal('bullseye',true);if(DROPS.every(q=>log.drops[q.id]))goal('drops');
-  toast(`${tier[0]===500?'BULLSEYE! ':tier[1]+' '}${Math.round(dist)} m · +${pts}${first?' · +1 STAMP':''}\n${first?`${d.who}: "${d.line}"`:d.name}`,first?4:2.6);}
-function updDrops(dt){const run=mode==='fly'||mode==='crashed';
-  const ui=$('dropUI');if(ui){const show=mode==='fly'&&!ac.ground;if(ui.hidden===show)ui.hidden=!show;}
+  d.done=true;const S=log.dropStats;S.n++;if(dist<5)S.bull++;S.best=Math.min(S.best,dist);
+  const pts=tier[0]+200;stamp(1);addScore(pts);saveL();snd.beep(1175);setTimeout(()=>snd.beep(1568),110);
+  const s=SITES.get(d);if(s)s.react=0;
+  goal('drop1',true);if(dist<5)goal('bullseye',true);if(S.n>=10)goal('drops');updJob();
+  const left=activeDrops().length;
+  toast(`${tier[1]} ${Math.round(dist)} m · +${pts} · +1 STAMP\n${d.who}: "${d.line}"${left?`\n${left} more drop${left>1?'s':''} to go.`:''}`,4);}
+function updDrops(dt){const run=mode==='fly'||mode==='crashed';animSites(performance.now()/1000,dt);
   if(lookDown&&(ac.ground||mode!=='fly'&&mode!=='paused')){lookDown=false;snapCam=true;updParcelUI();}
-  if(mode==='fly'&&!ac.ground){const {d,dist}=nearestDrop(ac.pos.x,ac.pos.z);if(d&&dist<1600)tip('drops',`A drop target! ${d.name}. Fly over it, tap LOOK DOWN (right side) to see below, and DROP when the dotted ring sits on the bullseye. You get three more parcels at every landing.`);}
+  if(mode==='fly'&&!ac.ground){const {d,dist}=nearestDrop(ac.pos.x,ac.pos.z);if(d&&dist<1600)tip('drops',`There's the smoke! Tap the target button on the left for LOOK DOWN and DROP. Let go when the crosshair sits on the rings, and you'll hear straight away if it's on its way.`);}
   if(lookDown){predT-=dt;if(predT<=0){predT=.05;predP.copy(predictDrop());}}else lookSnap=true;
   for(let i=airParcels.length-1;i>=0;i--){const o=airParcels[i];
     if(o.landed<0&&run){const n=Math.max(1,Math.ceil(dt/.02));for(let k=0;k<n;k++){stepParcel(o,dt/n);const g=groundH(o.pos.x,o.pos.z),gy=Math.max(0,g);if(o.pos.y<=gy+.5){o.pos.y=gy+.5;o.landed=0;o.water=g<0;parcelDown(o,o.water);break;}}}
-    o.open=lerp(o.open,o.age>.9?1:0,1-Math.exp(-dt*5));o.crate.position.copy(o.pos);o.crate.rotation.y+=dt*(o.landed<0?.8:0);
+    o.open=lerp(o.open,o.chuteOn?1:0,1-Math.exp(-dt*7));o.crate.position.copy(o.pos);o.crate.rotation.y+=dt*(o.landed<0?.8:0);
     if(o.landed<0){o.chute.position.copy(o.pos).y+=5.4*o.open+.5;o.chute.scale.setScalar(Math.max(.01,o.open));o.chute.rotation.z=Math.sin(o.age*2)*.08*o.open;}
     else{o.landed+=dt;if(o.water)o.crate.position.y=-o.landed*.4;o.chute.position.lerp(_c1.set(o.pos.x+WIND.x*2,o.pos.y,o.pos.z+WIND.z*2),1-Math.exp(-dt*1.5));o.chute.scale.y=Math.max(.12,o.chute.scale.y-dt*.8);
       if(o.water)o.chute.position.y=Math.max(-2,o.chute.position.y-dt*.3);
-      if(o.landed>45){scene.remove(o.crate);scene.remove(o.chute);airParcels.splice(i,1);}}}}
-/* the look-down camera: just under the belly, straight down, with the direction of flight at the top of the screen */
-/* it aims at where a parcel let go right now would come down, so the crosshair in the middle of the screen IS the landing spot */
+      if(o.landed>30){scene.remove(o.crate);scene.remove(o.chute);airParcels.splice(i,1);}}}}
+/* the look-down camera: just under the belly, aimed at where a parcel let go now would come down, flight direction up */
 const lookAim=new V3();let lookSnap=true;
 function lookDownCam(){const f=_c1.copy(_f);f.y=0;if(f.lengthSq()<1e-4)f.set(0,0,-1);f.normalize();
   camera.position.copy(ac.pos).y-=1.6;if(lookSnap||snapCam){lookAim.copy(predP);lookSnap=false;snapCam=false;}else lookAim.lerp(predP,.25);
@@ -3126,20 +3282,28 @@ function drawDropSight(dt){const K=rgba(0x241c2e),cx=Math.round(LW/2),cy=Math.ro
   for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){for(let k=6;k<13;k++){pb.px(cx+dx*k+1,cy+dy*k+1,K);pb.px(cx+dx*k,cy+dy*k,C.tick);}}
   const {d,dist}=nearestDrop(predP.x,predP.z),on=d&&dist<12,[px,py,vis]=scr(lookAim.x,lookAim.y,lookAim.z);
   if(vis){const rr=Math.max(3,Math.round(LH*.028)),col=on?C.green:C.cyan;for(let a=0;a<32;a++){if(a%4===3)continue;const t=a/32*TAU,x=px+Math.cos(t)*rr,y=py+Math.sin(t)*rr;pb.px(x+1,y+1,K);pb.px(x,y,col);}pb.rect(Math.round(px),Math.round(py),1,1,col);}
+  /* parcels already falling: an X where each one will land, green if it's going onto the rings */
+  for(const o of airParcels){if(o.landed>=0||!o.pred)continue;const [qx,qy,qv]=scr(o.pred.x,o.pred.y,o.pred.z);if(!qv)continue;const c=o.verdict&&o.verdict.good?C.green:C.orange;
+    for(let k=-2;k<=2;k++){pb.px(qx+k+1,qy+k+1,K);pb.px(qx+k,qy+k,c);pb.px(qx+k+1,qy-k+1,K);pb.px(qx+k,qy-k,c);}}
   const agl=Math.round(Math.max(0,(ac.pos.y-surfH(ac.pos.x,ac.pos.z))*FT));
   txt('LOOKING DOWN',cx,4,C.tick);txt(`CROSSHAIR IS WHERE IT LANDS - ${agl} FT UP`,cx,12,C.dim);
   const nd=nearestDrop(ac.pos.x,ac.pos.z);
   if(nd.d){const [tx,ty,tv]=scr(nd.d.x,nd.d.y,nd.d.z),inside=tv&&tx>4&&tx<LW-4&&ty>4&&ty<LH-4;
-    if(!inside&&nd.dist<6000){const a=Math.atan2(nd.d.x-ac.pos.x,-(nd.d.z-ac.pos.z))-Math.atan2(_f.x,-_f.z),ex=cx+Math.sin(a)*(LW*.42),ey=cy-Math.cos(a)*(LH*.4);
+    if(!inside&&nd.dist<6000&&nd.d.seen){const a=Math.atan2(nd.d.x-ac.pos.x,-(nd.d.z-ac.pos.z))-Math.atan2(_f.x,-_f.z),ex=cx+Math.sin(a)*(LW*.42),ey=cy-Math.cos(a)*(LH*.4);
       pb.disc(Math.round(ex),Math.round(ey),3,K);pb.disc(Math.round(ex),Math.round(ey),2,C.orange);txt(nd.dist<1000?Math.round(nd.dist/10)*10+' M':(nd.dist/1000).toFixed(1)+' KM',Math.round(ex),Math.round(ey)+5,C.orange);}
-    txt(on?'ON TARGET - DROP NOW':d&&dist<45?`${Math.round(dist)} M OFF`:`TARGET ${nd.dist<1000?Math.round(nd.dist/10)*10+' M':(nd.dist/1000).toFixed(1)+' KM'}`,cx,LH-18,on?C.green:C.tick);}
+    txt(on?'ON TARGET - DROP NOW':d&&dist<45?`${Math.round(dist)} M OFF`:nd.d.seen?`TARGET ${nd.dist<1000?Math.round(nd.dist/10)*10+' M':(nd.dist/1000).toFixed(1)+' KM'}`:'LOOK FOR THE ORANGE SMOKE',cx,LH-18,on?C.green:C.tick);}
   txt(`PARCELS ${parcelsLeft}`,cx,LH-10,parcelsLeft?C.tick:C.orange);}
+/* map marks: a dashed "somewhere round here" circle until you've spotted the smoke, then the exact rings.
+   P maps world x,z to map pixels; s is how big one map pixel is in the canvas's own units */
+function dropMarks(x,P,s){for(const d of activeDrops()){if(d.seen){const [a,b]=P(d.x,d.z);x.setLineDash([]);x.strokeStyle='#241c2e';x.lineWidth=3*s;x.beginPath();x.arc(a,b,4*s,0,TAU);x.stroke();x.strokeStyle='#ff7424';x.lineWidth=1.5*s;x.beginPath();x.arc(a,b,4*s,0,TAU);x.stroke();x.fillStyle='#ff7424';x.fillRect(a-s,b-s,2*s,2*s);}
+  else{const [a,b]=P(d.hx,d.hz),[c]=P(d.hx+650,d.hz);x.strokeStyle='#ff7424';x.lineWidth=1.3*s;x.setLineDash([3*s,3*s]);x.beginPath();x.arc(a,b,Math.max(5*s,Math.abs(c-a)),0,TAU);x.stroke();x.setLineDash([]);}}}
+syncSites();parcelsLeft=parcelCap();
 
 
 /* ---------- main loop ---------- */
 let acc=0,last=performance.now(),fpsN=0,fpsT=0,fpsLast=0,fpsPrev=0,fpsMin=999;renderer.info.autoReset=false;
 function loop(now){
-  const dt=Math.min(.05,(now-last)/1000);last=now;const t=now/1000;
+  const dt=clamp((now-last)/1000,0,.05);last=now;const t=now/1000;
   skyMat.uniforms.uTime.value=t;waterMat.uniforms.uTime.value=t;for(const a of anims)a(t);
   cloudGroup.position.set((t*2.2)%4000,0,-(t*.8)%4000);
   {const pu=postMat.uniforms;pu.mist.value=lerp(pu.mist.value,cloudMist(camera.position),1-Math.exp(-dt*5));pu.mistC.value.copy(scene.fog.color).lerp(_mistW,.3);}
@@ -3157,7 +3321,7 @@ function loop(now){
   requestAnimationFrame(loop);
 }
 addEventListener('resize',()=>{resize();setThrottleUI();placeRingIdle();checkRotate();});
-$('wind').addEventListener('click',e=>{e.stopPropagation();useWind();});pixMode=settings.pixels;resize();setTOD(settings.light);toTitle();placeRingIdle();checkRotate();refreshBag();
+$('wind').addEventListener('click',e=>{e.stopPropagation();useWind();});pixMode=settings.pixels;resize();setTOD(settings.light);toTitle();placeRingIdle();checkRotate();refreshBag();applyPanels();
 updScore();updErrandUI();updTodBtn();updRadioBtn();$('lookBtn').addEventListener('click',e=>{e.stopPropagation();toggleLook();});$('dropBtn').addEventListener('click',e=>{e.stopPropagation();doDrop();});updParcelUI();$('radioBtn').addEventListener('click',e=>{e.stopPropagation();turnDial();});const ld=$('load');if(ld)ld.hidden=true;$('fps').hidden=!settings.fps;$('fps').textContent='FPS: measuring…';
 requestAnimationFrame(loop);
 

@@ -41,37 +41,62 @@ button:focus-visible{outline:2px solid #fff;outline-offset:2px}
   box-shadow:4px 4px 0 #0008;pointer-events:none;text-align:center;text-wrap:balance}
 
 
-/* controls */
-#thr{position:fixed;left:var(--sl);top:calc(var(--st) + 50px);bottom:var(--sb);width:58px;background:var(--glass);border:2px solid var(--line);touch-action:none}
-#thrFill{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(#e2703f,#b5512b);opacity:.55}
-#thrKnob{position:absolute;left:-4px;right:-4px;height:14px;background:var(--paper);box-shadow:0 3px 0 #0008;transform:translateY(50%)}
-#thr span{position:absolute;left:0;right:0;top:6px;text-align:center;font-family:var(--mono);font-size:14px;color:var(--paper)}
-#thrPct{top:auto!important;bottom:6px}
-#lcol{position:fixed;left:calc(var(--sl) + 68px);top:calc(var(--st) + 50px);width:124px;display:flex;flex-direction:column;gap:6px}
-#mapc{width:124px;height:124px;image-rendering:pixelated;border:2px solid var(--line);background:#1d2a44;display:block;box-sizing:border-box;cursor:pointer}
-#sw{display:flex;gap:4px}
-#sw button{flex:1;font-family:var(--mono);font-size:13px;padding:7px 0;line-height:1.1;background:#3a3344;color:var(--paper);box-shadow:inset -2px -2px 0 #241c2e, 0 2px 0 #0007}
-#sw button.on{background:var(--good);color:#fff;box-shadow:inset -2px -2px 0 #3e7334, 0 2px 0 #0007}
-#sw button.warn{background:var(--warn);color:var(--ink)}
-#wind{font-family:var(--mono);font-size:14px;padding:8px 0;line-height:1.1;color:var(--ink);background:linear-gradient(to right,#ffd36b var(--w,0%),#fff0c4 var(--w,0%));box-shadow:inset -2px -2px 0 #b8902e, 0 2px 0 #0007;pointer-events:auto}
-#score{font-family:var(--mono);font-size:16px;text-align:center;background:var(--glass);border:2px solid var(--line);color:#ffd36b;padding:3px 0;pointer-events:none}
-#score.pop{animation:pop .5s}@keyframes pop{30%{transform:scale(1.12);color:#fff}}
-#errand{font-family:var(--mono);font-size:12px;line-height:1.15;background:rgba(36,28,46,.74);border:2px solid #b8902e;color:#ffd890;padding:3px 5px;pointer-events:none}
-#wind span{display:block;font-size:12px;letter-spacing:.2em;color:#a0601e}
-#wind.on{background:#ffd36b;color:#241c2e}
+/* controls: an analog panel. Throttle quadrant lever on the left, a rail of little toggle buttons beside it, and
+   panels (map, today's jobs, landing controls, air drop) that fold away so you can just look at the view */
+#thr{position:fixed;left:var(--sl);top:calc(var(--st) + 50px);bottom:var(--sb);width:58px;touch-action:none;z-index:2;
+  background:linear-gradient(90deg,#3b3542,#2c2733 45%,#24202b);border:2px solid #15121a;box-shadow:inset 2px 2px 0 #4d4656,inset -2px -2px 0 #1a161f}
+#thr .lab{position:absolute;left:0;right:0;top:4px;text-align:center;font:9px/1 var(--mono);letter-spacing:.08em;color:#cfc4b2}
+#thrSlot{position:absolute;left:50%;top:22px;bottom:36px;width:8px;margin-left:-4px;background:#0d0b10;box-shadow:inset 2px 0 0 #000,1px 0 0 #4d4656}
+#thrTicks{position:absolute;right:4px;top:22px;bottom:36px;width:6px;background:repeating-linear-gradient(#cfc4b2 0 1px,transparent 1px 10%)}
+#thrKnob{position:absolute;left:3px;right:3px;height:24px;transform:translateY(50%);border-radius:7px 7px 4px 4px;
+  background:linear-gradient(#55505c,#18151c 40%,#0b090d);box-shadow:inset 0 2px 0 #8a8492,0 3px 0 #000a;pointer-events:none}
+#thrKnob::after{content:'';position:absolute;left:6px;right:6px;top:9px;height:2px;background:#e2703f}
+#thrPct{position:absolute;left:0;right:0;bottom:6px;text-align:center;font-family:var(--mono);font-size:14px;color:#ffd36b}
+#rail{position:fixed;left:calc(var(--sl) + 64px);top:calc(var(--st) + 50px);display:flex;flex-direction:column;gap:5px;z-index:2}
+.rb{width:36px;height:36px;padding:2px;line-height:0;background:#2c2733;box-shadow:inset 2px 2px 0 #4d4656,inset -2px -2px 0 #16131b,0 2px 0 #0008;opacity:.75}
+.rb img{width:32px;height:32px;image-rendering:pixelated}
+.rb.on{background:#4a4255;opacity:1;box-shadow:inset 2px 2px 0 #6b6276,inset -2px -2px 0 #241f2a,0 2px 0 #0008}
+.rb.nudge{animation:nudge 1s infinite}@keyframes nudge{50%{background:#e2703f;opacity:1}}
+#wind{width:36px;height:52px;padding:0;font-family:var(--mono);font-size:10px;line-height:1;color:var(--ink);background:linear-gradient(to top,#ffd36b var(--w,0%),#fff0c4 var(--w,0%));box-shadow:inset -2px -2px 0 #b8902e, 0 2px 0 #0007;pointer-events:auto}
+#wind img{width:28px;height:28px;image-rendering:pixelated;display:block;margin:2px auto 1px}
+#wind span{display:block;font-size:10px;color:#a0601e}
+#wind.on{background:#ffd36b}
 #wind.off{opacity:.55}
-#wind.cool{background:linear-gradient(to right,#c9a85a var(--w,0%),#6a5a48 var(--w,0%));color:var(--paper)}
+#wind.cool{background:linear-gradient(to top,#c9a85a var(--w,0%),#6a5a48 var(--w,0%));color:var(--paper)}
 #wind.cool span{color:var(--paper)}
-#lbtn{position:fixed;left:calc(var(--sl) + 68px);bottom:var(--sb);display:flex;gap:6px;width:124px}
-#lbtn button{flex:1;font-family:var(--mono);font-size:14px;padding:11px 0;position:relative;overflow:hidden}
-#brake{background:linear-gradient(to top, var(--bad) var(--b,0%), var(--paper) var(--b,0%))}
-#brake.on{color:#fff}
-#check{position:fixed;left:calc(var(--sl) + 200px);top:calc(var(--st) + 50px);background:var(--glass);border:2px solid var(--line);padding:6px 9px;font-family:var(--mono);font-size:14px;line-height:1.6;pointer-events:none}
+#pcol{position:fixed;left:calc(var(--sl) + 106px);top:calc(var(--st) + 50px);width:124px;display:flex;flex-direction:column;gap:6px;z-index:2}
+#mapc{width:124px;height:124px;image-rendering:pixelated;border:2px solid var(--line);background:#1d2a44;display:block;box-sizing:border-box;cursor:pointer}
+#job{background:var(--glass);border:2px solid #b8902e;padding:3px 5px 4px;font-family:var(--mono);font-size:13px;line-height:1.15;color:#ffd890;cursor:pointer;pointer-events:auto;width:150px;box-sizing:border-box}
+#job .jh{display:flex;justify-content:space-between;gap:6px;font-size:11px;color:var(--paper);opacity:.85;letter-spacing:.04em}
+#score{color:#ffd36b}#score.pop{animation:pop .5s}@keyframes pop{30%{transform:scale(1.15);color:#fff}}
+#jDrop.done{color:#8fe08a}#jDrop{color:#ff9a6a}
+#eng{position:fixed;left:calc(var(--sl) + 106px);bottom:var(--sb);display:flex;gap:4px;align-items:stretch;z-index:2;padding:4px;
+  background:linear-gradient(#3b3542,#2c2733 50%,#24202b);border:2px solid #15121a;box-shadow:inset 2px 2px 0 #4d4656,inset -2px -2px 0 #1a161f}
+#eng .lab{position:absolute;left:-2px;right:-2px;top:3px;text-align:center;font:9px/1 var(--mono);letter-spacing:.02em;color:#cfc4b2;white-space:nowrap}
+.tsw,#brake,#flapL{position:relative;width:44px;height:92px;padding:0;background:#211d27;box-shadow:inset 1px 1px 0 #15121a,inset -1px -1px 0 #4d4656;touch-action:none}
+.tsw:active,#brake:active{transform:none;box-shadow:inset 1px 1px 0 #15121a,inset -1px -1px 0 #4d4656}
+.tsw .nut{position:absolute;left:50%;top:54px;width:16px;height:16px;margin:-8px 0 0 -8px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#f0eef4,#9a96a2 55%,#55515c);box-shadow:0 0 0 2px #15121a}
+.tsw .bat{position:absolute;left:50%;width:8px;margin-left:-4px;border-radius:4px;background:linear-gradient(90deg,#8c8896,#f4f2f8 45%,#a4a0ac);box-shadow:0 0 0 1px #15121a;transition:top .07s,height .07s}
+.tsw.on .bat{top:28px;height:26px}.tsw:not(.on) .bat{top:54px;height:22px;filter:brightness(.8)}
+.tsw em{position:absolute;left:0;right:0;font:normal 10px/1 var(--mono);text-align:center;color:#7b7385}
+.tsw em.u{top:16px}.tsw em.d{bottom:4px}
+.tsw.on em.u{color:#8fe08a}.tsw:not(.on) em.d{color:var(--paper)}
+.tsw.warn{animation:warnb .6s infinite}@keyframes warnb{50%{background:#6a5218}}
+#flapL{width:50px;cursor:ns-resize}
+#flapL .fslot{position:absolute;left:12px;top:22px;bottom:12px;width:6px;background:#0d0b10}
+#flapL .fd{position:absolute;right:6px;font:12px/1 var(--mono);color:#7b7385;transform:translateY(-50%);pointer-events:none}
+#flapL .fd.on{color:#ffd36b}
+#flapH{position:absolute;left:3px;width:28px;height:12px;transform:translateY(-50%);transition:top .12s;pointer-events:none;
+  background:linear-gradient(#ffffff,#d8d2c8);clip-path:polygon(0 30%,20% 0,100% 35%,100% 65%,20% 100%,0 70%);filter:drop-shadow(0 2px 0 #000)}
+#brake{width:52px;background:linear-gradient(to top, #7a2a24 var(--b,0%), #211d27 var(--b,0%))}
+#brake .ped{position:absolute;left:8px;right:8px;top:24px;bottom:10px;border-radius:3px;background:repeating-linear-gradient(#55505c 0 3px,#2a2630 3px 6px);box-shadow:0 0 0 2px #15121a}
+#brake.on .ped{background:repeating-linear-gradient(#e5483b 0 3px,#8a2a22 3px 6px)}
+#check{position:fixed;left:calc(var(--sl) + 240px);top:calc(var(--st) + 50px);background:var(--glass);border:2px solid var(--line);padding:6px 9px;font-family:var(--mono);font-size:14px;line-height:1.6;pointer-events:none;z-index:2}
 #check b{display:block;font-size:9px;opacity:.75;letter-spacing:.06em}
+@media (max-height:520px){#pcol{flex-direction:row;align-items:flex-start;width:auto}#check{left:calc(var(--sl) + 392px)}}
 #check .ok{color:#8fe08a}
 #fps{position:fixed;left:50%;transform:translateX(-50%);top:calc(var(--st) + 46px);white-space:nowrap;background:var(--glass);color:var(--paper);font-family:var(--mono);font-size:13px;padding:3px 6px;pointer-events:none;z-index:1}
-#bag{position:fixed;right:var(--sr);top:calc(var(--st) + 50px);background:var(--glass);border:2px solid var(--line);padding:5px 8px;font-family:var(--mono);font-size:14px;pointer-events:auto;cursor:pointer;color:var(--paper);border-radius:0}
-#dropUI{position:fixed;right:var(--sr);top:calc(var(--st) + 94px);display:flex;flex-direction:column;gap:6px;z-index:3}
+#dropUI{position:fixed;right:var(--sr);top:calc(var(--st) + 50px);display:flex;flex-direction:column;gap:6px;z-index:3}
 #dropUI button{font-family:var(--mono);font-size:14px;line-height:1.1;padding:8px 10px;min-width:62px}
 #lookBtn.on{background:var(--good);color:#fff;box-shadow:inset -3px -3px 0 #3e7334, 0 3px 0 #0007}
 #dropBtn{background:#e2703f;color:#fff8ec;box-shadow:inset -3px -3px 0 #b5512b, 0 3px 0 #0007}#dropBtn.empty{opacity:.55}
@@ -147,13 +172,24 @@ h3{font-family:var(--mono);font-size:15px;letter-spacing:.08em;color:var(--ink2)
   </div>
   <div id="stallBan" hidden>STALL</div>
   <div id="callout" hidden></div>
-  <div id="thr" aria-label="Throttle"><div id="thrFill"></div><div id="thrKnob"></div><span>PWR</span><span id="thrPct">0%</span></div>
-  <div id="lcol"><canvas id="mapc" width="96" height="96" aria-label="Map. Tap for the full chart."></canvas>
-    <div id="sw"><button id="swCarb">CARB<br>HEAT</button><button id="swMix">MIX<br>RICH</button><button id="swLight">LAND<br>LIGHT</button></div>
-    <button id="wind" aria-label="Tailwind boost">TAILWIND</button><div id="score" aria-label="Score">★ 0</div><div id="errand" hidden></div></div>
-  <div id="lbtn"><button id="flaps">FLAPS 0</button><button id="brake">BRAKE</button></div>
+  <div id="thr" aria-label="Throttle lever"><b class="lab">THROTTLE</b><div id="thrSlot"></div><div id="thrTicks"></div><div id="thrKnob"></div><span id="thrPct">0%</span></div>
+  <div id="rail">
+    <button class="rb on" id="rMap" aria-label="Show or hide the map"></button>
+    <button class="rb on" id="rJob" aria-label="Show or hide today's jobs"></button>
+    <button class="rb on" id="rEng" aria-label="Show or hide the landing controls"></button>
+    <button class="rb" id="rDrop" aria-label="Show or hide the air-drop controls" hidden></button>
+    <button id="wind" aria-label="Tailwind boost"></button>
+  </div>
+  <div id="pcol"><canvas id="mapc" width="96" height="96" aria-label="Map. Tap for the full chart."></canvas>
+    <div id="job" aria-label="Today's jobs. Tap for the mail bag."><div class="jh"><span id="jDay">FREE FLIGHT</span><span id="score" aria-label="Score">★ 0</span></div><div id="bag" hidden></div><div id="jDrop" hidden></div><div id="errand" hidden></div></div></div>
+  <div id="eng">
+    <div id="flapL" aria-label="Flap lever"><b class="lab">FLAPS</b><div class="fslot"></div><span class="fd" data-f="0">0</span><span class="fd" data-f="1">1</span><span class="fd" data-f="2">2</span><div id="flapH"></div></div>
+    <button class="tsw" id="swCarb"><b class="lab">CARB HEAT</b><span class="nut"></span><span class="bat"></span><em class="u">ON</em><em class="d">OFF</em></button>
+    <button class="tsw" id="swMix"><b class="lab">MIXTURE</b><span class="nut"></span><span class="bat"></span><em class="u">RICH</em><em class="d">LEAN</em></button>
+    <button class="tsw" id="swLight"><b class="lab">LAND LIGHT</b><span class="nut"></span><span class="bat"></span><em class="u">ON</em><em class="d">OFF</em></button>
+    <button id="brake"><b class="lab">BRAKE</b><span class="ped"></span></button>
+  </div>
   <div id="check" hidden></div>
-  <button id="bag" hidden></button>
   <div id="dropUI" hidden><button id="lookBtn" aria-label="Look straight down">LOOK<br>DOWN</button><button id="dropBtn" aria-label="Drop a parcel">DROP</button></div>
   <div id="stick"><div id="ring" class="idle"><div id="knob"></div><div id="ringHint">STICK · DRAG ANYWHERE</div></div></div>
 </div>
