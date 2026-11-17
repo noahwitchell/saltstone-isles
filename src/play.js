@@ -1,6 +1,6 @@
 /* ---------- score, fly-through gaps, errands, and Biscuit the dog ---------- */
 if(log.score==null)log.score=0;if(!log.gates)log.gates={};if(!log.errands)log.errands={};if(!log.gateHint)log.gateHint={};
-function updScore(){const e=$('score');if(e)e.textContent='★ '+log.score.toLocaleString();}
+function updScore(){const e=$('score');if(!e)return;e.innerHTML='★ '+log.score.toLocaleString()+(window.__shopReady?' &nbsp;'+coinTag(log.coins):'');}
 function addScore(n){log.score+=n;saveL();updScore();const e=$('score');if(e){e.classList.remove('pop');void e.offsetWidth;e.classList.add('pop');}}
 
 /* fly-through gaps: cross the window's plane inside its width and height */
@@ -81,9 +81,9 @@ function offerErrand(id,s){const e=ERRANDS[id],c=CHARS[e.giver],meet=!log.met[e.
      ['Maybe later',()=>showCard(`<p class="say">“No hurry. It'll keep.”</p>`,afterBtns(s))]]);}
 function reportErrand(id,s){const e=ERRANDS[id],c=CHARS[e.giver],n=errCount(id);
   if(n.n<n.of){showCard(`<div class="who"><img src="${portrait(e.giver)}" alt=""><div><b>${c.name}</b><span>${c.role}</span></div></div><p class="say">“${e.set?`${n.n} of ${n.of} so far? Keep looking, they're out there.`:`Not found it yet? It's out there somewhere.`}”</p>`,afterBtns(s));return;}
-  const st=errState(id);st.st='done';const pts=e.set?200+n.of*30:300;addScore(pts);stamp(2);saveL();updErrandUI();
+  const st=errState(id);st.st='done';const pts=e.set?200+n.of*30:300;addScore(pts);stamp(2);addCoins(50);saveL();updErrandUI();
   if(Object.keys(ERRANDS).every(k=>errState(k).st==='done'))goal('errands',true);goal('errand',true);
-  showCard(`<div class="who"><img src="${portrait(e.giver)}" alt=""><div><b>${c.name}</b><span>${c.role}</span></div></div><p class="say">“${e.thanks}”</p><div class="got">ERRAND DONE · +${pts} · +2 STAMPS</div>${typeof giftLine==='function'?giftLine(id):''}`,afterBtns(s));}
+  showCard(`<div class="who"><img src="${portrait(e.giver)}" alt=""><div><b>${c.name}</b><span>${c.role}</span></div></div><p class="say">“${e.thanks}”</p><div class="got">ERRAND DONE · +${pts} · +2 STAMPS · +50 COINS</div>${typeof giftLine==='function'?giftLine(id):''}`,afterBtns(s));}
 
 /* Biscuit: a scruffy golden dog with his head out of the right window */
 const dog=(()=>{const g=new THREE.Group(),fur=0xe8a850,lt=0xf4e4c8,dk=0x2c2833;

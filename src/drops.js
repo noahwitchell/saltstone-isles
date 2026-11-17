@@ -115,11 +115,11 @@ function parcelDown(o,water){const {d,dist}=nearestDrop(o.pos.x,o.pos.z);
   if(!d||dist>45){toast(dist<600?`Missed by ${Math.round(dist)} m. Biscuit gives you a look.`:'The parcel lands in the middle of nowhere. A lucky sheep, maybe.',2.4);return;}
   const tier=dist<5?[500,'BULLSEYE!']:dist<12?[300,'Right on the mark!']:dist<24?[150,'On target!']:[60,'Just about in the field.'];
   d.done=true;const S=log.dropStats;S.n++;if(dist<5)S.bull++;S.best=Math.min(S.best,dist);
-  const pts=tier[0]+200;stamp(1);addScore(pts);saveL();snd.beep(1175);setTimeout(()=>snd.beep(1568),110);
+  const pts=tier[0]+200,coins=dist<5?40:dist<12?30:dist<24?20:10;stamp(1);addScore(pts);addCoins(coins);saveL();snd.beep(1175);setTimeout(()=>snd.beep(1568),110);
   const s=SITES.get(d);if(s)s.react=0;
   goal('drop1',true);if(dist<5)goal('bullseye',true);if(S.n>=10)goal('drops');updJob();
   const left=activeDrops().length;
-  toast(`${tier[1]} ${Math.round(dist)} m · +${pts} · +1 STAMP\n${d.who}: "${d.line}"${left?`\n${left} more drop${left>1?'s':''} to go.`:''}`,4);}
+  toast(`${tier[1]} ${Math.round(dist)} m · +${pts} · +1 STAMP · +${coins} COINS\n${d.who}: "${d.line}"${left?`\n${left} more drop${left>1?'s':''} to go.`:''}`,4);}
 function updDrops(dt){const run=mode==='fly'||mode==='crashed';animSites(performance.now()/1000,dt);
   if(lookDown&&(ac.ground||mode!=='fly'&&mode!=='paused')){lookDown=false;snapCam=true;updParcelUI();}
   if(mode==='fly'&&!ac.ground){const {d,dist}=nearestDrop(ac.pos.x,ac.pos.z);if(d&&dist<1600)tip('drops',`There's the smoke! Tap the target button on the left for LOOK DOWN and DROP. Let go when the crosshair sits on the rings, and you'll hear straight away if it's on its way.`);}

@@ -62,12 +62,12 @@ const SMOKE_N=1600,SMOKE_LIFE=120,SMOKE_EVERY=.075;let smokeOn=false,smokeAcc=0,
 /* light, soft smoke: nearly see-through right behind the plane (so it never blocks your view), thickening to
    solid white with distance, so you see what you've drawn when you turn round and look back */
 const smokeMat=new THREE.ShaderMaterial({transparent:true,depthWrite:false,
-  uniforms:{uSun:{value:sunDir},uTint:{value:1},fogColor:{value:scene.fog.color},fogNear:{value:700},fogFar:{value:5600}},
+  uniforms:{uSun:{value:sunDir},uTint:{value:1},uSmokeC:{value:new THREE.Color(.96,.95,.94)},fogColor:{value:scene.fog.color},fogNear:{value:700},fogFar:{value:5600}},
   vertexShader:`varying float vSh;varying float vD;uniform vec3 uSun;
     void main(){vec4 w=modelMatrix*instanceMatrix*vec4(position,1.);vec3 n=normalize(mat3(modelMatrix*instanceMatrix)*normal);
       vSh=.84+.16*max(dot(n,normalize(uSun)),0.)+.06*n.y;vec4 mv=viewMatrix*w;vD=-mv.z;gl_Position=projectionMatrix*mv;}`,
-  fragmentShader:`varying float vSh;varying float vD;uniform float uTint,fogNear,fogFar;uniform vec3 fogColor;
-    void main(){float a=mix(.1,.98,smoothstep(14.,130.,vD));vec3 c=vec3(.96,.95,.94)*vSh*uTint;c=mix(c,fogColor,smoothstep(fogNear,fogFar,vD));gl_FragColor=vec4(c,a);}`});
+  fragmentShader:`varying float vSh;varying float vD;uniform float uTint,fogNear,fogFar;uniform vec3 fogColor,uSmokeC;
+    void main(){float a=mix(.1,.98,smoothstep(14.,130.,vD));vec3 c=uSmokeC*vSh*uTint;c=mix(c,fogColor,smoothstep(fogNear,fogFar,vD));gl_FragColor=vec4(c,a);}`});
 const smokeTrail=new THREE.InstancedMesh(new THREE.DodecahedronGeometry(1,1),smokeMat,SMOKE_N);smokeTrail.renderOrder=6;smokeTrail.frustumCulled=false;scene.add(smokeTrail);
 const SMK=Array.from({length:SMOKE_N},()=>({t:-1,p:new V3(),v:new V3(),r:Math.random()*TAU}));
 const _tail=new V3(),_tm=new THREE.Matrix4(),_tq=new THREE.Quaternion(),_ts=new V3();
@@ -170,7 +170,7 @@ setInterval(()=>{const c=snd.ctx;if(c&&c.onstatechange==null)c.onstatechange=()=
 
 /* ---- updraft: like the tailwind but straight up. Three charges; tap again while one is lifting you to stack them.
    Holding BRAKE in the air calls it off, same as the tailwind ---- */
-const UP_N=3,UP_T=3,UP_V=26,UP_CD=6,UP_STACK=[0,1,1.6,2.1];let upCharges=UP_N,upCD=0,upUiT=0;
+const UP_T=3,UP_V=26,UP_STACK=[0,1,1.6,2.1,2.5,2.85];let UP_N=3,UP_CD=6;let upCharges=UP_N,upCD=0,upUiT=0;
 function useUpdraft(){if(mode!=='fly')return;if(ac.ground){toast('Updrafts work once you\'re flying.',1.6);return;}
   if(upCharges<=0){toast(`The next updraft is gathering. ${Math.ceil(upCD)} s.`,1.3);return;}
   if(!ac.ups)ac.ups=[];ac.ups.push(UP_T);upCharges--;upCD=UP_CD;const n=ac.ups.length;snd.beep(660+n*120);setTimeout(()=>snd.beep(990+n*160),80);

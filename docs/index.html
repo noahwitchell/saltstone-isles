@@ -380,7 +380,7 @@ const ARCH=[
      const m=-f*1.2+fbm(x*.01,z*.01,2,331)*.12;if(m<0)return Math.max(-48,m*40-1.2);return smooth(0,.15,m)*6+fbm(x*.02,z*.02,2,333)*1.2;}},
 ];
 const TERN=[[0,0,260,70],[-420,240,180,50],[380,-300,220,60],[-180,-420,140,40],[520,260,120,36]];
-/* Saltpans: a grid of shallow pans, each a different colour; returns the pan index or -1 on the bunds */
+/* Saltpans: a grid of shallow pans, each a different color; returns the pan index or -1 on the bunds */
 function saltPan(x,z){const I={x:-5900,z:2950,rot:.7},[u,v]=locUV(I,x,z),gu=u/170,gv=v/130,fu=gu-Math.floor(gu),fv=gv-Math.floor(gv);
   if(fu<.08||fv<.1||Math.abs(u)>760||Math.abs(v)>420)return -1;return (hash2(Math.floor(gu),Math.floor(gv),241)*6)|0;}
 for(const a of ARCH)ISLES[a.id]=a;
@@ -400,7 +400,7 @@ const ARCH_STRIPS=[
 /* du/dv are world offsets (metres east/south of the island centre); hdg is a world-space yaw offset in radians that lines the strip up with the island */
 function archStrips(){return ARCH_STRIPS.map(s=>{const I=ISLES[s.isle];let h=(Math.atan2(Math.cos(I.rot+s.hdg),-Math.sin(I.rot+s.hdg))/DEG);h=((h%360)+360)%360;
   return {id:s.id,name:s.name,isle:s.isle,x:Math.round(I.x+s.du),z:Math.round(I.z+s.dv),hdg:Math.round(h),len:s.len,wid:s.wid,surf:s.surf};});}
-/* island colours */
+/* island colors */
 const ARCH_COL={
   sisters(h,sl,n1,n2){if(h<3+n1*1.5&&sl<.3)return tc.setHex(0xd9c8a0);if(sl>.4)return tc.setHex(0x8a8078).lerp(tc2.setHex(0x6e6660),n2*.5+.5);return tc.setHex(0x86a85a).lerp(tc2.setHex(0xb0b46a),n1*.5+.5);},
   puffin(h,sl,n1,n2){if(h>30&&sl<.5)return tc.setHex(0x9ab86a).lerp(tc2.setHex(0xeae6d8),n2>.2?.5:0);return tc.setHex(0x7e746e).lerp(tc2.setHex(0x9c9088),(Math.sin(h*.3)*.5+.5));},
@@ -409,7 +409,10 @@ const ARCH_COL={
   apple(h,sl,n1,n2,x,z){if(h<3+n1*2&&sl<.3)return tc.setHex(COL.sand);if(sl>.42)return tc.setHex(COL.rock);
      if(orchardAt(x,z))return tc.setHex(0x8cb850).lerp(tc2.setHex(0x9cc45a),n2*.5+.5);
      const [u,v]=locUV(ISLES.apple,x,z),k=hash2(Math.floor(u/120),Math.floor(v/90),235);return tc.setHex(k<.3?0xd8c46c:k<.55?0xc9d27a:k<.8?0x7fae4f:0xe0b45c);},
-  salt(h,sl,n1,n2,x,z){const p=saltPan(x,z);if(h<.4&&p<0)return tc.setHex(0xd8ccb0);if(p>=0)return tc.setHex([0xf4eee8,0xf0c8c8,0xe8a8b8,0xbfe0dc,0xf6f2ea,0xd8b8d0][p]);return tc.setHex(0xc8b890).lerp(tc2.setHex(0xe0d4b8),n2*.5+.5);},
+  /* one color per 40 m terrain square (both triangles), and gentle pastels, so the pans don't crawl and shimmer at low resolution */
+  salt(h,sl,n1,n2,x,z){const qx=(Math.floor((x+HALFX)/CELL)+.5)*CELL-HALFX,qz=(Math.floor((z+HALFZ)/CELL)+.5)*CELL-HALFZ,I={x:-5900,z:2950,rot:.7},[u,v]=locUV(I,qx,qz);
+    const inPans=Math.abs(u)<=760&&Math.abs(v)<=420,p=inPans?(hash2(Math.floor(u/170),Math.floor(v/130),241)*6)|0:-1;
+    if(h<.4&&p<0)return tc.setHex(0xd8ccb0);if(p>=0)return tc.setHex([0xf2ece4,0xf0dcd6,0xecd0d0,0xdce8e2,0xf4f0e8,0xe6d8de][p]);return tc.setHex(0xc8b890).lerp(tc2.setHex(0xe0d4b8),n2*.5+.5);},
   mirror(h,sl,n1,n2){if(h<-.6)return tc.setHex(0x8ab0a0);if(h<2.5&&sl<.3)return tc.setHex(0xd8cc9c);const f=hash2(Math.floor(n1*40),Math.floor(n2*40),257);
      tc.setHex(0x7eb456).lerp(tc2.setHex(0x98c060),n1*.5+.5);if(n2>.3)tc.lerp(tc2.setHex(f<.33?0xe8d060:f<.66?0xd890b8:0xf0ece0),.55);return tc;},
   mesa(h,sl,n1,n2){if(h<3&&sl<.3)return tc.setHex(0xd8b890);if(sl>.35)return tc.setHex([0xc07850,0xd8a070,0xa86048,0xe0b888][Math.floor(h/26+n1*.6)&3]);
@@ -1675,7 +1678,7 @@ const FORMS=[];
 
 /* ---------------- night finds: things that only glow after dark ----------------
    Landmarks (sights with night:true) you can't see in daylight. They light up at blue hour and night, and only count
-   as discovered then. All the glows are one Points cloud with a small shader: each point has a colour, a size, a
+   as discovered then. All the glows are one Points cloud with a small shader: each point has a color, a size, a
    phase and a motion kind (0 twinkle in place, 1 firefly drift, 2 sea glow that pulses in waves, 3 slow wandering wisp). */
 const NIGHT_GLOW=(function nightGlow(){
   let ns=31337;const r=()=>{ns=(Math.imul(ns,1664525)+1013904223)>>>0;return ns/4294967296;};
@@ -1798,11 +1801,12 @@ const cloudGroup=new THREE.Group();scene.add(cloudGroup);const CLOUDS=[];
   const geo=merge(it),cc=new Float32Array(geo.attributes.position.count*4);let o=0;
   it.forEach((q,i)=>{const n=q.geo.index?q.geo.index.count:q.geo.attributes.position.count,c=CLOUDS[q.cl];for(let k=0;k<n;k++,o++){cc[o*4]=c.x;cc[o*4+1]=c.y;cc[o*4+2]=c.z;cc[o*4+3]=c.r;}});
   geo.setAttribute('cc',new THREE.BufferAttribute(cc,4));
-  const cmat=see=>{const m=toon(see?{transparent:true,depthWrite:false}:{},false);m.onBeforeCompile=sh=>{
-    sh.vertexShader='attribute vec4 cc;varying float vFade;\n'+sh.vertexShader.replace('#include <project_vertex>','#include <project_vertex>\nvec3 ccw=(modelMatrix*vec4(cc.xyz,1.)).xyz;vFade=smoothstep(.45,1.5,distance(cameraPosition,ccw)/cc.w);');
-    sh.fragmentShader='varying float vFade;\n'+sh.fragmentShader.replace('void main() {','void main() {\n'+(see?'if(vFade>=.999||vFade<.01)discard;':'if(vFade<.999)discard;')).replace('#include <dithering_fragment>','#include <dithering_fragment>\ngl_FragColor.a*='+(see?'vFade':'1.')+';');};
-    m.customProgramCacheKey=()=>'cloud'+see;return m;};
-  cloudGroup.add(new THREE.Mesh(geo,cmat(false)));const seeM=new THREE.Mesh(geo,cmat(true));seeM.renderOrder=5;cloudGroup.add(seeM);
+  /* one solid pass; as you get close, the cloud dissolves through an ordered pixel dither instead of switching to a
+     see-through pass (which drew the inner puffs in no particular order and made the cloud pop) */
+  const cm=toon({},false);cm.onBeforeCompile=sh=>{
+    sh.vertexShader='attribute vec4 cc;varying float vFade;\n'+sh.vertexShader.replace('#include <project_vertex>','#include <project_vertex>\nvec3 ccw=(modelMatrix*vec4(cc.xyz,1.)).xyz;vFade=smoothstep(.85,2.3,distance(cameraPosition,ccw)/cc.w);');
+    sh.fragmentShader='varying float vFade;\nfloat cb2(vec2 a){a=floor(a);return fract(a.x*.5+a.y*a.y*.75);}float cb4(vec2 a){return cb2(.5*a)*.25+cb2(a);}\n'+sh.fragmentShader.replace('void main() {','void main() {\nif(vFade<.999&&vFade<=cb4(gl_FragCoord.xy)*.9375+.03)discard;').replace('#include <dithering_fragment>','#include <dithering_fragment>\ngl_FragColor.rgb=mix(vec3(.93,.93,.96),gl_FragColor.rgb,smoothstep(.65,1.,vFade));');};
+  cm.customProgramCacheKey=()=>'cloudDither';cloudGroup.add(new THREE.Mesh(geo,cm));
 })();
 /* how deep in a cloud the camera is (0 clear .. 1 in the middle): drives a soft white-out in the post pass */
 function cloudMist(p){let m=0;const gx=cloudGroup.position.x,gz=cloudGroup.position.z;for(const c of CLOUDS){const dy=p.y-c.y;if(Math.abs(dy)>c.r)continue;
@@ -2277,19 +2281,19 @@ function updGates(){
 /* tailwind button: three charges, each a 6 s gust that carries you along fast and holds your height.
    Tap again while a gust is blowing and they stack: two gusts go faster, three faster still.
    Charges refill one every 5 s once every gust has died down. */
-const BOOST_V=55,BOOST_T=6,WIND_N=5,WIND_CD=5,STACK=[0,1,1.7,2.25,2.75,3.2];
+const BOOST_V=55,BOOST_T=6,STACK=[0,1,1.7,2.25,2.75,3.2,3.6,3.95];let WIND_N=5,WIND_CD=5;   // Gus can fit bigger tanks and quicker refills
 let windCharges=WIND_N,windCD=0,windUiT=0,windWait=WIND_CD,windPeak=0;
 const glideAlt=(s,d)=>s.elev+AC.gearH+Math.tan(4*DEG)*d;
 function windBlock(){if(ac.ground||mode!=='fly')return 'IN THE AIR';const agl=ac.pos.y-AC.gearH-surfH(ac.pos.x,ac.pos.z);if(agl<40)return 'TOO LOW';
   return null;}
 function useWind(){const b=windBlock();
-  if(windCharges<=0){toast(ac.gusts&&ac.gusts.length?'All five are blowing. Ride it out, or hold BRAKE to stop it.':`The wind is gathering. Next one in ${Math.ceil(windCD)} s.`,1.4);return;}
+  if(windCharges<=0){toast(ac.gusts&&ac.gusts.length?'Every tailwind is blowing. Ride it out, or hold BRAKE to stop it.':`The wind is gathering. Next one in ${Math.ceil(windCD)} s.`,1.4);return;}
   if(b){toast(b==='TOO LOW'?'Climb a little first. Tailwinds need some height.':'Tailwinds work once you\'re flying.',1.8);return;}
   if(!ac.gusts)ac.gusts=[];ac.gusts.push(BOOST_T);windCharges--;const n=ac.gusts.length;windPeak=Math.max(windPeak,n);
   windWait=WIND_CD;windCD=windWait;ac.boostT=Math.max(...ac.gusts);
   snd.beep(1320+n*180);setTimeout(()=>snd.beep(1760+n*220),90);
-  toast(n>1?`Tailwind ×${n}!${n===5?' FULL GALE!':n===3?' A proper gale.':''}`:windCharges?`Tailwind! ${windCharges} left.`:'Last tailwind for now.',1.4);
-  if(!log.goals.tailwind&&n>=3)goal('tailwind');if(n===5)goal('gale5');if(n>=2)tip('windstop','Going too fast? Hold BRAKE in the air and the tailwind stops at once.',1);updWindUI();}
+  toast(n>1?`Tailwind ×${n}!${n>=5?' FULL GALE!':n===3?' A proper gale.':''}`:windCharges?`Tailwind! ${windCharges} left.`:'Last tailwind for now.',1.4);
+  if(!log.goals.tailwind&&n>=3)goal('tailwind');if(n>=5)goal('gale5');if(n>=2)tip('windstop','Going too fast? Hold BRAKE in the air and the tailwind stops at once.',1);updWindUI();}
 function updWindUI(){const b=$('wind');if(!b)return;const blk=windBlock(),cool=windCharges<=0,n=(ac.gusts||[]).length,fill=windCharges<WIND_N&&!n;
   b.innerHTML=`<img src="${RICON.wind}" alt="Tailwind">${n>1?'×'+n:''}<span>${'●'.repeat(windCharges)+'○'.repeat(WIND_N-windCharges)}</span>`;
   b.classList.toggle('cool',cool&&!n);b.classList.toggle('off',!!blk&&!cool);b.classList.toggle('on',n>0);
@@ -2517,7 +2521,7 @@ function finishLanding(){
   g('land_'+s.id);if(STRIPS.every(q=>log.goals['land_'+q.id]))g('hopper');if(isTrip){log.trips++;g('trip');}if(fpm<90&&!td.bounced)g('butter');if(s.id==='ridge'&&total===3)g('ridge3');if(td.view==='cockpit')g('instrument');
   if(ckOk)g('checklist');if(td.tod==='night')g('night');
   if(ckOk&&mail.active)stamp(1);
-  const firstHere=F.landings===1,lpts=total*25+(firstHere?150:0);addScore(lpts);
+  const firstHere=F.landings===1,lpts=total*25+(firstHere?150:0);addScore(lpts);addCoins(total*2);
   ac.lastField=s.id;ac.from=s.id;saveL();
   const missed=[!ck.carb&&'carb heat',!ck.mix&&'mixture rich',!ck.flaps&&'flaps',!ck.light&&'landing light'].filter(Boolean).join(', ');
   const ckRow=`<span class="k">CHECKLIST</span><span>${ckOk?'All done'+(mail.active?' · +1 stamp':''):'Missed: '+missed}</span><span class="s">${ckOk?'✓':''}</span>`;
@@ -2526,11 +2530,11 @@ function finishLanding(){
   const btns=here.length?[[`Deliver the mail (${here.length})`,()=>deliverAt(s),true]]
     :homeDone?[['Hand in the day',endDay,true]]
     :[['Take off from here',()=>spawnField(s),true],['Practice this landing',()=>spawnApproach(s,td.dirSign)],['Keep taxiing',()=>{hideModal();mode='fly';}]];
-  btns.splice(1,0,...errandBtns(s));
+  btns.splice(1,0,...errandBtns(s));if(s.id==='harbor')btns.splice(1,0,["Gus's garage",()=>shopCard(s)]);
   showCard(`<h2>${stopped?'Landed at':'Rolled off'} ${s.name}</h2><div class="sub">${isTrip?'TRIP FROM '+stripById(fromId).name.toUpperCase()+' · ':''}${stars(total)}</div>
     <div class="rows"><span class="k">TOUCHDOWN</span><span>${Math.round(fpm)} ft/min at ${Math.round(td.kt)} kt · ${softTxt}</span><span class="s">${stars(soft)}</span>
     <span class="k">CENTERLINE</span><span>${off<.2?'Right down the middle':off<.5?'A little off center':'Way off center'}</span><span class="s">${stars(cen)}</span>
-    <span class="k">AIM POINT</span><span>${zoneTxt}</span><span class="s">${stars(zone)}</span>${ckRow}<span class="k">SCORE</span><span>+${lpts}${firstHere?' · first landing here':''}</span><span class="s"></span></div>
+    <span class="k">AIM POINT</span><span>${zoneTxt}</span><span class="s">${stars(zone)}</span>${ckRow}<span class="k">SCORE</span><span>+${lpts} · +${total*2} coins${firstHere?' · first landing here':''}</span><span class="s"></span></div>
     ${!stopped?'<p>You ran off the end. Touch down nearer the markers and hold BRAKE.</p>':''}
     ${news.length?`<p><b>New in your logbook:</b> ${news.join(', ')}</p>`:''}`,btns);
   mode='card';
@@ -2548,8 +2552,8 @@ function deliverAt(s){
         homeDone?[['Hand in the day',endDay,true]]:[['Take off',()=>spawnField(s),true],...errandBtns(s),['Look around first',()=>{hideModal();mode='fly';}]]);return;}
     if(q.kind==='meet'){log.met[q.who]=1;saveL();const c=CHARS[q.who];
       showCard(`<div class="who"><img src="${portrait(q.who)}" alt=""><div><b>${c.name}</b><span>${c.role}</span></div></div><p class="say">“${MEET[q.who]}”</p>`,[['Nice to meet you',step,true]]);return;}
-    const it=q.it,c=CHARS[it.to];stamp(1);addScore(100);
-    showCard(`<div class="who"><img src="${portrait(it.to)}" alt=""><div><b>${c.name}</b><span>${c.role}</span></div></div><p class="say">“${it.line}”</p><div class="got">DELIVERED: ${it.item.toUpperCase()} · +1 STAMP · +100</div>`,[['You\'re welcome',step,true]]);};
+    const it=q.it,c=CHARS[it.to];stamp(1);addScore(100);addCoins(15);
+    showCard(`<div class="who"><img src="${portrait(it.to)}" alt=""><div><b>${c.name}</b><span>${c.role}</span></div></div><p class="say">“${it.line}”</p><div class="got">DELIVERED: ${it.item.toUpperCase()} · +1 STAMP · +100 · +15 COINS</div>`,[['You\'re welcome',step,true]]);};
   step();
 }
 function offerDay(after){
@@ -2564,8 +2568,8 @@ function offerDay(after){
 }
 function meetBea(){if(mode!=='fly'||log.met.bea)return;log.met.bea=1;saveL();mode='card';
   showCard(`<div class="who"><img src="${portrait('bea')}" alt=""><div><b>Bea Hollis</b><span>RETIRED MAIL PILOT · HARBOR FIELD</span></div></div><p class="say">“${MEET.bea}”</p><p>Bea's logbook is in the pause menu whenever you want it.</p>`,[['Thanks, Bea',()=>{hideModal();mode='fly';},true],['Open the logbook',()=>bea(-1)]]);}
-function endDay(){const day=DAYS[mail.day-1];mail.active=false;mail.bag=[];clearDrops();mail.day++;stamp(2);if(mail.day>6)goal('week',true);if(mail.day>12)goal('week2',true);if(mail.day>18)goal('week3',true);saveL();refreshBag();
-  showCard(`<div class="who"><img src="${portrait('mabel')}" alt=""><div><b>Mabel Ostrander</b><span>END OF DAY · +2 STAMPS</span></div></div><p class="say">“${day?day.outro:'Good flying.'}”</p><div class="got">${log.stamps} STAMPS ON YOUR ROUTE CARD</div>`,
+function endDay(){const day=DAYS[mail.day-1];mail.active=false;mail.bag=[];clearDrops();addCoins(40);mail.day++;stamp(2);if(mail.day>6)goal('week',true);if(mail.day>12)goal('week2',true);if(mail.day>18)goal('week3',true);saveL();refreshBag();
+  showCard(`<div class="who"><img src="${portrait('mabel')}" alt=""><div><b>Mabel Ostrander</b><span>END OF DAY · +2 STAMPS</span></div></div><p class="say">“${day?day.outro:'Good flying.'}”</p><div class="got">${log.stamps} STAMPS ON YOUR ROUTE CARD · +40 COINS</div>`,
     [[mail.day<=DAYS.length?'Start the next day':'Keep flying',()=>{if(mail.day<=DAYS.length)offerDay(()=>spawnField(STRIPS[0]));else{hideModal();mode='fly';}},true],['Free flight',()=>{hideModal();mode='fly';pickDest('harbor');}]]);}
 function goal(id,quiet){if(log.goals[id])return false;log.goals[id]=Date.now();saveL();if(!quiet){const g=GOALS.find(x=>x.id===id);toast('Logbook: '+g.name,2.5);}return true;}
 
@@ -2941,7 +2945,7 @@ function hideModal(){$('modal').hidden=true;}
 function back(){hideModal();if(mode==='title')$('title').hidden=false;else if(mode==='paused'||mode==='card')openMenu();}
 function openMenu(){if(mode==='fly')mode='paused';showCard(`<h2>Paused</h2><div class="sub">${dest?'HEADING FOR '+dest.name.toUpperCase():''}${mail.active?' · '+mail.bag.length+' IN THE BAG':''} · ${log.stamps} STAMPS</div>`,[
   ['Resume',()=>{hideModal();mode='fly';},true],['Title screen',()=>{hideModal();toTitle();}],['Mail bag',()=>mail.active?mailCard():showCard('<h2>Mail bag</h2><p>No mail in the bag today. Start a day at Harbor Field from the title screen and Mabel will load it.</p>',[['Back',back,true]])],["Bea's chart",()=>bigMap()],["Bea's logbook",()=>bea(-1)],['Your logbook',()=>logbook()],['Practice a landing',()=>picker('practice')],['Start at a field',()=>picker('start')],['Hangar',()=>hangarCard()],['Settings',()=>settingsCard()]],{grid:true,colors:MENU_COL});$('cardBody').classList.add('wide');}
-/* each pause-menu button gets its own colour so they're easy to tell apart at a glance */
+/* each pause-menu button gets its own color so they're easy to tell apart at a glance */
 const MENU_COL={'Mail bag':'#f2c25a',"Bea's chart":'#7cc4d4',"Bea's logbook":'#a6d38a','Practice a landing':'#c4aee6','Start at a field':'#f0a77c','Your logbook':'#9fc4ef','Settings':'#cfc6b4','Hangar':'#f2a8d4'};
 function picker(kind){
   const items=STRIPS.map(s=>{const F=log.fields[s.id];return `<button class="item" data-id="${s.id}"><span><b>${s.name}</b><span class="d">${DESC[s.id]}</span></span><span class="r">${F&&F.best?stars(F.best):'NOT YET'}</span></button>`;}).join('');
@@ -2964,7 +2968,7 @@ function settingsCard(){
   const mv=[['OFF',0],['SOFT',.5],['ON',1]].map(([n,v])=>`<button data-mv="${v}" class="${(settings.music??.5)==v?'primary':''}">${n}</button>`).join('');
   const st=STATIONS.map(S=>`<button data-st="${S.id}" class="${settings.station===S.id?'primary':''}">${S.fq} ${S.name.toUpperCase()}</button>`).join('');
   const lt=Object.keys(TOD).map(k=>`<button data-lt="${k}" class="${settings.light===k?'primary':''}">${TOD[k].name.toUpperCase()}</button>`).join('');
-  showCard(`<h2>Settings</h2><div class="sub">ASSISTS · TURN THEM OFF ONE AT A TIME AS YOU IMPROVE</div>${rows}<h3>ENGINE VOLUME</h3><div class="btns">${ev}</div><h3>RADIO VOLUME</h3><div class="btns">${mv}</div><h3>RADIO STATION · OR TAP THE DIAL UP TOP WHILE FLYING</h3><div class="btns">${st}</div><h3>TIME OF DAY</h3><div class="btns">${lt}</div><h3>PIXELS</h3><div class="btns">${px}</div><div class="sub" style="margin-top:14px">BUILD 97a2fc3</div>`,[['Back',back,true]]);
+  showCard(`<h2>Settings</h2><div class="sub">ASSISTS · TURN THEM OFF ONE AT A TIME AS YOU IMPROVE</div>${rows}<h3>ENGINE VOLUME</h3><div class="btns">${ev}</div><h3>RADIO VOLUME</h3><div class="btns">${mv}</div><h3>RADIO STATION · OR TAP THE DIAL UP TOP WHILE FLYING</h3><div class="btns">${st}</div><h3>TIME OF DAY</h3><div class="btns">${lt}</div><h3>PIXELS</h3><div class="btns">${px}</div><div class="sub" style="margin-top:14px">BUILD 4fff221</div>`,[['Back',back,true]]);
   const cb=$('cardBody');
   cb.querySelectorAll('[data-k]').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.k;if(k==='tilt'){if(!settings.tilt){settings.tilt=true;saveS();enableTilt().then(()=>{updTiltUI();settingsCard();});}else{settings.tilt=false;saveS();disableTilt();updTiltUI();settingsCard();}return;}settings[k]=!settings[k];saveS();if(k==='sound')snd.setOn(settings.sound);if(k==='fps'){$('fps').hidden=!settings.fps;$('fps').textContent='FPS: measuring…';fpsN=fpsT=0;fpsLast=0;}if(k==='sound')music.setVol();settingsCard();}));
   cb.querySelectorAll('[data-px]').forEach(b=>b.addEventListener('click',()=>{settings.pixels=b.dataset.px;pixMode=settings.pixels;saveS();resize();settingsCard();}));
@@ -3013,7 +3017,7 @@ function gameChecks(dt){
     ck.innerHTML=`<b>BEFORE LANDING</b>${row(c.carb,'CARB HEAT ON')}${row(c.mix,'MIXTURE RICH')}${row(c.flaps,'FLAPS 1 OR 2')}${c.needLight?row(c.light,'LANDING LIGHT'):''}${c.needLight&&typeof rwyLit==='function'?row(rwyLit(dest),'RUNWAY LIGHTS (MIC)'):''}`;ck.hidden=false;tip('checklist','Before-landing checklist: flick the switches and set the flap lever in the landing panel, bottom left. Bea\'s logbook explains each one.',1);}
   else ck.hidden=true;
   sightT+=dt;if(sightT>.3){sightT=0;
-    for(const [k,v] of Object.entries(sights)){if(log.sights[k]||!sightOn(v))continue;if(Math.hypot(ac.pos.x-v.x,ac.pos.z-v.z)<450&&ac.pos.y-v.y<650){log.sights[k]=Date.now();stamp(1);addScore(100);saveL();
+    for(const [k,v] of Object.entries(sights)){if(log.sights[k]||!sightOn(v))continue;if(Math.hypot(ac.pos.x-v.x,ac.pos.z-v.z)<450&&ac.pos.y-v.y<650){log.sights[k]=Date.now();stamp(1);addScore(100);addCoins(5);saveL();
       const n=Object.keys(sights).filter(q=>log.sights[q]).length;snd.beep(990);setTimeout(()=>snd.beep(1320),110);setTimeout(()=>snd.beep(1760),220);
       toast(`Discovered: ${v.name} (${n}/${Object.keys(sights).length}) · +100\n${v.desc||''}`,4);tip('discover','Landmarks you discover go on Bea\'s chart, with a stamp for each. Fly over anything that looks interesting.',4.5);}}
     if(!ac.ground&&Math.hypot(ac.pos.x-summit.x,ac.pos.z-summit.z)<320&&ac.pos.y>summit.h+10)goal('summit');}
@@ -3141,7 +3145,7 @@ function updateVisuals(dt,t){
 const _mistW=new THREE.Color(0xffffff);
 /* ---------- score, fly-through gaps, errands, and Biscuit the dog ---------- */
 if(log.score==null)log.score=0;if(!log.gates)log.gates={};if(!log.errands)log.errands={};if(!log.gateHint)log.gateHint={};
-function updScore(){const e=$('score');if(e)e.textContent='★ '+log.score.toLocaleString();}
+function updScore(){const e=$('score');if(!e)return;e.innerHTML='★ '+log.score.toLocaleString()+(window.__shopReady?' &nbsp;'+coinTag(log.coins):'');}
 function addScore(n){log.score+=n;saveL();updScore();const e=$('score');if(e){e.classList.remove('pop');void e.offsetWidth;e.classList.add('pop');}}
 
 /* fly-through gaps: cross the window's plane inside its width and height */
@@ -3222,9 +3226,9 @@ function offerErrand(id,s){const e=ERRANDS[id],c=CHARS[e.giver],meet=!log.met[e.
      ['Maybe later',()=>showCard(`<p class="say">“No hurry. It'll keep.”</p>`,afterBtns(s))]]);}
 function reportErrand(id,s){const e=ERRANDS[id],c=CHARS[e.giver],n=errCount(id);
   if(n.n<n.of){showCard(`<div class="who"><img src="${portrait(e.giver)}" alt=""><div><b>${c.name}</b><span>${c.role}</span></div></div><p class="say">“${e.set?`${n.n} of ${n.of} so far? Keep looking, they're out there.`:`Not found it yet? It's out there somewhere.`}”</p>`,afterBtns(s));return;}
-  const st=errState(id);st.st='done';const pts=e.set?200+n.of*30:300;addScore(pts);stamp(2);saveL();updErrandUI();
+  const st=errState(id);st.st='done';const pts=e.set?200+n.of*30:300;addScore(pts);stamp(2);addCoins(50);saveL();updErrandUI();
   if(Object.keys(ERRANDS).every(k=>errState(k).st==='done'))goal('errands',true);goal('errand',true);
-  showCard(`<div class="who"><img src="${portrait(e.giver)}" alt=""><div><b>${c.name}</b><span>${c.role}</span></div></div><p class="say">“${e.thanks}”</p><div class="got">ERRAND DONE · +${pts} · +2 STAMPS</div>${typeof giftLine==='function'?giftLine(id):''}`,afterBtns(s));}
+  showCard(`<div class="who"><img src="${portrait(e.giver)}" alt=""><div><b>${c.name}</b><span>${c.role}</span></div></div><p class="say">“${e.thanks}”</p><div class="got">ERRAND DONE · +${pts} · +2 STAMPS · +50 COINS</div>${typeof giftLine==='function'?giftLine(id):''}`,afterBtns(s));}
 
 /* Biscuit: a scruffy golden dog with his head out of the right window */
 const dog=(()=>{const g=new THREE.Group(),fur=0xe8a850,lt=0xf4e4c8,dk=0x2c2833;
@@ -3488,11 +3492,11 @@ function parcelDown(o,water){const {d,dist}=nearestDrop(o.pos.x,o.pos.z);
   if(!d||dist>45){toast(dist<600?`Missed by ${Math.round(dist)} m. Biscuit gives you a look.`:'The parcel lands in the middle of nowhere. A lucky sheep, maybe.',2.4);return;}
   const tier=dist<5?[500,'BULLSEYE!']:dist<12?[300,'Right on the mark!']:dist<24?[150,'On target!']:[60,'Just about in the field.'];
   d.done=true;const S=log.dropStats;S.n++;if(dist<5)S.bull++;S.best=Math.min(S.best,dist);
-  const pts=tier[0]+200;stamp(1);addScore(pts);saveL();snd.beep(1175);setTimeout(()=>snd.beep(1568),110);
+  const pts=tier[0]+200,coins=dist<5?40:dist<12?30:dist<24?20:10;stamp(1);addScore(pts);addCoins(coins);saveL();snd.beep(1175);setTimeout(()=>snd.beep(1568),110);
   const s=SITES.get(d);if(s)s.react=0;
   goal('drop1',true);if(dist<5)goal('bullseye',true);if(S.n>=10)goal('drops');updJob();
   const left=activeDrops().length;
-  toast(`${tier[1]} ${Math.round(dist)} m · +${pts} · +1 STAMP\n${d.who}: "${d.line}"${left?`\n${left} more drop${left>1?'s':''} to go.`:''}`,4);}
+  toast(`${tier[1]} ${Math.round(dist)} m · +${pts} · +1 STAMP · +${coins} COINS\n${d.who}: "${d.line}"${left?`\n${left} more drop${left>1?'s':''} to go.`:''}`,4);}
 function updDrops(dt){const run=mode==='fly'||mode==='crashed';animSites(performance.now()/1000,dt);
   if(lookDown&&(ac.ground||mode!=='fly'&&mode!=='paused')){lookDown=false;snapCam=true;updParcelUI();}
   if(mode==='fly'&&!ac.ground){const {d,dist}=nearestDrop(ac.pos.x,ac.pos.z);if(d&&dist<1600)tip('drops',`There's the smoke! Tap the target button on the left for LOOK DOWN and DROP. Let go when the crosshair sits on the rings, and you'll hear straight away if it's on its way.`);}
@@ -3597,12 +3601,12 @@ const SMOKE_N=1600,SMOKE_LIFE=120,SMOKE_EVERY=.075;let smokeOn=false,smokeAcc=0,
 /* light, soft smoke: nearly see-through right behind the plane (so it never blocks your view), thickening to
    solid white with distance, so you see what you've drawn when you turn round and look back */
 const smokeMat=new THREE.ShaderMaterial({transparent:true,depthWrite:false,
-  uniforms:{uSun:{value:sunDir},uTint:{value:1},fogColor:{value:scene.fog.color},fogNear:{value:700},fogFar:{value:5600}},
+  uniforms:{uSun:{value:sunDir},uTint:{value:1},uSmokeC:{value:new THREE.Color(.96,.95,.94)},fogColor:{value:scene.fog.color},fogNear:{value:700},fogFar:{value:5600}},
   vertexShader:`varying float vSh;varying float vD;uniform vec3 uSun;
     void main(){vec4 w=modelMatrix*instanceMatrix*vec4(position,1.);vec3 n=normalize(mat3(modelMatrix*instanceMatrix)*normal);
       vSh=.84+.16*max(dot(n,normalize(uSun)),0.)+.06*n.y;vec4 mv=viewMatrix*w;vD=-mv.z;gl_Position=projectionMatrix*mv;}`,
-  fragmentShader:`varying float vSh;varying float vD;uniform float uTint,fogNear,fogFar;uniform vec3 fogColor;
-    void main(){float a=mix(.1,.98,smoothstep(14.,130.,vD));vec3 c=vec3(.96,.95,.94)*vSh*uTint;c=mix(c,fogColor,smoothstep(fogNear,fogFar,vD));gl_FragColor=vec4(c,a);}`});
+  fragmentShader:`varying float vSh;varying float vD;uniform float uTint,fogNear,fogFar;uniform vec3 fogColor,uSmokeC;
+    void main(){float a=mix(.1,.98,smoothstep(14.,130.,vD));vec3 c=uSmokeC*vSh*uTint;c=mix(c,fogColor,smoothstep(fogNear,fogFar,vD));gl_FragColor=vec4(c,a);}`});
 const smokeTrail=new THREE.InstancedMesh(new THREE.DodecahedronGeometry(1,1),smokeMat,SMOKE_N);smokeTrail.renderOrder=6;smokeTrail.frustumCulled=false;scene.add(smokeTrail);
 const SMK=Array.from({length:SMOKE_N},()=>({t:-1,p:new V3(),v:new V3(),r:Math.random()*TAU}));
 const _tail=new V3(),_tm=new THREE.Matrix4(),_tq=new THREE.Quaternion(),_ts=new V3();
@@ -3705,7 +3709,7 @@ setInterval(()=>{const c=snd.ctx;if(c&&c.onstatechange==null)c.onstatechange=()=
 
 /* ---- updraft: like the tailwind but straight up. Three charges; tap again while one is lifting you to stack them.
    Holding BRAKE in the air calls it off, same as the tailwind ---- */
-const UP_N=3,UP_T=3,UP_V=26,UP_CD=6,UP_STACK=[0,1,1.6,2.1];let upCharges=UP_N,upCD=0,upUiT=0;
+const UP_T=3,UP_V=26,UP_STACK=[0,1,1.6,2.1,2.5,2.85];let UP_N=3,UP_CD=6;let upCharges=UP_N,upCD=0,upUiT=0;
 function useUpdraft(){if(mode!=='fly')return;if(ac.ground){toast('Updrafts work once you\'re flying.',1.6);return;}
   if(upCharges<=0){toast(`The next updraft is gathering. ${Math.ceil(upCD)} s.`,1.3);return;}
   if(!ac.ups)ac.ups=[];ac.ups.push(UP_T);upCharges--;upCD=UP_CD;const n=ac.ups.length;snd.beep(660+n*120);setTimeout(()=>snd.beep(990+n*160),80);
@@ -3804,7 +3808,7 @@ function hangarCard(){const rows=DECOR.map(d=>{const e=decorEarned(d);
   $('cardBody').querySelectorAll('[data-dec]').forEach(b=>b.addEventListener('click',()=>{const id=b.dataset.dec,d=DECOR.find(q=>q.id===id);settings.decor[id]=!decorOn(d);saveS();applyDecor();b.classList.toggle('on',decorOn(d));b.textContent=decorOn(d)?'ON':'OFF';snd.click();}));if(typeof wirePetPanel==='function')wirePetPanel();}
 applyDecor();
 
-/* ---------- your co-pilot: pick the animal, its colours, the noise it makes and its name ----------
+/* ---------- your co-pilot: pick the animal, its colors, the noise it makes and its name ----------
    Biscuit the golden dog is the default. The companion keeps the same rig (head with two ears and a tongue, and a
    chest, haunches and tail for the cockpit seat); each species swaps the shapes, so every animation still works.
    Chosen in the Hangar; saved in settings.pet. Anywhere the game says "Biscuit", it says your companion's name. */
@@ -3907,6 +3911,53 @@ function wirePetPanel(){const B=$('cardBody'),P=settings.pet;
   B.querySelectorAll('[data-psnd]').forEach(b=>b.addEventListener('click',()=>{P.snd=b.dataset.psnd;saveS();applyPet();snd.petCall();hangarCard();}));
   const n=$('petName');if(n){n.addEventListener('keydown',e=>e.stopPropagation());n.addEventListener('change',()=>{P.name=n.value.trim().slice(0,14)||PET_SPECIES[P.sp].name;saveS();applyPet();});}}
 applyPet();
+
+/* ---------- coins and Gus's garage ----------
+   Delivering mail, air drops, errands, new landmarks and good landings pay a few coins. Spend them at Gus's garage
+   (land at Harbor Field) on bigger tailwind and updraft tanks, quicker refills, an engine tune-up, paint and smoke. */
+if(log.coins==null)log.coins=0;
+if(!log.shop)log.shop={};const SH=log.shop;
+for(const [k,v] of [['wind',0],['up',0],['quick',0],['engine',0]])if(SH[k]==null)SH[k]=v;
+if(!SH.paint)SH.paint={owned:['classic'],sel:'classic'};if(!SH.smoke)SH.smoke={owned:['white'],sel:'white'};
+const COIN_IMG=(()=>{const c=document.createElement('canvas');c.width=c.height=8;const x=c.getContext('2d'),P=(col,a,b,w=1,h=1)=>{x.fillStyle=col;x.fillRect(a,b,w,h);};
+  P('#8a5a18',2,0,4,8);P('#8a5a18',0,2,8,4);P('#8a5a18',1,1,6,6);P('#f1c84a',2,1,4,6);P('#f1c84a',1,2,6,4);P('#fff2b0',2,2,2,2);P('#c8902e',4,5,2,1);return c.toDataURL();})();
+function coinTag(n){return `<img src="${COIN_IMG}" alt="coins" style="width:12px;height:12px;image-rendering:pixelated;vertical-align:-1px;margin-right:2px">${n.toLocaleString()}`;}
+function addCoins(n){if(!n)return;log.coins+=n;saveL();updScore();const e=$('score');if(e){e.classList.remove('pop');void e.offsetWidth;e.classList.add('pop');}}
+const UPG=[
+  {id:'wind',name:'Bigger tailwind tank',desc:'One more tailwind charge.',max:2,cost:[60,140]},
+  {id:'up',name:'Bigger updraft tank',desc:'One more updraft charge.',max:2,cost:[50,120]},
+  {id:'quick',name:'Quick refill',desc:'Tailwinds and updrafts come back faster.',max:2,cost:[80,160]},
+  {id:'engine',name:'Engine tune-up',desc:'More power: faster climbs and a higher top speed.',max:3,cost:[100,180,280]},
+];
+const PAINTS=[['classic','Classic',0xf3e7cf,0xd2493c,0],['sky','Sky blue',0xdcecf6,0x2f6fb0,40],['forest','Forest',0xe8e4c8,0x2f6a3a,40],['sunset','Sunset',0xffe2b8,0xe2703f,40],
+  ['bumble','Bumblebee',0xf6d24a,0x2c2833,60],['midnight','Midnight',0x2e3550,0xf1c84a,60],['seafoam','Seafoam',0xd4f0e4,0x3f8f8a,40],['rose','Rose',0xf8dce0,0xc2456a,40]];
+const SMOKES=[['white','White',[.96,.95,.94],0],['pink','Pink',[1,.72,.82],30],['sky','Sky blue',[.62,.82,1],30],['gold','Gold',[1,.86,.45],30],['mint','Mint',[.66,.95,.8],30],['lilac','Lilac',[.82,.72,1],30]];
+const PARK0={body:0xf3e7cf,trim:0xd2493c};
+function applyUpgrades(){
+  WIND_N=5+SH.wind;UP_N=3+SH.up;WIND_CD=[5,3.8,2.8][SH.quick];UP_CD=[6,4.6,3.4][SH.quick];windCharges=Math.min(windCharges,WIND_N);if(windWait>WIND_CD)windWait=WIND_CD;upCharges=Math.min(upCharges,UP_N);
+  AC.Tmax=3000*(1+.09*SH.engine);
+  const P=PAINTS.find(p=>p[0]===SH.paint.sel)||PAINTS[0],np=buildPlane({body:P[2],trim:P[3]}),U=plane.userData;
+  U.bodyM.geometry.dispose();U.bodyM.geometry=np.userData.bodyM.geometry;U.wingM.geometry.dispose();U.wingM.geometry=np.userData.wingM.geometry;
+  const S=SMOKES.find(s=>s[0]===SH.smoke.sel)||SMOKES[0];smokeMat.uniforms.uSmokeC.value.setRGB(...S[2]);
+  if(typeof updWindUI==='function')updWindUI();if(typeof updUpUI==='function')updUpUI();}
+function shopCard(s){const meet=!log.met.gus;if(meet){log.met.gus=1;saveL();}
+  const row=(name,desc,btn)=>`<div class="tog"><div><b>${name}</b><span>${desc}</span></div>${btn}</div>`;
+  const buy=(attr,cost,label)=>`<button ${attr} ${log.coins<cost?'disabled style="opacity:.45"':''}>${label||'BUY'} · ${coinTag(cost)}</button>`;
+  const ups=UPG.map(u=>{const lv=SH[u.id];return row(`${u.name} <span style="display:inline;font-family:var(--mono);font-size:13px;color:var(--ink2)">${'■'.repeat(lv)+'□'.repeat(u.max-lv)}</span>`,u.desc,lv>=u.max?'<button disabled style="opacity:.55">MAXED</button>':buy(`data-up="${u.id}"`,u.cost[lv]));}).join('');
+  const sw=(list,kind)=>list.map(([id,name,a,b,cost])=>{const own=SH[kind].owned.includes(id),sel=SH[kind].sel===id,bg=kind==='paint'?`linear-gradient(135deg,#${a.toString(16).padStart(6,'0')} 55%,#${b.toString(16).padStart(6,'0')} 55%)`:`rgb(${a.map(v=>Math.round(v*255)).join(',')})`,price=kind==='paint'?cost:b;
+    return `<button data-${kind}="${id}" style="background:${bg};min-width:96px;padding:6px 8px;font-size:13px;${sel?'outline:3px solid #241c2e;outline-offset:1px;':''}${!own&&log.coins<price?'opacity:.5;':''}"><span style="background:#fff8ecdd;padding:1px 4px">${name}${own?'':' · '+price}</span></button>`;}).join('');
+  showCard(`<div class="who"><img src="${portrait('gus')}" alt=""><div><b>Gus's garage</b><span>GUS AMARI · MECHANIC · HARBOR FIELD</span></div></div>
+    ${meet?`<p class="say">“${MEET.gus}”</p>`:''}<p class="say">“${['What are we fixing today?','Bring the plane round the back and I\'ll have a look.','Coins in the jar, upgrades on the plane. Simple.'][(log.flights||0)%3]}”</p>
+    <div class="sub" style="font-size:16px">YOU HAVE ${coinTag(log.coins)} COINS</div>
+    <h3>UPGRADES</h3>${ups}<h3>PAINT</h3><div class="btns">${sw(PAINTS,'paint')}</div><h3>SMOKE COLOR</h3><div class="btns">${sw(SMOKES,'smoke')}</div>
+    <p style="font-size:13px;color:var(--ink2)">Coins come from delivering mail, air drops, errands, new landmarks and good landings.</p>`,
+    [['Back',()=>{if(s)showCard(`<h2>${s.name}</h2><p>All fixed up.</p>`,[['Take off',()=>spawnField(s),true],['Look around first',()=>{hideModal();mode='fly';}]]);else back();},true]]);
+  const B=$('cardBody'),pay=c=>{if(log.coins<c){toast('Not enough coins yet.',1.4);return false;}log.coins-=c;saveL();updScore();snd.beep(1320);setTimeout(()=>snd.beep(1760),90);return true;};
+  B.querySelectorAll('[data-up]').forEach(b=>b.addEventListener('click',()=>{const u=UPG.find(q=>q.id===b.dataset.up),lv=SH[u.id];if(lv>=u.max||!pay(u.cost[lv]))return;SH[u.id]++;saveL();applyUpgrades();
+    if(u.id==='wind')windCharges=WIND_N;if(u.id==='up')upCharges=UP_N;toast(`${u.name}: fitted.`,1.6);shopCard(s);}));
+  for(const [kind,list] of [['paint',PAINTS],['smoke',SMOKES]])B.querySelectorAll(`[data-${kind}]`).forEach(b=>b.addEventListener('click',()=>{const it=list.find(q=>q[0]===b.dataset[kind]),own=SH[kind].owned.includes(it[0]),price=kind==='paint'?it[4]:it[3];
+    if(!own){if(!pay(price))return;SH[kind].owned.push(it[0]);}SH[kind].sel=it[0];saveL();applyUpgrades();snd.click();shopCard(s);}));}
+applyUpgrades();window.__shopReady=true;updScore();
 
 
 /* ---------- main loop ---------- */

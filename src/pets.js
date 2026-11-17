@@ -1,4 +1,4 @@
-/* ---------- your co-pilot: pick the animal, its colours, the noise it makes and its name ----------
+/* ---------- your co-pilot: pick the animal, its colors, the noise it makes and its name ----------
    Biscuit the golden dog is the default. The companion keeps the same rig (head with two ears and a tongue, and a
    chest, haunches and tail for the cockpit seat); each species swaps the shapes, so every animation still works.
    Chosen in the Hangar; saved in settings.pet. Anywhere the game says "Biscuit", it says your companion's name. */

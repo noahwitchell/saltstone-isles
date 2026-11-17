@@ -1,6 +1,6 @@
 /* ---------------- night finds: things that only glow after dark ----------------
    Landmarks (sights with night:true) you can't see in daylight. They light up at blue hour and night, and only count
-   as discovered then. All the glows are one Points cloud with a small shader: each point has a colour, a size, a
+   as discovered then. All the glows are one Points cloud with a small shader: each point has a color, a size, a
    phase and a motion kind (0 twinkle in place, 1 firefly drift, 2 sea glow that pulses in waves, 3 slow wandering wisp). */
 const NIGHT_GLOW=(function nightGlow(){
   let ns=31337;const r=()=>{ns=(Math.imul(ns,1664525)+1013904223)>>>0;return ns/4294967296;};

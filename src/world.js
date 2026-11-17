@@ -775,11 +775,12 @@ const cloudGroup=new THREE.Group();scene.add(cloudGroup);const CLOUDS=[];
   const geo=merge(it),cc=new Float32Array(geo.attributes.position.count*4);let o=0;
   it.forEach((q,i)=>{const n=q.geo.index?q.geo.index.count:q.geo.attributes.position.count,c=CLOUDS[q.cl];for(let k=0;k<n;k++,o++){cc[o*4]=c.x;cc[o*4+1]=c.y;cc[o*4+2]=c.z;cc[o*4+3]=c.r;}});
   geo.setAttribute('cc',new THREE.BufferAttribute(cc,4));
-  const cmat=see=>{const m=toon(see?{transparent:true,depthWrite:false}:{},false);m.onBeforeCompile=sh=>{
-    sh.vertexShader='attribute vec4 cc;varying float vFade;\n'+sh.vertexShader.replace('#include <project_vertex>','#include <project_vertex>\nvec3 ccw=(modelMatrix*vec4(cc.xyz,1.)).xyz;vFade=smoothstep(.45,1.5,distance(cameraPosition,ccw)/cc.w);');
-    sh.fragmentShader='varying float vFade;\n'+sh.fragmentShader.replace('void main() {','void main() {\n'+(see?'if(vFade>=.999||vFade<.01)discard;':'if(vFade<.999)discard;')).replace('#include <dithering_fragment>','#include <dithering_fragment>\ngl_FragColor.a*='+(see?'vFade':'1.')+';');};
-    m.customProgramCacheKey=()=>'cloud'+see;return m;};
-  cloudGroup.add(new THREE.Mesh(geo,cmat(false)));const seeM=new THREE.Mesh(geo,cmat(true));seeM.renderOrder=5;cloudGroup.add(seeM);
+  /* one solid pass; as you get close, the cloud dissolves through an ordered pixel dither instead of switching to a
+     see-through pass (which drew the inner puffs in no particular order and made the cloud pop) */
+  const cm=toon({},false);cm.onBeforeCompile=sh=>{
+    sh.vertexShader='attribute vec4 cc;varying float vFade;\n'+sh.vertexShader.replace('#include <project_vertex>','#include <project_vertex>\nvec3 ccw=(modelMatrix*vec4(cc.xyz,1.)).xyz;vFade=smoothstep(.85,2.3,distance(cameraPosition,ccw)/cc.w);');
+    sh.fragmentShader='varying float vFade;\nfloat cb2(vec2 a){a=floor(a);return fract(a.x*.5+a.y*a.y*.75);}float cb4(vec2 a){return cb2(.5*a)*.25+cb2(a);}\n'+sh.fragmentShader.replace('void main() {','void main() {\nif(vFade<.999&&vFade<=cb4(gl_FragCoord.xy)*.9375+.03)discard;').replace('#include <dithering_fragment>','#include <dithering_fragment>\ngl_FragColor.rgb=mix(vec3(.93,.93,.96),gl_FragColor.rgb,smoothstep(.65,1.,vFade));');};
+  cm.customProgramCacheKey=()=>'cloudDither';cloudGroup.add(new THREE.Mesh(geo,cm));
 })();
 /* how deep in a cloud the camera is (0 clear .. 1 in the middle): drives a soft white-out in the post pass */
 function cloudMist(p){let m=0;const gx=cloudGroup.position.x,gz=cloudGroup.position.z;for(const c of CLOUDS){const dy=p.y-c.y;if(Math.abs(dy)>c.r)continue;

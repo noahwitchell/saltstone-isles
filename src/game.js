@@ -307,19 +307,19 @@ function updGates(){
 /* tailwind button: three charges, each a 6 s gust that carries you along fast and holds your height.
    Tap again while a gust is blowing and they stack: two gusts go faster, three faster still.
    Charges refill one every 5 s once every gust has died down. */
-const BOOST_V=55,BOOST_T=6,WIND_N=5,WIND_CD=5,STACK=[0,1,1.7,2.25,2.75,3.2];
+const BOOST_V=55,BOOST_T=6,STACK=[0,1,1.7,2.25,2.75,3.2,3.6,3.95];let WIND_N=5,WIND_CD=5;   // Gus can fit bigger tanks and quicker refills
 let windCharges=WIND_N,windCD=0,windUiT=0,windWait=WIND_CD,windPeak=0;
 const glideAlt=(s,d)=>s.elev+AC.gearH+Math.tan(4*DEG)*d;
 function windBlock(){if(ac.ground||mode!=='fly')return 'IN THE AIR';const agl=ac.pos.y-AC.gearH-surfH(ac.pos.x,ac.pos.z);if(agl<40)return 'TOO LOW';
   return null;}
 function useWind(){const b=windBlock();
-  if(windCharges<=0){toast(ac.gusts&&ac.gusts.length?'All five are blowing. Ride it out, or hold BRAKE to stop it.':`The wind is gathering. Next one in ${Math.ceil(windCD)} s.`,1.4);return;}
+  if(windCharges<=0){toast(ac.gusts&&ac.gusts.length?'Every tailwind is blowing. Ride it out, or hold BRAKE to stop it.':`The wind is gathering. Next one in ${Math.ceil(windCD)} s.`,1.4);return;}
   if(b){toast(b==='TOO LOW'?'Climb a little first. Tailwinds need some height.':'Tailwinds work once you\'re flying.',1.8);return;}
   if(!ac.gusts)ac.gusts=[];ac.gusts.push(BOOST_T);windCharges--;const n=ac.gusts.length;windPeak=Math.max(windPeak,n);
   windWait=WIND_CD;windCD=windWait;ac.boostT=Math.max(...ac.gusts);
   snd.beep(1320+n*180);setTimeout(()=>snd.beep(1760+n*220),90);
-  toast(n>1?`Tailwind ×${n}!${n===5?' FULL GALE!':n===3?' A proper gale.':''}`:windCharges?`Tailwind! ${windCharges} left.`:'Last tailwind for now.',1.4);
-  if(!log.goals.tailwind&&n>=3)goal('tailwind');if(n===5)goal('gale5');if(n>=2)tip('windstop','Going too fast? Hold BRAKE in the air and the tailwind stops at once.',1);updWindUI();}
+  toast(n>1?`Tailwind ×${n}!${n>=5?' FULL GALE!':n===3?' A proper gale.':''}`:windCharges?`Tailwind! ${windCharges} left.`:'Last tailwind for now.',1.4);
+  if(!log.goals.tailwind&&n>=3)goal('tailwind');if(n>=5)goal('gale5');if(n>=2)tip('windstop','Going too fast? Hold BRAKE in the air and the tailwind stops at once.',1);updWindUI();}
 function updWindUI(){const b=$('wind');if(!b)return;const blk=windBlock(),cool=windCharges<=0,n=(ac.gusts||[]).length,fill=windCharges<WIND_N&&!n;
   b.innerHTML=`<img src="${RICON.wind}" alt="Tailwind">${n>1?'×'+n:''}<span>${'●'.repeat(windCharges)+'○'.repeat(WIND_N-windCharges)}</span>`;
   b.classList.toggle('cool',cool&&!n);b.classList.toggle('off',!!blk&&!cool);b.classList.toggle('on',n>0);
@@ -547,7 +547,7 @@ function finishLanding(){
   g('land_'+s.id);if(STRIPS.every(q=>log.goals['land_'+q.id]))g('hopper');if(isTrip){log.trips++;g('trip');}if(fpm<90&&!td.bounced)g('butter');if(s.id==='ridge'&&total===3)g('ridge3');if(td.view==='cockpit')g('instrument');
   if(ckOk)g('checklist');if(td.tod==='night')g('night');
   if(ckOk&&mail.active)stamp(1);
-  const firstHere=F.landings===1,lpts=total*25+(firstHere?150:0);addScore(lpts);
+  const firstHere=F.landings===1,lpts=total*25+(firstHere?150:0);addScore(lpts);addCoins(total*2);
   ac.lastField=s.id;ac.from=s.id;saveL();
   const missed=[!ck.carb&&'carb heat',!ck.mix&&'mixture rich',!ck.flaps&&'flaps',!ck.light&&'landing light'].filter(Boolean).join(', ');
   const ckRow=`<span class="k">CHECKLIST</span><span>${ckOk?'All done'+(mail.active?' · +1 stamp':''):'Missed: '+missed}</span><span class="s">${ckOk?'✓':''}</span>`;
@@ -556,11 +556,11 @@ function finishLanding(){
   const btns=here.length?[[`Deliver the mail (${here.length})`,()=>deliverAt(s),true]]
     :homeDone?[['Hand in the day',endDay,true]]
     :[['Take off from here',()=>spawnField(s),true],['Practice this landing',()=>spawnApproach(s,td.dirSign)],['Keep taxiing',()=>{hideModal();mode='fly';}]];
-  btns.splice(1,0,...errandBtns(s));
+  btns.splice(1,0,...errandBtns(s));if(s.id==='harbor')btns.splice(1,0,["Gus's garage",()=>shopCard(s)]);
   showCard(`<h2>${stopped?'Landed at':'Rolled off'} ${s.name}</h2><div class="sub">${isTrip?'TRIP FROM '+stripById(fromId).name.toUpperCase()+' · ':''}${stars(total)}</div>
     <div class="rows"><span class="k">TOUCHDOWN</span><span>${Math.round(fpm)} ft/min at ${Math.round(td.kt)} kt · ${softTxt}</span><span class="s">${stars(soft)}</span>
     <span class="k">CENTERLINE</span><span>${off<.2?'Right down the middle':off<.5?'A little off center':'Way off center'}</span><span class="s">${stars(cen)}</span>
-    <span class="k">AIM POINT</span><span>${zoneTxt}</span><span class="s">${stars(zone)}</span>${ckRow}<span class="k">SCORE</span><span>+${lpts}${firstHere?' · first landing here':''}</span><span class="s"></span></div>
+    <span class="k">AIM POINT</span><span>${zoneTxt}</span><span class="s">${stars(zone)}</span>${ckRow}<span class="k">SCORE</span><span>+${lpts} · +${total*2} coins${firstHere?' · first landing here':''}</span><span class="s"></span></div>
     ${!stopped?'<p>You ran off the end. Touch down nearer the markers and hold BRAKE.</p>':''}
     ${news.length?`<p><b>New in your logbook:</b> ${news.join(', ')}</p>`:''}`,btns);
   mode='card';
@@ -578,8 +578,8 @@ function deliverAt(s){
         homeDone?[['Hand in the day',endDay,true]]:[['Take off',()=>spawnField(s),true],...errandBtns(s),['Look around first',()=>{hideModal();mode='fly';}]]);return;}
     if(q.kind==='meet'){log.met[q.who]=1;saveL();const c=CHARS[q.who];
       showCard(`<div class="who"><img src="${portrait(q.who)}" alt=""><div><b>${c.name}</b><span>${c.role}</span></div></div><p class="say">“${MEET[q.who]}”</p>`,[['Nice to meet you',step,true]]);return;}
-    const it=q.it,c=CHARS[it.to];stamp(1);addScore(100);
-    showCard(`<div class="who"><img src="${portrait(it.to)}" alt=""><div><b>${c.name}</b><span>${c.role}</span></div></div><p class="say">“${it.line}”</p><div class="got">DELIVERED: ${it.item.toUpperCase()} · +1 STAMP · +100</div>`,[['You\'re welcome',step,true]]);};
+    const it=q.it,c=CHARS[it.to];stamp(1);addScore(100);addCoins(15);
+    showCard(`<div class="who"><img src="${portrait(it.to)}" alt=""><div><b>${c.name}</b><span>${c.role}</span></div></div><p class="say">“${it.line}”</p><div class="got">DELIVERED: ${it.item.toUpperCase()} · +1 STAMP · +100 · +15 COINS</div>`,[['You\'re welcome',step,true]]);};
   step();
 }
 function offerDay(after){
@@ -594,8 +594,8 @@ function offerDay(after){
 }
 function meetBea(){if(mode!=='fly'||log.met.bea)return;log.met.bea=1;saveL();mode='card';
   showCard(`<div class="who"><img src="${portrait('bea')}" alt=""><div><b>Bea Hollis</b><span>RETIRED MAIL PILOT · HARBOR FIELD</span></div></div><p class="say">“${MEET.bea}”</p><p>Bea's logbook is in the pause menu whenever you want it.</p>`,[['Thanks, Bea',()=>{hideModal();mode='fly';},true],['Open the logbook',()=>bea(-1)]]);}
-function endDay(){const day=DAYS[mail.day-1];mail.active=false;mail.bag=[];clearDrops();mail.day++;stamp(2);if(mail.day>6)goal('week',true);if(mail.day>12)goal('week2',true);if(mail.day>18)goal('week3',true);saveL();refreshBag();
-  showCard(`<div class="who"><img src="${portrait('mabel')}" alt=""><div><b>Mabel Ostrander</b><span>END OF DAY · +2 STAMPS</span></div></div><p class="say">“${day?day.outro:'Good flying.'}”</p><div class="got">${log.stamps} STAMPS ON YOUR ROUTE CARD</div>`,
+function endDay(){const day=DAYS[mail.day-1];mail.active=false;mail.bag=[];clearDrops();addCoins(40);mail.day++;stamp(2);if(mail.day>6)goal('week',true);if(mail.day>12)goal('week2',true);if(mail.day>18)goal('week3',true);saveL();refreshBag();
+  showCard(`<div class="who"><img src="${portrait('mabel')}" alt=""><div><b>Mabel Ostrander</b><span>END OF DAY · +2 STAMPS</span></div></div><p class="say">“${day?day.outro:'Good flying.'}”</p><div class="got">${log.stamps} STAMPS ON YOUR ROUTE CARD · +40 COINS</div>`,
     [[mail.day<=DAYS.length?'Start the next day':'Keep flying',()=>{if(mail.day<=DAYS.length)offerDay(()=>spawnField(STRIPS[0]));else{hideModal();mode='fly';}},true],['Free flight',()=>{hideModal();mode='fly';pickDest('harbor');}]]);}
 function goal(id,quiet){if(log.goals[id])return false;log.goals[id]=Date.now();saveL();if(!quiet){const g=GOALS.find(x=>x.id===id);toast('Logbook: '+g.name,2.5);}return true;}
 
@@ -971,7 +971,7 @@ function hideModal(){$('modal').hidden=true;}
 function back(){hideModal();if(mode==='title')$('title').hidden=false;else if(mode==='paused'||mode==='card')openMenu();}
 function openMenu(){if(mode==='fly')mode='paused';showCard(`<h2>Paused</h2><div class="sub">${dest?'HEADING FOR '+dest.name.toUpperCase():''}${mail.active?' · '+mail.bag.length+' IN THE BAG':''} · ${log.stamps} STAMPS</div>`,[
   ['Resume',()=>{hideModal();mode='fly';},true],['Title screen',()=>{hideModal();toTitle();}],['Mail bag',()=>mail.active?mailCard():showCard('<h2>Mail bag</h2><p>No mail in the bag today. Start a day at Harbor Field from the title screen and Mabel will load it.</p>',[['Back',back,true]])],["Bea's chart",()=>bigMap()],["Bea's logbook",()=>bea(-1)],['Your logbook',()=>logbook()],['Practice a landing',()=>picker('practice')],['Start at a field',()=>picker('start')],['Hangar',()=>hangarCard()],['Settings',()=>settingsCard()]],{grid:true,colors:MENU_COL});$('cardBody').classList.add('wide');}
-/* each pause-menu button gets its own colour so they're easy to tell apart at a glance */
+/* each pause-menu button gets its own color so they're easy to tell apart at a glance */
 const MENU_COL={'Mail bag':'#f2c25a',"Bea's chart":'#7cc4d4',"Bea's logbook":'#a6d38a','Practice a landing':'#c4aee6','Start at a field':'#f0a77c','Your logbook':'#9fc4ef','Settings':'#cfc6b4','Hangar':'#f2a8d4'};
 function picker(kind){
   const items=STRIPS.map(s=>{const F=log.fields[s.id];return `<button class="item" data-id="${s.id}"><span><b>${s.name}</b><span class="d">${DESC[s.id]}</span></span><span class="r">${F&&F.best?stars(F.best):'NOT YET'}</span></button>`;}).join('');
@@ -1043,7 +1043,7 @@ function gameChecks(dt){
     ck.innerHTML=`<b>BEFORE LANDING</b>${row(c.carb,'CARB HEAT ON')}${row(c.mix,'MIXTURE RICH')}${row(c.flaps,'FLAPS 1 OR 2')}${c.needLight?row(c.light,'LANDING LIGHT'):''}${c.needLight&&typeof rwyLit==='function'?row(rwyLit(dest),'RUNWAY LIGHTS (MIC)'):''}`;ck.hidden=false;tip('checklist','Before-landing checklist: flick the switches and set the flap lever in the landing panel, bottom left. Bea\'s logbook explains each one.',1);}
   else ck.hidden=true;
   sightT+=dt;if(sightT>.3){sightT=0;
-    for(const [k,v] of Object.entries(sights)){if(log.sights[k]||!sightOn(v))continue;if(Math.hypot(ac.pos.x-v.x,ac.pos.z-v.z)<450&&ac.pos.y-v.y<650){log.sights[k]=Date.now();stamp(1);addScore(100);saveL();
+    for(const [k,v] of Object.entries(sights)){if(log.sights[k]||!sightOn(v))continue;if(Math.hypot(ac.pos.x-v.x,ac.pos.z-v.z)<450&&ac.pos.y-v.y<650){log.sights[k]=Date.now();stamp(1);addScore(100);addCoins(5);saveL();
       const n=Object.keys(sights).filter(q=>log.sights[q]).length;snd.beep(990);setTimeout(()=>snd.beep(1320),110);setTimeout(()=>snd.beep(1760),220);
       toast(`Discovered: ${v.name} (${n}/${Object.keys(sights).length}) · +100\n${v.desc||''}`,4);tip('discover','Landmarks you discover go on Bea\'s chart, with a stamp for each. Fly over anything that looks interesting.',4.5);}}
     if(!ac.ground&&Math.hypot(ac.pos.x-summit.x,ac.pos.z-summit.z)<320&&ac.pos.y>summit.h+10)goal('summit');}

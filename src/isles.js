@@ -41,7 +41,7 @@ const ARCH=[
      const m=-f*1.2+fbm(x*.01,z*.01,2,331)*.12;if(m<0)return Math.max(-48,m*40-1.2);return smooth(0,.15,m)*6+fbm(x*.02,z*.02,2,333)*1.2;}},
 ];
 const TERN=[[0,0,260,70],[-420,240,180,50],[380,-300,220,60],[-180,-420,140,40],[520,260,120,36]];
-/* Saltpans: a grid of shallow pans, each a different colour; returns the pan index or -1 on the bunds */
+/* Saltpans: a grid of shallow pans, each a different color; returns the pan index or -1 on the bunds */
 function saltPan(x,z){const I={x:-5900,z:2950,rot:.7},[u,v]=locUV(I,x,z),gu=u/170,gv=v/130,fu=gu-Math.floor(gu),fv=gv-Math.floor(gv);
   if(fu<.08||fv<.1||Math.abs(u)>760||Math.abs(v)>420)return -1;return (hash2(Math.floor(gu),Math.floor(gv),241)*6)|0;}
 for(const a of ARCH)ISLES[a.id]=a;
@@ -61,7 +61,7 @@ const ARCH_STRIPS=[
 /* du/dv are world offsets (metres east/south of the island centre); hdg is a world-space yaw offset in radians that lines the strip up with the island */
 function archStrips(){return ARCH_STRIPS.map(s=>{const I=ISLES[s.isle];let h=(Math.atan2(Math.cos(I.rot+s.hdg),-Math.sin(I.rot+s.hdg))/DEG);h=((h%360)+360)%360;
   return {id:s.id,name:s.name,isle:s.isle,x:Math.round(I.x+s.du),z:Math.round(I.z+s.dv),hdg:Math.round(h),len:s.len,wid:s.wid,surf:s.surf};});}
-/* island colours */
+/* island colors */
 const ARCH_COL={
   sisters(h,sl,n1,n2){if(h<3+n1*1.5&&sl<.3)return tc.setHex(0xd9c8a0);if(sl>.4)return tc.setHex(0x8a8078).lerp(tc2.setHex(0x6e6660),n2*.5+.5);return tc.setHex(0x86a85a).lerp(tc2.setHex(0xb0b46a),n1*.5+.5);},
   puffin(h,sl,n1,n2){if(h>30&&sl<.5)return tc.setHex(0x9ab86a).lerp(tc2.setHex(0xeae6d8),n2>.2?.5:0);return tc.setHex(0x7e746e).lerp(tc2.setHex(0x9c9088),(Math.sin(h*.3)*.5+.5));},
@@ -70,7 +70,10 @@ const ARCH_COL={
   apple(h,sl,n1,n2,x,z){if(h<3+n1*2&&sl<.3)return tc.setHex(COL.sand);if(sl>.42)return tc.setHex(COL.rock);
      if(orchardAt(x,z))return tc.setHex(0x8cb850).lerp(tc2.setHex(0x9cc45a),n2*.5+.5);
      const [u,v]=locUV(ISLES.apple,x,z),k=hash2(Math.floor(u/120),Math.floor(v/90),235);return tc.setHex(k<.3?0xd8c46c:k<.55?0xc9d27a:k<.8?0x7fae4f:0xe0b45c);},
-  salt(h,sl,n1,n2,x,z){const p=saltPan(x,z);if(h<.4&&p<0)return tc.setHex(0xd8ccb0);if(p>=0)return tc.setHex([0xf4eee8,0xf0c8c8,0xe8a8b8,0xbfe0dc,0xf6f2ea,0xd8b8d0][p]);return tc.setHex(0xc8b890).lerp(tc2.setHex(0xe0d4b8),n2*.5+.5);},
+  /* one color per 40 m terrain square (both triangles), and gentle pastels, so the pans don't crawl and shimmer at low resolution */
+  salt(h,sl,n1,n2,x,z){const qx=(Math.floor((x+HALFX)/CELL)+.5)*CELL-HALFX,qz=(Math.floor((z+HALFZ)/CELL)+.5)*CELL-HALFZ,I={x:-5900,z:2950,rot:.7},[u,v]=locUV(I,qx,qz);
+    const inPans=Math.abs(u)<=760&&Math.abs(v)<=420,p=inPans?(hash2(Math.floor(u/170),Math.floor(v/130),241)*6)|0:-1;
+    if(h<.4&&p<0)return tc.setHex(0xd8ccb0);if(p>=0)return tc.setHex([0xf2ece4,0xf0dcd6,0xecd0d0,0xdce8e2,0xf4f0e8,0xe6d8de][p]);return tc.setHex(0xc8b890).lerp(tc2.setHex(0xe0d4b8),n2*.5+.5);},
   mirror(h,sl,n1,n2){if(h<-.6)return tc.setHex(0x8ab0a0);if(h<2.5&&sl<.3)return tc.setHex(0xd8cc9c);const f=hash2(Math.floor(n1*40),Math.floor(n2*40),257);
      tc.setHex(0x7eb456).lerp(tc2.setHex(0x98c060),n1*.5+.5);if(n2>.3)tc.lerp(tc2.setHex(f<.33?0xe8d060:f<.66?0xd890b8:0xf0ece0),.55);return tc;},
   mesa(h,sl,n1,n2){if(h<3&&sl<.3)return tc.setHex(0xd8b890);if(sl>.35)return tc.setHex([0xc07850,0xd8a070,0xa86048,0xe0b888][Math.floor(h/26+n1*.6)&3]);
