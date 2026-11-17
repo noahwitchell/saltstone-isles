@@ -775,12 +775,18 @@ const cloudGroup=new THREE.Group();scene.add(cloudGroup);const CLOUDS=[];
   const geo=merge(it),cc=new Float32Array(geo.attributes.position.count*4);let o=0;
   it.forEach((q,i)=>{const n=q.geo.index?q.geo.index.count:q.geo.attributes.position.count,c=CLOUDS[q.cl];for(let k=0;k<n;k++,o++){cc[o*4]=c.x;cc[o*4+1]=c.y;cc[o*4+2]=c.z;cc[o*4+3]=c.r;}});
   geo.setAttribute('cc',new THREE.BufferAttribute(cc,4));
-  /* one solid pass; as you get close, the cloud dissolves through an ordered pixel dither instead of switching to a
-     see-through pass (which drew the inner puffs in no particular order and made the cloud pop) */
-  const cm=toon({},false);cm.onBeforeCompile=sh=>{
-    sh.vertexShader='attribute vec4 cc;varying float vFade;\n'+sh.vertexShader.replace('#include <project_vertex>','#include <project_vertex>\nvec3 ccw=(modelMatrix*vec4(cc.xyz,1.)).xyz;vFade=smoothstep(.85,2.3,distance(cameraPosition,ccw)/cc.w);');
-    sh.fragmentShader='varying float vFade;\nfloat cb2(vec2 a){a=floor(a);return fract(a.x*.5+a.y*a.y*.75);}float cb4(vec2 a){return cb2(.5*a)*.25+cb2(a);}\n'+sh.fragmentShader.replace('void main() {','void main() {\nif(vFade<.999&&vFade<=cb4(gl_FragCoord.xy)*.9375+.03)discard;').replace('#include <dithering_fragment>','#include <dithering_fragment>\ngl_FragColor.rgb=mix(vec3(.93,.93,.96),gl_FragColor.rgb,smoothstep(.65,1.,vFade));');};
-  cm.customProgramCacheKey=()=>'cloudDither';cloudGroup.add(new THREE.Mesh(geo,cm));
+  /* clouds look solid until you get close, then fade out smoothly as you fly into them. Clouds you're clear of draw in
+     the opaque pass; the ones you're entering draw in a see-through pass at their faded opacity. That pass still writes
+     depth, so each cloud's inner puffs stay hidden behind its outer ones (without it they drew in random order and
+     the cloud popped) */
+  /* pass 0: solid. pass 1: fading but still more than half there (writes depth, so it keeps its outline and hides its
+     own inner puffs). pass 2: mostly faded (no depth, so the outline goes and it melts away) */
+  const cmat=k=>{const m=toon(k?{transparent:true,depthWrite:k===1}:{},false);m.onBeforeCompile=sh=>{
+    sh.vertexShader='attribute vec4 cc;varying float vFade;\n'+sh.vertexShader.replace('#include <project_vertex>','#include <project_vertex>\nvec3 ccw=(modelMatrix*vec4(cc.xyz,1.)).xyz;vFade=smoothstep(.8,2.4,distance(cameraPosition,ccw)/cc.w);');
+    const keep=['if(vFade<.999)discard;','if(vFade>=.999||vFade<.72)discard;','if(vFade>=.72||vFade<.01)discard;'][k];
+    sh.fragmentShader='varying float vFade;\n'+sh.fragmentShader.replace('void main() {','void main() {\n'+keep).replace('#include <dithering_fragment>','#include <dithering_fragment>\ngl_FragColor.a*='+(k?'vFade*vFade':'1.')+';');};
+    m.customProgramCacheKey=()=>'cloudFade'+k;return m;};
+  cloudGroup.add(new THREE.Mesh(geo,cmat(0)));for(const k of [1,2]){const sm=new THREE.Mesh(geo,cmat(k));sm.renderOrder=4+k;cloudGroup.add(sm);}
 })();
 /* how deep in a cloud the camera is (0 clear .. 1 in the middle): drives a soft white-out in the post pass */
 function cloudMist(p){let m=0;const gx=cloudGroup.position.x,gz=cloudGroup.position.z;for(const c of CLOUDS){const dy=p.y-c.y;if(Math.abs(dy)>c.r)continue;
