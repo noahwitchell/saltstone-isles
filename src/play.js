@@ -208,9 +208,13 @@ addEventListener('pagehide',saveResume);document.addEventListener('visibilitycha
 function resumeFlight(r){resetAc();ac.pos.fromArray(r.pos);ac.vel.fromArray(r.vel);ac.q.fromArray(r.q);ac.ground=!!r.ground;ac.gYaw=r.gYaw||0;ac.gPitch=r.gPitch||0;ac.u=r.u||0;ac.throttle=r.throttle||0;ac.flaps=r.flaps||0;ac.trim=r.trim??.06;ac.light=!!r.light;
   ac.lastField=stripById(r.lastField)?r.lastField:'harbor';ac.from=r.from==='__approach'?ac.lastField:(r.from||ac.lastField);dest=stripById(r.dest)||null;if(!dest)pickDest(ac.lastField);
   $('title').hidden=true;startFly();setView(r.cam==='cockpit'?'cockpit':camMode);snapCam=true;toast('Welcome back. Picking up right where you left off.',2.6);}
-(function(){const r=store.get(RESUME,null);if(!r||!r.pos||Date.now()-r.ts>1000*3600*24*60)return;
-  const b=document.createElement('button');b.className='primary';b.id='tResume';b.textContent='Continue where you left off';$('tFly').before(b);$('tFly').classList.remove('primary');
-  b.addEventListener('click',()=>{const r2=store.get(RESUME,null);if(r2)resumeFlight(r2);b.remove();$('tFly').classList.add('primary');});})();
+/* title screen: two buttons. With a saved flight: pick up where you left off, or start at a field.
+   Without one: start the day at Harbor Field, or start at a field. Everything else lives in the pause menu. */
+function titleButtons(){const r=store.get(RESUME,null),ok=!!(r&&r.pos&&Date.now()-r.ts<1000*3600*24*60);let b=$('tResume');
+  if(ok&&!b){b=document.createElement('button');b.className='primary';b.id='tResume';b.textContent='Pick up where you left off';$('tFly').before(b);
+    b.addEventListener('click',()=>{const r2=store.get(RESUME,null);if(r2)resumeFlight(r2);});}
+  if(b)b.hidden=!ok;$('tFly').hidden=ok;}
+titleButtons();
 /* ---------- tailwind streaks: air streaming off the wingtips and the trailing edge while a gust is blowing ---------- */
 const streaks=(()=>{const SRC=[[-5.2,.8,.3,1],[5.2,.8,.3,1],[-5.2,.95,.3,1],[5.2,.95,.3,1],[-2.8,.82,.3,.5],[2.8,.82,.3,.5],[-.9,1.6,2.2,.35],[.9,1.6,2.2,.35]],N=28;
   const mat=new THREE.ShaderMaterial({transparent:true,depthWrite:false,fog:false,uniforms:{k:{value:0}},

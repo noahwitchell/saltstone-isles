@@ -224,6 +224,7 @@ h3{font-family:var(--mono);font-size:15px;letter-spacing:.08em;color:var(--ink2)
     <button class="rb on" id="rJob" aria-label="Show or hide today's jobs"></button>
     <button class="rb on" id="rEng" aria-label="Show or hide the landing controls"></button>
     <button class="rb on" id="rFun" aria-label="Show or hide the light, smoke, float and radio switches"></button>
+    <button class="rb" id="rChk" aria-label="Show or hide the before-landing checklist"></button>
     <button class="rb" id="rDrop" aria-label="Show or hide the air-drop controls" hidden></button>
   </div>
   <div id="pcol"><canvas id="mapc" width="96" height="96" aria-label="Map. Tap for the full chart."></canvas>
@@ -257,11 +258,7 @@ h3{font-family:var(--mono);font-size:15px;letter-spacing:.08em;color:var(--ink2)
     <div class="tag">AIR MAIL FOR THE SALTWHISTLE ISLANDS · ONE LITTLE PLANE</div>
     <div class="btns">
       <button class="primary" id="tFly">Start the day at Harbor Field</button>
-      <button id="tPractice">Practice a landing</button>
-      <button id="tStart">Start somewhere else</button>
-      <button id="tBea">Bea's logbook</button>
-      <button id="tLog">Your logbook</button>
-      <button id="tSet">Settings</button>
+      <button id="tStart">Start at a field</button>
     </div>
   </div>
 </div>
@@ -2666,15 +2663,16 @@ const RICON={
   job:railIcon(['................','................','.aaaaaaaaaaaaaa.','.abbaaaaaaaabba.','.abcbbaaaabbcba.','.abccdbbbbdccba.','.abcccdddddccba.','.abccccccccccba.','.abccccccccccba.','.abccccccccccba.','.abccccccccccba.','.abbbbbbbbbbbba.','.aaaaaaaaaaaaaa.','................','................','................'],{a:'#241c2e',b:'#e9d3b0',c:'#f5e8cf',d:'#e2703f'}),
   eng:railIcon(['................','.......aa.......','.......ab.......','.......ab.......','......aabb......','.....aabbbb.....','......a..b......','....cccccccc....','...cddddddddc...','..cdde....eddc..','..cde.ffff.edc..','..cde.ffff.edc..','..cdde....eddc..','...cddddddddc...','....cccccccc....','................'],{a:'#9a96a2',b:'#d8d2c8',c:'#15121a',d:'#3a3344',e:'#55505c',f:'#cfc4b2'}),
   drop:railIcon(['.....aabbaa.....','...abbaabbaab...','..abbaabbaabba..','.aaaaaaaaaaaaaa.','.c....c..c....c.','..c...c..c...c..','...c..c..c..c...','....c.c..c.c....','.....cc..cc.....','.....dddddd.....','.....dedded.....','.....eeeeee.....','.....dedded.....','.....dddddd.....','................','................'],{a:'#d8463a',b:'#f6f1e4',c:'#3a3030',d:'#b07a48',e:'#f4e4c8'}),
+  chk:railIcon(['................','.....aaaaaa.....','..bbbaccccabbb..','..bdddddddddddb.','..bdeedfffffdb..','..bdeedddddddb..','..bdddddddddddb.','..bdeedfffffdb..','..bdeedddddddb..','..bdddddddddddb.','..bd..dfffffdb..','..bd..dddddddb..','..bdddddddddddb.','..bbbbbbbbbbbbb.','................','................'].map(r=>r.slice(0,16)),{a:'#9a96a2',b:'#7a4a1a',c:'#d8d2c8',d:'#f5e8cf',e:'#5fbf5a',f:'#8a8090'}),
   fun:railIcon(['................','................','..aaaaaaaaaaaa..','..abbbbbbbbbba..','..ab.c....c.ba..','..ab.c....c.ba..','..ab.c....c.ba..','..ab.c....d.ba..','..abeee..eeeba..','..abeee..eeeba..','..abeee..eeeba..','..ab.d....c.ba..','..abbbbbbbbbba..','..aaaaaaaaaaaa..','................','................'],{a:'#15121a',b:'#3a3344',c:'#f4f2f8',d:'#e5483b',e:'#9a96a2'}),
   wind:railIcon(['................','................','.......aaaa.....','..........aa....','...........a....','.aaaaaaaaaa.....','................','..aaaaaaaaaaaa..','..............a.','.............a..','.aaaaaaaaaaa....','................','....aaaaaa......','..........a.....','.........a......','................'],{a:'#7a4a1a'})};
-const PANELS={map:['rMap','mapc'],job:['rJob','job'],eng:['rEng','eng'],fun:['rFun','fun'],drop:['rDrop','dropUI']};
+const PANELS={map:['rMap','mapc'],job:['rJob','job'],eng:['rEng','eng'],fun:['rFun','fun'],chk:['rChk','check'],drop:['rDrop','dropUI']};
 if(!settings.panels)settings.panels={map:true,job:true,eng:true,drop:true};if(settings.panels.fun==null)settings.panels.fun=true;
-function applyPanels(){for(const [k,[b,el]] of Object.entries(PANELS)){$(b).classList.toggle('on',!!settings.panels[k]);if(k!=='drop')$(el).hidden=!settings.panels[k];}updPanels();}
+function applyPanels(){for(const [k,[b,el]] of Object.entries(PANELS)){$(b).classList.toggle('on',!!settings.panels[k]);if(k!=='drop'&&k!=='chk')$(el).hidden=!settings.panels[k];}updPanels();}
 function updPanels(){const ad=activeDrops().length>0,air=mode==='fly'&&!ac.ground,du=$('dropUI'),show=ad&&air&&!!settings.panels.drop;if(du.hidden===show)du.hidden=!show;
   const rd=$('rDrop');if(rd.hidden===ad)rd.hidden=!ad;
   const near=ad&&nearestDrop(ac.pos.x,ac.pos.z).dist<2200;rd.classList.toggle('nudge',near&&!settings.panels.drop);
-  $('rEng').classList.toggle('nudge',!settings.panels.eng&&!$('check').hidden);}
+}
 for(const [k,[b]] of Object.entries(PANELS)){$(b).innerHTML=`<img src="${RICON[k]}" alt="">`;$(b).addEventListener('click',e=>{e.stopPropagation();settings.panels[k]=!settings.panels[k];saveS();applyPanels();snd.click();});}
 const VIEWS=['chase','cockpit'],VNAME={chase:'CHASE',cockpit:'COCKPIT'};
 function setView(v){camMode=v;$('view').textContent=VNAME[v];snapCam=true;camera.fov=v==='chase'?58:70;camera.near=v==='chase'?.4:.15;camera.updateProjectionMatrix();postMat.uniforms.cNear.value=camera.near;
@@ -2957,7 +2955,7 @@ const MENU_COL={'Mail bag':'#f2c25a',"Bea's chart":'#7cc4d4',"Bea's logbook":'#a
 function picker(kind){
   const items=STRIPS.map(s=>{const F=log.fields[s.id];return `<button class="item" data-id="${s.id}"><span><b>${s.name}</b><span class="d">${DESC[s.id]}</span></span><span class="r">${F&&F.best?stars(F.best):'NOT YET'}</span></button>`;}).join('');
   showCard(`<h2>${kind==='practice'?'Practice a landing':'Start at a field'}</h2><div class="sub">${kind==='practice'?'START 1.5 KM OUT, LINED UP, ON THE GLIDE PATH':'START ON THE RUNWAY, ENGINE AT IDLE'}</div><div class="list">${items}</div>`,[['Back',back]]);
-  $('cardBody').querySelectorAll('.item').forEach(b=>b.addEventListener('click',()=>{const s=stripById(b.dataset.id);kind==='practice'?spawnApproach(s):spawnField(s);}));}
+  $('cardBody').querySelectorAll('.item').forEach(b=>b.addEventListener('click',()=>{const s=stripById(b.dataset.id);if(kind==='practice')spawnApproach(s);else if(s.id==='harbor'&&!mail.active&&mode==='title')offerDay(()=>spawnField(s));else spawnField(s);}));}
 function logbook(){
   const f=STRIPS.map(s=>{const F=log.fields[s.id]||{};return `<div class="item ${F.landings?'done':''}"><span><b>${s.name}</b><span class="d">${F.landings?F.landings+' landing'+(F.landings>1?'s':''):'Not visited yet'}</span></span><span class="r">${F.best?stars(F.best):''}</span></div>`;}).join('');
   const ppl=Object.keys(CHARS).map(id=>log.met[id]?`<div class="item done"><span style="display:flex;gap:10px;align-items:center"><img src="${portrait(id)}" alt="" style="width:40px;height:40px;image-rendering:pixelated"><span><b>${CHARS[id].name}</b><span class="d">${CHARS[id].role}</span></span></span></div>`:`<div class="item"><span><b>???</b><span class="d">Someone you haven't met yet.</span></span></div>`).join('');
@@ -2975,7 +2973,7 @@ function settingsCard(){
   const mv=[['OFF',0],['SOFT',.5],['ON',1]].map(([n,v])=>`<button data-mv="${v}" class="${(settings.music??.5)==v?'primary':''}">${n}</button>`).join('');
   const st=STATIONS.map(S=>`<button data-st="${S.id}" class="${settings.station===S.id?'primary':''}">${S.fq} ${S.name.toUpperCase()}</button>`).join('');
   const lt=Object.keys(TOD).map(k=>`<button data-lt="${k}" class="${settings.light===k?'primary':''}">${TOD[k].name.toUpperCase()}</button>`).join('');
-  showCard(`<h2>Settings</h2><div class="sub">ASSISTS · TURN THEM OFF ONE AT A TIME AS YOU IMPROVE</div>${rows}<h3>ENGINE VOLUME</h3><div class="btns">${ev}</div><h3>RADIO VOLUME</h3><div class="btns">${mv}</div><h3>RADIO STATION · OR TAP THE DIAL UP TOP WHILE FLYING</h3><div class="btns">${st}</div><h3>TIME OF DAY</h3><div class="btns">${lt}</div><h3>PIXELS</h3><div class="btns">${px}</div><div class="sub" style="margin-top:14px">BUILD 2b41852</div>`,[['Back',back,true]]);
+  showCard(`<h2>Settings</h2><div class="sub">ASSISTS · TURN THEM OFF ONE AT A TIME AS YOU IMPROVE</div>${rows}<h3>ENGINE VOLUME</h3><div class="btns">${ev}</div><h3>RADIO VOLUME</h3><div class="btns">${mv}</div><h3>RADIO STATION · OR TAP THE DIAL UP TOP WHILE FLYING</h3><div class="btns">${st}</div><h3>TIME OF DAY</h3><div class="btns">${lt}</div><h3>PIXELS</h3><div class="btns">${px}</div><div class="sub" style="margin-top:14px">BUILD aba6d77</div>`,[['Back',back,true]]);
   const cb=$('cardBody');
   cb.querySelectorAll('[data-k]').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.k;if(k==='tilt'){if(!settings.tilt){settings.tilt=true;saveS();enableTilt().then(()=>{updTiltUI();settingsCard();});}else{settings.tilt=false;saveS();disableTilt();updTiltUI();settingsCard();}return;}settings[k]=!settings[k];saveS();if(k==='sound')snd.setOn(settings.sound);if(k==='fps'){$('fps').hidden=!settings.fps;$('fps').textContent='FPS: measuring…';fpsN=fpsT=0;fpsLast=0;}if(k==='sound')music.setVol();settingsCard();}));
   cb.querySelectorAll('[data-px]').forEach(b=>b.addEventListener('click',()=>{settings.pixels=b.dataset.px;pixMode=settings.pixels;saveS();resize();settingsCard();}));
@@ -2989,13 +2987,9 @@ function showHowTo(){mode='card';
     <span class="k">RIGHT</span><span><b>Stick.</b> Touch anywhere on the right and drag. Drag down to raise the nose, up to lower it, sideways to bank and turn.</span><span></span>
     <span class="k">TOP</span><span>Speed on the left, <b>height above the ground</b> on the right. On approach they turn green when you're on the numbers. <b>VIEW</b> switches chase, cockpit and gauges.</span><span></span></div>
     <p>To take off: full power, roll down the runway, and at about 45 knots drag the stick down gently. Everything else is in Bea's logbook.</p>`,[['Got it',()=>{hideModal();mode='fly';if(mail.active&&!log.met.bea)setTimeout(meetBea,300);},true]]);}
-function toTitle(){mode='title';spawnQuiet=true;spawnField(STRIPS[0]);spawnQuiet=false;mode='title';$('flightUI').hidden=true;$('title').hidden=false;setView('chase');}
+function toTitle(){mode='title';spawnQuiet=true;spawnField(STRIPS[0]);spawnQuiet=false;mode='title';$('flightUI').hidden=true;$('title').hidden=false;setView('chase');if(typeof titleButtons==='function')titleButtons();}
 $('tFly').addEventListener('click',()=>{$('title').hidden=true;if(mail.active)spawnField(STRIPS[0]);else offerDay(()=>spawnField(STRIPS[0]));});
-$('tPractice').addEventListener('click',()=>{$('title').hidden=true;picker('practice');});
 $('tStart').addEventListener('click',()=>{$('title').hidden=true;picker('start');});
-$('tBea').addEventListener('click',()=>{$('title').hidden=true;bea(-1);});
-$('tLog').addEventListener('click',()=>{$('title').hidden=true;logbook();});
-$('tSet').addEventListener('click',()=>{$('title').hidden=true;settingsCard();});
 $('rotOk').addEventListener('click',()=>{$('rotate').hidden=true;rotDismissed=true;});
 let rotDismissed=false;
 function checkRotate(){$('rotate').hidden=true;}
@@ -3016,11 +3010,11 @@ function gameChecks(dt){
   let showCheck=false;
   if(!ac.ground&&dest&&airT>8&&Math.hypot(dest.x-ac.pos.x,dest.z-ac.pos.z)>3500)tip('tailwind','Long way to go? Tap the wind button under the throttle for a short gust that carries you fast and level. Tap again while it blows to stack gusts and go faster. Charges come back one every 5 seconds once the wind dies down.',.5);
   if(dest){const gl=glide(dest);if(!ac.ground&&Math.hypot(dest.x-ac.pos.x,dest.z-ac.pos.z)<5500)tip('gates','See the cyan gates? They show the way in. Start lining up at the first one, 2 km out and about 450 ft up.');
-    if(gl.active&&gl.along<3200){showCheck=true;tip('approach','Fly through the three cyan gates. Keep the diamond in the ring at the top of the screen. Flaps down, power back, about 55 knots.');
+    if(gl.active&&gl.along<3200){tip('chkbtn','Want the before-landing checklist? Tap the clipboard on the left to show it. Tap again to hide it.',4);tip('approach','Fly through the three cyan gates. Keep the diamond in the ring at the top of the screen. Flaps down, power back, about 55 knots.');
       if(gl.along<1800)tip('papi','The four lights beside the runway: two white and two red means you\'re on the glide path. All white is too high, all red too low.',3);}
     const st=stripAt(ac.pos.x,ac.pos.z,10);if(st&&!ac.ground&&agl<7&&ac.vel.y<-.5)tip('flare','Just above the runway, ease the stick down (back) to soften the touchdown.');}
   if(ac.ground&&ac.td&&ac.u>8)tip('brake','Hold BRAKE to stop. The longer you hold, the harder it brakes.');
-  const ck=$('check');if(showCheck){const c=checklistState();const row=(ok,t)=>`<span class="${ok?'ok':''}">${ok?'✓':'○'} ${t}</span><br>`;
+  const ck=$('check');if(settings.panels.chk&&!ac.ground){const c=checklistState();const row=(ok,t)=>`<span class="${ok?'ok':''}">${ok?'✓':'○'} ${t}</span><br>`;
     ck.innerHTML=`<b>BEFORE LANDING</b>${row(c.carb,'CARB HEAT ON')}${row(c.mix,'MIXTURE RICH')}${row(c.flaps,'FLAPS 1 OR 2')}${c.needLight?row(c.light,'LANDING LIGHT'):''}${c.needLight&&typeof rwyLit==='function'?row(rwyLit(dest),'RUNWAY LIGHTS (MIC)'):''}`;ck.hidden=false;tip('checklist','Before-landing checklist: flick the switches and set the flap lever in the landing panel, bottom left. Bea\'s logbook explains each one.',1);}
   else ck.hidden=true;
   sightT+=dt;if(sightT>.3){sightT=0;
@@ -3360,9 +3354,13 @@ addEventListener('pagehide',saveResume);document.addEventListener('visibilitycha
 function resumeFlight(r){resetAc();ac.pos.fromArray(r.pos);ac.vel.fromArray(r.vel);ac.q.fromArray(r.q);ac.ground=!!r.ground;ac.gYaw=r.gYaw||0;ac.gPitch=r.gPitch||0;ac.u=r.u||0;ac.throttle=r.throttle||0;ac.flaps=r.flaps||0;ac.trim=r.trim??.06;ac.light=!!r.light;
   ac.lastField=stripById(r.lastField)?r.lastField:'harbor';ac.from=r.from==='__approach'?ac.lastField:(r.from||ac.lastField);dest=stripById(r.dest)||null;if(!dest)pickDest(ac.lastField);
   $('title').hidden=true;startFly();setView(r.cam==='cockpit'?'cockpit':camMode);snapCam=true;toast('Welcome back. Picking up right where you left off.',2.6);}
-(function(){const r=store.get(RESUME,null);if(!r||!r.pos||Date.now()-r.ts>1000*3600*24*60)return;
-  const b=document.createElement('button');b.className='primary';b.id='tResume';b.textContent='Continue where you left off';$('tFly').before(b);$('tFly').classList.remove('primary');
-  b.addEventListener('click',()=>{const r2=store.get(RESUME,null);if(r2)resumeFlight(r2);b.remove();$('tFly').classList.add('primary');});})();
+/* title screen: two buttons. With a saved flight: pick up where you left off, or start at a field.
+   Without one: start the day at Harbor Field, or start at a field. Everything else lives in the pause menu. */
+function titleButtons(){const r=store.get(RESUME,null),ok=!!(r&&r.pos&&Date.now()-r.ts<1000*3600*24*60);let b=$('tResume');
+  if(ok&&!b){b=document.createElement('button');b.className='primary';b.id='tResume';b.textContent='Pick up where you left off';$('tFly').before(b);
+    b.addEventListener('click',()=>{const r2=store.get(RESUME,null);if(r2)resumeFlight(r2);});}
+  if(b)b.hidden=!ok;$('tFly').hidden=ok;}
+titleButtons();
 /* ---------- tailwind streaks: air streaming off the wingtips and the trailing edge while a gust is blowing ---------- */
 const streaks=(()=>{const SRC=[[-5.2,.8,.3,1],[5.2,.8,.3,1],[-5.2,.95,.3,1],[5.2,.95,.3,1],[-2.8,.82,.3,.5],[2.8,.82,.3,.5],[-.9,1.6,2.2,.35],[.9,1.6,2.2,.35]],N=28;
   const mat=new THREE.ShaderMaterial({transparent:true,depthWrite:false,fog:false,uniforms:{k:{value:0}},
