@@ -1805,11 +1805,12 @@ const cloudGroup=new THREE.Group();scene.add(cloudGroup);const CLOUDS=[];
      the opaque pass; the ones you're entering draw in a see-through pass at their faded opacity. That pass still writes
      depth, so each cloud's inner puffs stay hidden behind its outer ones (without it they drew in random order and
      the cloud popped) */
-  /* pass 0: solid. pass 1: fading but still more than half there (writes depth, so it keeps its outline and hides its
-     own inner puffs). pass 2: mostly faded (no depth, so the outline goes and it melts away) */
-  const cmat=k=>{const m=toon(k?{transparent:true,depthWrite:k===1}:{},false);m.onBeforeCompile=sh=>{
+  /* pass 0: solid. pass 1: fading (writes depth, so it hides its own inner puffs, and stores its opacity in the alpha
+     channel so the post pass fades the outline along with it). pass 2: nearly gone (no depth, so what's behind it gets
+     its own outlines back) */
+  const cmat=k=>{const m=toon(k?{transparent:true,depthWrite:k===1}:{},false);if(k===1)Object.assign(m,{blending:THREE.CustomBlending,blendSrc:THREE.SrcAlphaFactor,blendDst:THREE.OneMinusSrcAlphaFactor,blendSrcAlpha:THREE.OneFactor,blendDstAlpha:THREE.ZeroFactor});m.onBeforeCompile=sh=>{
     sh.vertexShader='attribute vec4 cc;varying float vFade;\n'+sh.vertexShader.replace('#include <project_vertex>','#include <project_vertex>\nvec3 ccw=(modelMatrix*vec4(cc.xyz,1.)).xyz;vFade=smoothstep(.8,2.4,distance(cameraPosition,ccw)/cc.w);');
-    const keep=['if(vFade<.999)discard;','if(vFade>=.999||vFade<.72)discard;','if(vFade>=.72||vFade<.01)discard;'][k];
+    const keep=['if(vFade<.999)discard;','if(vFade>=.999||vFade<.3)discard;','if(vFade>=.3||vFade<.01)discard;'][k];
     sh.fragmentShader='varying float vFade;\n'+sh.fragmentShader.replace('void main() {','void main() {\n'+keep).replace('#include <dithering_fragment>','#include <dithering_fragment>\ngl_FragColor.a*='+(k?'vFade*vFade':'1.')+';');};
     m.customProgramCacheKey=()=>'cloudFade'+k;return m;};
   cloudGroup.add(new THREE.Mesh(geo,cmat(0)));for(const k of [1,2]){const sm=new THREE.Mesh(geo,cmat(k));sm.renderOrder=4+k;cloudGroup.add(sm);}
@@ -1860,14 +1861,14 @@ const postMat=new THREE.ShaderMaterial({
   float lin(float d){float z=d*2.-1.;return 2.*cNear*cFar/(cFar+cNear-z*(cFar-cNear));}
   float b2(vec2 a){a=floor(a);return fract(a.x*.5+a.y*a.y*.75);}
   float b4(vec2 a){return b2(.5*a)*.25+b2(a);}
-  void main(){vec2 px=1./res;vec3 c=texture2D(tColor,vUv).rgb;
+  void main(){vec2 px=1./res;vec4 c4=texture2D(tColor,vUv);vec3 c=c4.rgb;
     // searchlight: a soft circle on the ground ahead, where everything is lit up to daytime brightness
     if(uSpotOn>.01){float sd=texture2D(tDepth,vUv).r;if(sd<1.){vec4 vp=uInvProj*vec4(vUv*2.-1.,sd*2.-1.,1.);vp/=vp.w;vec3 wp=(uCamW*vp).xyz;
       float r=length(wp.xz-uSpot.xz),k=(1.-smoothstep(uSpotR*.72,uSpotR,r))*(1.-smoothstep(60.,140.,abs(wp.y-uSpot.y)));c=mix(c,min(c*uSpotK,vec3(1.)),k*uSpotOn);}}
     if(outline>.5){float dc=lin(texture2D(tDepth,vUv).r);
       float dn=max(max(lin(texture2D(tDepth,vUv+vec2(px.x,0.)).r),lin(texture2D(tDepth,vUv-vec2(px.x,0.)).r)),max(lin(texture2D(tDepth,vUv+vec2(0.,px.y)).r),lin(texture2D(tDepth,vUv-vec2(0.,px.y)).r)));
       float e=step(dc*.07+1.2,dn-dc)*(1.-smoothstep(250.,2600.,dc));
-      c=mix(c,c*vec3(.45,.38,.52),e*.85);}
+      c=mix(c,c*vec3(.45,.38,.52),e*.85*c4.a);}
     c=mix(c,mistC,mist*(.5+.25*smoothstep(.2,.9,vUv.y)));
     float l=dot(c,vec3(.299,.587,.114));c=mix(vec3(l),c,sat);c=(c-.5)*con+.5;
     vec2 vv=vUv-.5;c*=1.-vig*dot(vv,vv)*1.6;
@@ -2974,7 +2975,7 @@ function settingsCard(){
   const mv=[['OFF',0],['SOFT',.5],['ON',1]].map(([n,v])=>`<button data-mv="${v}" class="${(settings.music??.5)==v?'primary':''}">${n}</button>`).join('');
   const st=STATIONS.map(S=>`<button data-st="${S.id}" class="${settings.station===S.id?'primary':''}">${S.fq} ${S.name.toUpperCase()}</button>`).join('');
   const lt=Object.keys(TOD).map(k=>`<button data-lt="${k}" class="${settings.light===k?'primary':''}">${TOD[k].name.toUpperCase()}</button>`).join('');
-  showCard(`<h2>Settings</h2><div class="sub">ASSISTS · TURN THEM OFF ONE AT A TIME AS YOU IMPROVE</div>${rows}<h3>ENGINE VOLUME</h3><div class="btns">${ev}</div><h3>RADIO VOLUME</h3><div class="btns">${mv}</div><h3>RADIO STATION · OR TAP THE DIAL UP TOP WHILE FLYING</h3><div class="btns">${st}</div><h3>TIME OF DAY</h3><div class="btns">${lt}</div><h3>PIXELS</h3><div class="btns">${px}</div><div class="sub" style="margin-top:14px">BUILD 48cd0ac</div>`,[['Back',back,true]]);
+  showCard(`<h2>Settings</h2><div class="sub">ASSISTS · TURN THEM OFF ONE AT A TIME AS YOU IMPROVE</div>${rows}<h3>ENGINE VOLUME</h3><div class="btns">${ev}</div><h3>RADIO VOLUME</h3><div class="btns">${mv}</div><h3>RADIO STATION · OR TAP THE DIAL UP TOP WHILE FLYING</h3><div class="btns">${st}</div><h3>TIME OF DAY</h3><div class="btns">${lt}</div><h3>PIXELS</h3><div class="btns">${px}</div><div class="sub" style="margin-top:14px">BUILD 2b41852</div>`,[['Back',back,true]]);
   const cb=$('cardBody');
   cb.querySelectorAll('[data-k]').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.k;if(k==='tilt'){if(!settings.tilt){settings.tilt=true;saveS();enableTilt().then(()=>{updTiltUI();settingsCard();});}else{settings.tilt=false;saveS();disableTilt();updTiltUI();settingsCard();}return;}settings[k]=!settings[k];saveS();if(k==='sound')snd.setOn(settings.sound);if(k==='fps'){$('fps').hidden=!settings.fps;$('fps').textContent='FPS: measuring…';fpsN=fpsT=0;fpsLast=0;}if(k==='sound')music.setVol();settingsCard();}));
   cb.querySelectorAll('[data-px]').forEach(b=>b.addEventListener('click',()=>{settings.pixels=b.dataset.px;pixMode=settings.pixels;saveS();resize();settingsCard();}));
