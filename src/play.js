@@ -140,8 +140,8 @@ function updDog(dt,t){if(lookDown){dog.root.visible=false;return;}const U=plane.
   if(cock){/* in the cockpit he sits in the right seat, bottom-right of the view: head, collar and chest above the dash */
     dog.root.visible=dog.body.visible=true;
     if(dog.root.parent!==COCK)COCK.add(dog.root);   // sits in the right seat of the 3D cockpit, so it rides with the view
-    dog.up=lerp(dog.up||0,b?1:0,1-Math.exp(-dt*8));const k=.5;   // on the seat bottom beside you, in front of the panel, head against the windshield
-    dog.root.position.set(.5,-.11+(dog.dy||0)*k+dog.up*.04+Math.abs(Math.sin(t*14))*b*.02,-.55);
+    dog.up=lerp(dog.up||0,b?1:0,1-Math.exp(-dt*8));const k=.4;   // on the seat bottom beside you, in front of the panel, head against the windshield
+    dog.root.position.set(.52,-.535+.85*k+(dog.dy||0)*k+dog.up*.04+Math.abs(Math.sin(t*14))*b*.02,-.55);
     dog.root.scale.setScalar(k*(dog.k||1));dog.root.rotation.set(0,1.45,0);
     // now and then he turns to look at you; otherwise he watches out of the windshield
     dog.glanceT-=dt;if(dog.glanceT<=0){dog.glanceT=14+Math.random()*14;dog.glance=1.6;}dog.glance=Math.max(0,dog.glance-dt);
