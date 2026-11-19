@@ -2967,7 +2967,7 @@ function settingsCard(){
   const mv=[['OFF',0],['SOFT',.5],['ON',1]].map(([n,v])=>`<button data-mv="${v}" class="${(settings.music??.5)==v?'primary':''}">${n}</button>`).join('');
   const st=STATIONS.map(S=>`<button data-st="${S.id}" class="${settings.station===S.id?'primary':''}">${S.fq} ${S.name.toUpperCase()}</button>`).join('');
   const lt=Object.keys(TOD).map(k=>`<button data-lt="${k}" class="${settings.light===k?'primary':''}">${TOD[k].name.toUpperCase()}</button>`).join('');
-  showCard(`<h2>Settings</h2><div class="sub">ASSISTS · TURN THEM OFF ONE AT A TIME AS YOU IMPROVE</div>${rows}<h3>ENGINE VOLUME</h3><div class="btns">${ev}</div><h3>RADIO VOLUME</h3><div class="btns">${mv}</div><h3>RADIO STATION · OR TAP THE DIAL UP TOP WHILE FLYING</h3><div class="btns">${st}</div><h3>TIME OF DAY</h3><div class="btns">${lt}</div><h3>WEATHER · TRYING IT OUT</h3><div class="btns">${Object.entries(WX).map(([k,W])=>`<button data-wx="${k}" class="${settings.weather===k?'primary':''}">${W.name.toUpperCase()}</button>`).join('')}</div><h3>PIXELS</h3><div class="btns">${px}</div><div class="sub" style="margin-top:14px">BUILD c2b0d7d</div>`,[['Back',back,true]]);
+  showCard(`<h2>Settings</h2><div class="sub">ASSISTS · TURN THEM OFF ONE AT A TIME AS YOU IMPROVE</div>${rows}<h3>ENGINE VOLUME</h3><div class="btns">${ev}</div><h3>RADIO VOLUME</h3><div class="btns">${mv}</div><h3>RADIO STATION · OR TAP THE DIAL UP TOP WHILE FLYING</h3><div class="btns">${st}</div><h3>TIME OF DAY</h3><div class="btns">${lt}</div><h3>WEATHER · TRYING IT OUT</h3><div class="btns">${Object.entries(WX).map(([k,W])=>`<button data-wx="${k}" class="${settings.weather===k?'primary':''}">${W.name.toUpperCase()}</button>`).join('')}</div><h3>PIXELS</h3><div class="btns">${px}</div><div class="sub" style="margin-top:14px">BUILD ad7e520</div>`,[['Back',back,true]]);
   const cb=$('cardBody');
   cb.querySelectorAll('[data-k]').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.k;if(k==='tilt'){if(!settings.tilt){settings.tilt=true;saveS();enableTilt().then(()=>{updTiltUI();settingsCard();});}else{settings.tilt=false;saveS();disableTilt();updTiltUI();settingsCard();}return;}settings[k]=!settings[k];saveS();if(k==='sound')snd.setOn(settings.sound);if(k==='fps'){$('fps').hidden=!settings.fps;$('fps').textContent='FPS: measuring…';fpsN=fpsT=0;fpsLast=0;}if(k==='sound')music.setVol();settingsCard();}));
   cb.querySelectorAll('[data-px]').forEach(b=>b.addEventListener('click',()=>{settings.pixels=b.dataset.px;pixMode=settings.pixels;saveS();resize();settingsCard();}));
@@ -3959,6 +3959,67 @@ function shopCard(s){const meet=!log.met.gus;if(meet){log.met.gus=1;saveL();}
     if(!own){if(!pay(price))return;SH[kind].owned.push(it[0]);}SH[kind].sel=it[0];saveL();applyUpgrades();snd.click();shopCard(s);}));}
 applyUpgrades();window.__shopReady=true;updScore();
 
+/* ---------- portrait wallpapers ----------
+   Each character's background is a little wallpaper for who they are and where they live. Patterns are kept soft
+   (close to the background color) so the face stays the star. wallpaper(id,...) returns (i,j)=>color or null. */
+function wallpaper(id,bg,hs,mixH){const L=shade(bg,.14),LL=shade(bg,.26),D=shade(bg,-.1),DD=shade(bg,-.2),A=(c,t=.35)=>mixH(bg,c,t);
+  const rnd=(i,j)=>{let h=(i*374761393+j*668265263+hs*1442695)>>>0;h=Math.imul(h^(h>>>13),1274126177)>>>0;return ((h^(h>>>16))>>>0)/4294967296;};
+  const M=(a,b)=>((a%b)+b)%b;
+  const P={
+    // post office: rows of postage stamps with perforated edges
+    mabel:(i,j)=>{const u=M(i+(Math.floor(j/12)%2)*6,12),v=M(j,12);if(u<1||u>9||v<1||v>9)return null;const edge=u===1||u===9||v===1||v===9;if(edge)return (u+v)%2?LL:null;
+      if(u>2&&u<8&&v>2&&v<8)return [A('#d2493c'),A('#3f6fb0'),A('#3f8f6a')][(Math.floor(i/12)+Math.floor(j/12))%3];return LL;},
+    // retired pilot: puffy clouds drifting across the sky
+    bea:(i,j)=>{for(const [cx,cy,r] of [[8,8,5],[13,7,4],[34,20,6],[40,18,4],[18,40,5],[24,38,4],[46,42,4],[2,30,4]]){const d=Math.hypot(i-cx,(j-cy)*1.5);if(d<r)return d>r-1.2?L:LL;}return null;},
+    // mechanic: pegboard with a wrench and a screwdriver hung on it
+    gus:(i,j)=>{if(M(i,4)===2&&M(j,4)===2)return DD;const w=(x,y)=>{const a=(i-x)+(j-y);const b=(i-x)-(j-y);return Math.abs(b)<=1&&a>-12&&a<12||(Math.hypot(i-x-4,j-y-4)<2.6&&Math.hypot(i-x-5,j-y-5)>1.4);};if(w(6,6)||w(38,36))return A('#8a8a92',.6);
+      if(i>=40&&i<=41&&j>=4&&j<=14)return A('#c2453a',.55);if(i===40&&j>14&&j<22)return A('#9a96a2',.6);return null;},
+    // lighthouse keeper: the beam sweeping out from the top corner
+    tomas:(i,j)=>{const a=Math.atan2(j+4,i+6);return Math.floor(a*18)%3===0?L:(Math.floor(a*18)%3===1&&(i+j)%2?shade(bg,.07):null);},
+    // shepherd: a flock of little sheep on the green
+    nell:(i,j)=>{const u=M(i+(Math.floor(j/11)%2)*7,14),v=M(j,11);if(v>=3&&v<=5&&u>=3&&u<=7)return u===7&&v===4?DD:'#f6f2ea';if(v===6&&(u===4||u===6))return DD;if(v===2&&(u===4||u===6))return '#f6f2ea';if(u===8&&v===4)return '#3a3434';return (i*3+j*7)%13===0?D:null;},
+    // forest ranger: rows of pines
+    ada:(i,j)=>{const u=M(i+(Math.floor(j/12)%2)*5,10),v=M(j,12);const half=Math.floor(v/2.2);if(v<9&&Math.abs(u-5)<=half)return (u>5?DD:D);if(v>=9&&v<11&&u===5)return A('#6a4a30',.5);return null;},
+    // logging crew: wood planks with grain
+    hank:(i,j)=>{const u=M(i,8);if(u===0)return DD;const g=Math.sin(j*.35+Math.floor(i/8)*2.1+u*.6)+Math.sin(j*.11+i);if(g>1.3)return D;if(rnd(Math.floor(i/8),Math.floor(j/16))<.2&&Math.hypot(u-4,M(j,16)-8)<1.6)return DD;return null;},
+    // strip crew kid on the beach: sun-bleached waves and shells
+    ollie:(i,j)=>{const w=M(j+Math.round(Math.sin(i*.45)*1.5),8);if(w===0)return LL;if(w===1)return L;if(rnd(i,j)<.012)return A('#e8a0a0',.6);return null;},
+    // beach bar: big tropical leaves
+    rosa:(i,j)=>{for(const [cx,cy,ang] of [[6,10,.6],[38,8,-.5],[10,38,-.8],[42,38,.9],[24,46,0]]){const c=Math.cos(ang),s=Math.sin(ang),u=(i-cx)*c+(j-cy)*s,v=-(i-cx)*s+(j-cy)*c;
+      if(Math.abs(v)<3.4*(1-Math.abs(u)/9)&&Math.abs(u)<9)return Math.abs(v)<.6?A('#2f6a3a',.3):(Math.round(u)%3===0&&Math.abs(v)>1.5?null:A('#3f8f4a',.45));}return null;},
+    // volcanologist: layered rock with glowing cracks
+    ines:(i,j)=>{const b=j+Math.round(Math.sin(i*.2)*2+Math.sin(i*.07)*3),k=Math.floor(b/6);if(M(b,6)===0)return DD;if(rnd(i,j)<.02)return A('#ff7a3a',.6);return k%2?D:null;},
+    // observatory cook: kitchen tiles
+    otto:(i,j)=>{const u=M(i,8),v=M(j,8);if(u===0||v===0)return LL;return (Math.floor(i/8)+Math.floor(j/8))%2?D:null;},
+    // Farhold field keeper: fog bands and a row of runway lights
+    fen:(i,j)=>{if(j===34&&M(i,6)===2)return '#ffd36b';if((j===33||j===35)&&M(i,6)===2)return A('#ffd36b',.4);const f=Math.sin(j*.4+Math.sin(i*.1)*1.5);return f>.6&&(i+j)%2?L:(f>.85?L:null);},
+    // the house with the lamp: old floral wallpaper
+    ivy:(i,j)=>{const u=M(i+(Math.floor(j/10)%2)*5,10),v=M(j,10);if(Math.abs(u-5)+Math.abs(v-5)===1)return A('#c2456a',.4);if(u===5&&v===5)return A('#f1c84a',.5);if(u===0&&M(j,3)===0)return A('#4a7a4a',.3);return null;},
+    // climber: mountain peaks with snow caps
+    wren:(i,j)=>{for(const [cx,base,hgt] of [[8,20,12],[24,18,14],[40,22,12],[0,44,10],[16,46,14],[34,46,12],[48,44,11]]){const top=base-hgt,dx=Math.abs(i-cx);if(j>=top+dx&&j<=base)return j<top+4+dx*.2?LL:(i>cx?D:L);}return null;},
+    // goatherd: a dry-stone wall
+    tam:(i,j)=>{const row=Math.floor(j/5),off=(row*7)%11,u=M(i+off,11);if(M(j,5)===0||u===0)return DD;return rnd(Math.floor((i+off)/11),row)<.5?D:null;},
+    // orchard keeper: apples with little leaves
+    hattie:(i,j)=>{const u=M(i+(Math.floor(j/10)%2)*5,10),v=M(j,10);if(Math.hypot(u-5,v-5.5)<2)return u<5&&v<5?A('#ff8a7a',.55):A('#d2493c',.55);if(u===5&&v===3)return A('#6a4a30',.6);if(u===6&&v===2)return A('#4a8a3a',.6);return null;},
+    // salt raker: the grid of salt pans
+    desmond:(i,j)=>{const u=M(i,9),v=M(j,9);if(u===0||v===0)return D;return rnd(Math.floor(i/9),Math.floor(j/9))<.5?LL:L;},
+    // painter: paint splatters
+    lio:(i,j)=>{const cols=['#e2703f','#3f8fc0','#f1c84a','#c2456a','#5fbf5a','#8a6ac0'];for(let k=0;k<11;k++){const cx=rnd(k,1)*48,cy=rnd(k,2)*48,r=1.2+rnd(k,3)*2.6;const d=Math.hypot(i-cx,j-cy);
+      if(d<r||(d<r+2.4&&rnd(i,j)<.18))return A(cols[k%cols.length],.5);}return null;},
+    // radio astronomer: stars and radio waves
+    odile:(i,j)=>{const d=Math.hypot(i-46,j-2);if(M(Math.round(d),6)===0&&d>4)return L;if(rnd(i,j)<.03)return rnd(j,i)<.3?'#fff8ec':LL;return null;},
+    // hut warden by the waterfall: falling streaks and ferns
+    kit:(i,j)=>{const col=Math.floor(i/2),s=M(j+Math.floor(rnd(col,0)*30),7);if(s<4&&rnd(col,1)<.7)return s===0?'#f6faf8':(s<2?LL:L);if(rnd(i,j)<.05)return D;return null;},
+    // lantern maker: strings of paper lanterns
+    lu:(i,j)=>{const v=M(j,16),row=Math.floor(j/16),sag=Math.round(Math.sin(i/48*Math.PI)*2);if(v===1+sag)return D;const u=M(i+row*6,12);
+      if(v>=3+sag&&v<=8+sag&&u>=4&&u<=8){const lv=v-3-sag;if(lv===0||lv===5)return A('#3a3030',.5);return (u===4||u===8)?A('#c2453a',.55):A(['#e8473a','#f0a33a','#e8473a'][row%3],.6);}
+      if(v>=2+sag&&v<=9+sag&&u>=2&&u<=10&&(i+j)%2)return A('#ffd36b',.2);return null;},
+    // quarryman: cut stone blocks
+    bram:(i,j)=>{const row=Math.floor(j/6),u=M(i+(row%2)*6,12);if(M(j,6)===0||u===0)return DD;if(M(j,6)===1)return L;return rnd(Math.floor((i+(row%2)*6)/12),row)<.4?D:null;},
+    // miller: stalks of wheat
+    agnes:(i,j)=>{const u=M(i+(Math.floor(j/16)%2)*4,8),v=M(j,16);if(u===4&&v>5)return A('#b08a3a',.45);if(v<=6&&(u===3||u===5)&&v%2===(u===3?0:1))return A('#d8a83a',.55);if(u===4&&v<=6)return A('#d8a83a',.5);return null;},
+  };
+  return P[id]||(()=>null);}
 /* ---------- character portraits ----------
    48x48 pixel art. Each character has their own face in FACES: head shape (width, forehead, chin, how square or
    pointed the jaw is), eye shape and spacing, brows, nose, mouth, age lines, ears, neck and shoulders. Clothes, hair,
@@ -3973,7 +4034,7 @@ const FACES={
   nell:{hair:'braids',w:9.8,top:12.4,bot:10.6,jaw:1.45,eye:'big',sep:4,tilt:1,brow:{a:-.5,y:-5},nose:'button',nl:4,mouth:'laugh',mw:3,blush:1.4},
   ada:{under:'curls',w:9.6,top:12,bot:11.6,jaw:1.9,eye:'almond',tilt:1,sep:4,brow:{t:2,a:.25},nose:'pointed',nl:5,mouth:'smirk',mw:3,bones:1},
   hank:{fh:'bushy',under:'shaggy',w:11.4,top:11,bot:11.8,jaw:3.6,eye:'small',sep:5,brow:{t:2,a:.2},nose:'broad',nl:6,mouth:'grin',mw:4,sh:1.16,nk:6,ears:1.2},
-  ollie:{under:'curls',kid:1,w:9.2,top:11.2,bot:9.4,jaw:1.7,eye:'big',sep:4,ey:1,brow:{a:-.6},nose:'button',nl:3,mouth:'laugh',mw:3,my:7,sh:.82,nk:3,ears:1.25,blush:1.4},
+  ollie:{under:'curls',w:10.2,top:11.6,bot:11.2,jaw:2.1,cheek:1.04,eye:'open',sep:4,brow:{y:-4},nose:'button',nl:4,mouth:'laugh',mw:3,my:8,sh:.86,nk:3,ears:1.15,blush:1.4,dimple:1},
   rosa:{hair:'wavy',w:10.4,top:11.8,bot:11,jaw:2,cheek:1.05,eye:'happy',sep:4,brow:{a:-.4,y:-5},nose:'wide',nl:5,mouth:'laugh',mw:4,blush:1.3},
   ines:{hair:'pony',w:9,top:13,bot:12,jaw:1.6,eye:'almond',sep:4,brow:{raise:1,a:.2},nose:'pointed',nl:6,mouth:'pursed',age:1,bones:1},
   otto:{hat:null,hair:'bald',fh:'fluffy',w:11.4,top:11.2,bot:11.2,jaw:2.2,cheek:1.1,eye:'happy',sep:5,brow:{a:-.6},nose:'button',nl:4,mouth:'grin',mw:4,chub:1,age:1,blush:1.6,sh:1.12,nk:5},
@@ -4187,8 +4248,10 @@ function portrait(id){if(PORT[id])return PORT[id];
     for(let y=y0+4;y<=y0+12;y++)for(let x=CX+3;x<=CX+6;x++)put(x+((y-y0-4)>>2),y,x===CX+6?sD:((y%3===0)?sD:s));put(CX+4,y0+13,sD);put(CX+6,y0+13,sD);}
   /* paint: background, a glow behind the head, soft outline round the figure */
   const c=document.createElement('canvas');c.width=c.height=N;const x=c.getContext('2d');
-  const bg=sp.bg,bgL=shade(bg,.22),bgD=shade(bg,-.1);
-  for(let j=0;j<N;j++)for(let i=0;i<N;i++){const d=Math.hypot(i-CX,(j-21+2)*1.05);let col=d<17?bgL:(d<19&&(i+j)%2===0?bgL:bg);if(j>40)col=bgD;if(j===40&&i%2===0)col=bgD;
+  const bg=sp.bg,bgL=shade(bg,.22),bgD=shade(bg,-.1),WP=wallpaper(id,bg,hs,mixH);
+  for(let j=0;j<N;j++)for(let i=0;i<N;i++){const d=Math.hypot(i-CX,(j-19)*1.05);let col=WP(i,j)||bg;
+    // a soft glow behind the head so the face still pops off the pattern
+    if(d<15)col=mixH(col,bgL,.55);else if(d<19)col=mixH(col,bgL,(i+j)%2===0?.4:.18);
     const v=F[j*N+i];if(v){col=v;}else{let nb=null;for(const [a,b] of [[1,0],[-1,0],[0,1],[0,-1]]){const q=F[(j+b)*N+i+a];if(i+a>=0&&i+a<N&&j+b>=0&&j+b<N&&q){nb=q;break;}}if(nb)col=mixH(shade(nb,-.55),col,.25);}
     x.fillStyle=col;x.fillRect(i,j,1,1);}
   PORT[id]=c.toDataURL();return PORT[id];}
