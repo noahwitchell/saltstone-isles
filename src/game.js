@@ -744,9 +744,10 @@ const snd={ctx:null,
   thump(v=1){this.burst(.6*v,260,.25);},crash(){this.burst(.5,900,1.2);},click(){this.burst(.25,3000,.03);},toot(){if(!this.ctx)return;const c=this.ctx;for(let k=0;k<2;k++){const t=c.currentTime+.02+k*.75,g=c.createGain(),lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=700;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.3,t+.08);g.gain.setValueAtTime(.3,t+.5);g.gain.linearRampToValueAtTime(0,t+.65);lp.connect(g);g.connect(this.master);
     for(const f of [k?98:110,k?147:165]){const o=c.createOscillator();o.type='sawtooth';o.frequency.value=f;o.connect(lp);o.start(t);o.stop(t+.7);}}},honk(){if(!this.ctx)return;/* a semi-truck air horn: honk honk. Three brassy sawtooths in a slightly sour chord, driven through a soft clipper
     for the blare, a burst of air hiss at the start of each honk, and a little upward bend as the air pressure comes up */
-    const c=this.ctx,t0=c.currentTime+.02;const ws=c.createWaveShaper(),cv=new Float32Array(1024);for(let i=0;i<1024;i++){const x=i/511.5-1;cv[i]=Math.tanh(x*2.6);}ws.curve=cv;
-    const pk=c.createBiquadFilter();pk.type='peaking';pk.frequency.value=1150;pk.Q.value=1.1;pk.gain.value=7;const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=3600;ws.connect(pk);pk.connect(lp);
-    for(let k=0;k<2;k++){const t=t0+k*.42,D=k?.36:.3,g=c.createGain();g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.28,t+.03);g.gain.setValueAtTime(.26,t+D-.06);g.gain.linearRampToValueAtTime(0,t+D);lp.connect(g);g.connect(this.master);
+    const c=this.ctx,t0=c.currentTime+.02,cv=new Float32Array(1024);for(let i=0;i<1024;i++){const x=i/511.5-1;cv[i]=Math.tanh(x*2.6);}
+    for(let k=0;k<2;k++){const t=t0+k*.42,D=k?.36:.3,ws=c.createWaveShaper(),pk=c.createBiquadFilter(),lp=c.createBiquadFilter(),g=c.createGain();ws.curve=cv;
+      pk.type='peaking';pk.frequency.value=1150;pk.Q.value=1.1;pk.gain.value=7;lp.type='lowpass';lp.frequency.value=3600;ws.connect(pk);pk.connect(lp);
+      g.gain.value=0;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.2,t+.03);g.gain.setValueAtTime(.19,t+D-.06);g.gain.linearRampToValueAtTime(0,t+D);lp.connect(g);g.connect(this.master);
       const pre=c.createGain();pre.gain.value=.55;pre.connect(ws);
       for(const f of [233,277,349]){const o=c.createOscillator();o.type='sawtooth';o.frequency.setValueAtTime(f*.94,t);o.frequency.exponentialRampToValueAtTime(f,t+.06);o.frequency.setValueAtTime(f,t+D-.05);o.frequency.linearRampToValueAtTime(f*.97,t+D);o.connect(pre);o.start(t);o.stop(t+D+.02);}
       const nb=c.createBuffer(1,Math.floor(c.sampleRate*.12),c.sampleRate),nd=nb.getChannelData(0);for(let i=0;i<nd.length;i++)nd[i]=(Math.random()*2-1)*(1-i/nd.length);
