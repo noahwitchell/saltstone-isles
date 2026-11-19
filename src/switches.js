@@ -127,7 +127,7 @@ $('micBtn').addEventListener('pointerdown',e=>{e.preventDefault();keyMic();});
 /* ---- the horn: a little double honk. Folk in town, at drop camps, and the errand goats and sheep nearby jump and
    turn to look up at you; Biscuit joins in ---- */
 let honkT=-1;const honkers=[];
-function honk(){if(mode!=='fly'||(honkT>=0&&honkT<.8))return;snd.honk();honkT=0;honkers.length=0;const P=ac.pos,b=$('hornBtn');b.classList.add('honk');setTimeout(()=>b.classList.remove('honk'),550);
+function honk(){if(mode!=='fly'||(honkT>=0&&honkT<1))return;snd.honk();honkT=0;honkers.length=0;const P=ac.pos,b=$('hornBtn');b.classList.add('honk');setTimeout(()=>b.classList.remove('honk'),550);
   const near=(x,y,z)=>Math.hypot(x-P.x,z-P.z)<420&&P.y-y<320;
   for(const o of (window.FOLK||[])){o.updateMatrixWorld();const w=o.getWorldPosition(_so);if(near(w.x,w.y,w.z))honkers.push({o,mv:true,ph:Math.random()*.35});}
   for(const set of ['goats','sheep'])for(const f of (FINDS[set]||[]))if(f.obj&&near(f.x,f.y,f.z))honkers.push({o:f.obj,mv:false,y0:f.obj.position.y,ph:Math.random()*.35});
