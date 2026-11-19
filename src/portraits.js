@@ -70,7 +70,7 @@ function wallpaper(id,bg,hs,mixH){const L=shade(bg,.14),LL=shade(bg,.26),D=shade
    real one, so a cap sits right on a wide head or a narrow one. The figure gets a soft dark outline over a background
    with a glow behind the head. Light comes from the upper left. */
 const FACES={
-  mabel:{w:10.6,top:12,bot:10.5,jaw:2.2,cheek:1.06,eye:'small',sep:4,brow:{a:-.6},nose:'button',nl:5,mouth:'smile',mw:3,age:2,chub:1,blush:1.3},
+  mabel:{outfit:'postal',shirt:'#2f3f6a',w:10.6,top:12,bot:10.5,jaw:2.2,cheek:1.06,eye:'small',sep:4,brow:{a:-.6},nose:'button',nl:5,mouth:'smile',mw:3,age:2,chub:1,blush:1.3},
   bea:{under:'wisps',w:9.4,top:12.5,bot:12.4,jaw:2.6,eye:'narrow',tilt:-1,sep:4,brow:{t:2,a:.4},nose:'long',nl:6,mouth:'smirk',mw:3,age:3,bones:1},
   gus:{fh:'boxed',under:'none',w:12,top:10.8,bot:11,jaw:2.2,cheek:1.14,sep:5,age:0,sh:1.2,nk:6,ears:1.3,chub:1},
   tomas:{fh:'walrus',w:9.6,top:12.8,bot:12.6,jaw:2.4,eye:'heavy',sep:4,brow:{t:2,a:-.3},nose:'hook',nl:6,mouth:'flat',mw:3,age:1,bones:1},
@@ -217,17 +217,25 @@ function portrait(id){if(PORT[id])return PORT[id];
   const fit=(S,dst)=>{for(let y=0;y<N;y++)for(let x=0;x<N;x++){const dy=y-CY,sy=Math.round(C0+(dy<0?dy/st:dy)),sx=Math.round(CX+(x-CX)/sw);if(sx<0||sy<0||sx>=N||sy>=N)continue;const v=S[sy*N+sx];if(v)dst[y*N+x]=v;}};
   L=F;fit(HB,F);
   /* shoulders and shirt */
-  const SH=fc.sh;for(let y=CY+14;y<N;y++){const w=Math.min(23*SH,(11+(y-CY-14)*1.6)*SH);for(let x=Math.ceil(CX-w);x<=Math.floor(CX+w);x++){const e=(x-CX)/w;
-      let c=sp.shirt;if(e<-.55&&y<CY+20)c=shade(sp.shirt,.12);if(e>.5)c=shade(sp.shirt,-.16);if(e>.82||y>45)c=shade(sp.shirt,-.26);
+  const SHIRT=fc.shirt||sp.shirt;const SH=fc.sh;for(let y=CY+14;y<N;y++){const w=Math.min(23*SH,(11+(y-CY-14)*1.6)*SH);for(let x=Math.ceil(CX-w);x<=Math.floor(CX+w);x++){const e=(x-CX)/w;
+      let c=SHIRT;if(e<-.55&&y<CY+20)c=shade(SHIRT,.12);if(e>.5)c=shade(SHIRT,-.16);if(e>.82||y>45)c=shade(SHIRT,-.26);
       if(sp.plaid&&((x%5===0)||(y%5===2)))c=shade(c,-.32);put(x,y,c);}}
-  for(let y=CY+19;y<N;y++){put(CX-Math.round(15*SH)+((y-CY-19)>>2),y,shade(sp.shirt,-.22));put(CX+Math.round(15*SH)-((y-CY-19)>>2),y,shade(sp.shirt,-.3));}
+  for(let y=CY+19;y<N;y++){put(CX-Math.round(15*SH)+((y-CY-19)>>2),y,shade(SHIRT,-.22));put(CX+Math.round(15*SH)-((y-CY-19)>>2),y,shade(SHIRT,-.3));}
   /* neck, collar */
   const NK=fc.nk,NY=CY+fc.bot-3;
   for(let y=NY;y<CY+17;y++)for(let x=CX-NK;x<=CX+NK;x++)put(x,y,x>CX+NK-3?sk(-.18):sk(-.08));
   for(let k=0;k<5;k++){for(let x=CX-NK+k;x<=CX+NK-k;x++)put(x,CY+15+k,x>CX+1?sk(-.16):sk(-.06));}
-  const col=shade(sp.shirt,.28),colD=shade(sp.shirt,-.1),cy0=CY+14;
+  const col=shade(SHIRT,.28),colD=shade(SHIRT,-.1),cy0=CY+14;
   for(let k=0;k<5;k++){put(CX-NK-1-k,cy0+k,col);put(CX-NK-k,cy0+1+k,col);put(CX-NK-1+k,cy0+1+k,colD);put(CX+NK+1+k,cy0+k,colD);put(CX+NK+k,cy0+1+k,colD);put(CX+NK+1-k,cy0+1+k,col);}
-  if(!sp.scarf){put(CX,CY+19,shade(sp.shirt,-.35));put(CX,CY+21,shade(sp.shirt,.2));put(CX,CY+24,shade(sp.shirt,.2));}
+  if(fc.outfit==='postal'){/* postmaster's jacket: white shirt collar and a navy tie in the V, wide lapels, brass buttons, a post badge */
+    const wc='#f4f0e8',wcD='#d8d2c6',lap=shade(SHIRT,.16),lapD=shade(SHIRT,-.18),tie='#c2453a';
+    for(let k=0;k<6;k++){for(let x=CX-NK+k;x<=CX+NK-k;x++)put(x,cy0+k,x<CX?wc:wcD);}
+    for(let k=0;k<3;k++){put(CX-1-k,cy0+k,wc);put(CX+1+k,cy0+k,wcD);}
+    for(let y=cy0+1;y<cy0+9;y++){const w=y<cy0+3?0:1;for(let x=CX-w;x<=CX+w;x++)put(x,y,y===cy0+1?shade(tie,.15):tie);}
+    for(let k=0;k<7;k++){put(CX-NK-1-k+(k>>1),cy0+2+k,lap);put(CX-NK-2-k+(k>>1),cy0+2+k,lap);put(CX+NK+1+k-(k>>1),cy0+2+k,lapD);put(CX+NK+2+k-(k>>1),cy0+2+k,lapD);}
+    for(const y of [cy0+10,cy0+13])put(CX+2,y,'#e8c060');
+    put(CX-8,cy0+8,'#e8c060');put(CX-7,cy0+8,'#c2453a');put(CX-8,cy0+9,'#c2453a');put(CX-7,cy0+9,'#e8c060');}
+  else if(!sp.scarf){put(CX,CY+19,shade(SHIRT,-.35));put(CX,CY+21,shade(SHIRT,.2));put(CX,CY+24,shade(SHIRT,.2));}
   if(fc.age>=3){put(CX-2,NY+3,sk(-.2));put(CX-1,NY+4,sk(-.2));put(CX+2,NY+3,sk(-.26));}
   /* ears */
   const EY=CY+fc.ey,erh=Math.round(3*fc.ears);
