@@ -2982,7 +2982,7 @@ function settingsCard(){
   const mv=[['OFF',0],['SOFT',.5],['ON',1]].map(([n,v])=>`<button data-mv="${v}" class="${(settings.music??.5)==v?'primary':''}">${n}</button>`).join('');
   const st=STATIONS.map(S=>`<button data-st="${S.id}" class="${settings.station===S.id?'primary':''}">${S.fq} ${S.name.toUpperCase()}</button>`).join('');
   const lt=Object.keys(TOD).map(k=>`<button data-lt="${k}" class="${settings.light===k?'primary':''}">${TOD[k].name.toUpperCase()}</button>`).join('');
-  showCard(`<h2>Settings</h2><div class="sub">ASSISTS · TURN THEM OFF ONE AT A TIME AS YOU IMPROVE</div>${rows}<h3>ENGINE VOLUME</h3><div class="btns">${ev}</div><h3>RADIO VOLUME</h3><div class="btns">${mv}</div><h3>RADIO STATION · OR TAP THE DIAL UP TOP WHILE FLYING</h3><div class="btns">${st}</div><h3>TIME OF DAY</h3><div class="btns">${lt}</div><h3>WEATHER · TRYING IT OUT</h3><div class="btns">${Object.entries(WX).map(([k,W])=>`<button data-wx="${k}" class="${settings.weather===k?'primary':''}">${W.name.toUpperCase()}</button>`).join('')}</div><h3>PIXELS</h3><div class="btns">${px}</div><div class="sub" style="margin-top:14px">BUILD ad7e520</div>`,[['Back',back,true]]);
+  showCard(`<h2>Settings</h2><div class="sub">ASSISTS · TURN THEM OFF ONE AT A TIME AS YOU IMPROVE</div>${rows}<h3>ENGINE VOLUME</h3><div class="btns">${ev}</div><h3>RADIO VOLUME</h3><div class="btns">${mv}</div><h3>RADIO STATION · OR TAP THE DIAL UP TOP WHILE FLYING</h3><div class="btns">${st}</div><h3>TIME OF DAY</h3><div class="btns">${lt}</div><h3>WEATHER · TRYING IT OUT</h3><div class="btns">${Object.entries(WX).map(([k,W])=>`<button data-wx="${k}" class="${settings.weather===k?'primary':''}">${W.name.toUpperCase()}</button>`).join('')}</div><h3>PIXELS</h3><div class="btns">${px}</div><div class="sub" style="margin-top:14px">BUILD bf17210</div>`,[['Back',back,true]]);
   const cb=$('cardBody');
   cb.querySelectorAll('[data-k]').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.k;if(k==='tilt'){if(!settings.tilt){settings.tilt=true;saveS();enableTilt().then(()=>{updTiltUI();settingsCard();});}else{settings.tilt=false;saveS();disableTilt();updTiltUI();settingsCard();}return;}settings[k]=!settings[k];saveS();if(k==='sound')snd.setOn(settings.sound);if(k==='fps'){$('fps').hidden=!settings.fps;$('fps').textContent='FPS: measuring…';fpsN=fpsT=0;fpsLast=0;}if(k==='sound')music.setVol();settingsCard();}));
   cb.querySelectorAll('[data-px]').forEach(b=>b.addEventListener('click',()=>{settings.pixels=b.dataset.px;pixMode=settings.pixels;saveS();resize();settingsCard();}));
@@ -4066,8 +4066,40 @@ const FACES={
   bram:{hat:null,hair:'crop',fh:'handlebar',w:11.4,top:11.2,bot:12,jaw:3.8,eye:'small',sep:5,brow:{t:2,a:.25,y:-4},nose:'broad',nl:5,mouth:'flat',mw:3,sh:1.18,nk:6,dimple:1},
   agnes:{hair:'chignon',w:9.6,top:12.4,bot:11,jaw:1.5,eye:'small',sep:4,brow:{a:.1},nose:'hook',nl:6,mouth:'small',age:2,bones:1},
 };
+/* Each character's own eyes, brows, nose and mouth. No two unrelated people share a set: the checker in the test
+   harness fails if any eye, brow, nose or mouth spec repeats. (Nobody on the islands is related to anyone else with a
+   portrait yet; relatives could share a feature or two.)
+   eye: w width 3-5, h height 1-3, lid thin|thick|lash|hood|wing|crease, tilt -1/0/1, low lower lid, closed arc|line
+   brow: t thickness 1-3, len, arch 0-2, a slant, raise (one brow up), y
+   nose: k kind, l length.  mouth: k kind, w half width */
+const FEAT={
+  mabel:{eye:{w:3,h:1,lid:'thin'},brow:{t:1,len:4,arch:1},nose:{k:'button',l:4},mouth:{k:'smile',w:3}},
+  bea:{eye:{w:4,h:1,lid:'thick',tilt:-1,low:1},brow:{t:2,len:5,a:.4},nose:{k:'long',l:6},mouth:{k:'smirk',w:3}},
+  gus:{eye:{w:4,h:2,lid:'thin'},brow:{t:3,len:6,a:.15},nose:{k:'broad',l:5},mouth:{k:'grin',w:4}},
+  tomas:{eye:{w:4,h:2,lid:'hood',tilt:-1},brow:{t:2,len:6,arch:0,y:-5},nose:{k:'hook',l:6},mouth:{k:'flat',w:3}},
+  nell:{eye:{w:4,h:3,lid:'lash',tilt:1},brow:{t:1,len:5,arch:2,y:-5},nose:{k:'upturned',l:4},mouth:{k:'soft',w:3}},
+  ada:{eye:{w:5,h:2,lid:'wing',tilt:1},brow:{t:2,len:6,arch:1,a:.3},nose:{k:'straight',l:5},mouth:{k:'wide',w:4}},
+  hank:{eye:{w:3,h:2,lid:'thin',low:1},brow:{t:3,len:5,arch:0,a:.05},nose:{k:'round',l:6},mouth:{k:'beam',w:5}},
+  ollie:{eye:{w:4,h:2,lid:'lash'},brow:{t:1,len:4,arch:1,y:-5},nose:{k:'snub',l:3},mouth:{k:'gap',w:3}},
+  rosa:{eye:{w:4,h:1,closed:'arc'},brow:{t:2,len:5,arch:2,y:-6},nose:{k:'wide',l:5},mouth:{k:'laugh',w:4}},
+  ines:{eye:{w:4,h:1,lid:'crease',tilt:1},brow:{t:1,len:5,raise:1,a:.2},nose:{k:'pointed',l:6},mouth:{k:'pursed',w:1}},
+  otto:{eye:{w:3,h:1,closed:'line'},brow:{t:2,len:4,arch:2,y:-5},nose:{k:'bulb',l:4},mouth:{k:'wide',w:3}},
+  fen:{eye:{w:3,h:2,lid:'crease',tilt:-1},brow:{t:1,len:6,arch:0,y:-4},nose:{k:'roman',l:7},mouth:{k:'small',w:1}},
+  ivy:{eye:{w:3,h:1,lid:'lash',low:1},brow:{t:1,len:4,arch:2,y:-5},nose:{k:'dainty',l:4},mouth:{k:'tongue',w:2}},
+  wren:{eye:{w:5,h:2,lid:'thin'},brow:{t:2,len:5,arch:1,a:.2},nose:{k:'flared',l:5},mouth:{k:'lopsided',w:3}},
+  tam:{eye:{w:4,h:1,lid:'thick'},brow:{t:2,len:5,arch:0,a:.1},nose:{k:'bulb',l:6},mouth:{k:'content',w:3}},
+  hattie:{eye:{w:4,h:3,lid:'thin'},brow:{t:1,len:5,arch:1,y:-5},nose:{k:'upturned',l:3},mouth:{k:'cheer',w:3}},
+  desmond:{eye:{w:4,h:1,lid:'hood',low:1},brow:{t:3,len:5,arch:1},nose:{k:'flared',l:7},mouth:{k:'beam',w:3}},
+  lio:{eye:{w:4,h:2,lid:'wing'},brow:{t:1,len:4,arch:0,a:.1},nose:{k:'straight',l:6},mouth:{k:'small',w:2}},
+  odile:{eye:{w:5,h:1,lid:'crease'},brow:{t:1,len:6,raise:1,a:.3},nose:{k:'long',l:7},mouth:{k:'pursed',w:2}},
+  kit:{eye:{w:5,h:3,lid:'thin'},brow:{t:2,len:4,arch:1},nose:{k:'button',l:5},mouth:{k:'grin',w:3}},
+  lu:{eye:{w:3,h:2,lid:'hood'},brow:{t:1,len:5,arch:2,y:-6},nose:{k:'round',l:4},mouth:{k:'cheer',w:4}},
+  bram:{eye:{w:3,h:1,lid:'thick'},brow:{t:3,len:6,arch:0,a:.25},nose:{k:'crooked',l:6},mouth:{k:'flat',w:4}},
+  agnes:{eye:{w:4,h:2,lid:'crease',low:1},brow:{t:1,len:5,arch:1,a:.15},nose:{k:'hook',l:5},mouth:{k:'smile',w:2}},
+};
 function portrait(id){if(PORT[id])return PORT[id];
   const sp=CHARS[id].sp,fc=Object.assign({w:10.2,top:12,bot:11.5,jaw:1.8,cheek:1,eye:'open',sep:4,tilt:0,brow:{},nose:'button',nl:5,mouth:'smile',mw:3,my:9,ey:0,age:0,ears:1,sh:1,nk:4,blush:1},FACES[id]||{});
+  const FT=FEAT[id]||{eye:{w:4,h:2,lid:'thin'},brow:{t:1,len:5,arch:1},nose:{k:'button',l:5},mouth:{k:'smile',w:3}};fc.mw=FT.mouth.w;fc.nl=FT.nose.l;const EYE=FT.eye;
   const N=48,F=new Array(N*N).fill(null),HB=new Array(N*N).fill(null),HF=new Array(N*N).fill(null);
   const hx=h=>{const n=parseInt(h.slice(1),16);return [n>>16,(n>>8)&255,n&255];},toH=c=>'#'+c.map(v=>clamp(Math.round(v),0,255).toString(16).padStart(2,'0')).join('');
   const mixH=(a,b,t)=>{const A=hx(a),B=hx(b);return toH(A.map((v,i)=>v+(B[i]-v)*t));};
@@ -4166,8 +4198,8 @@ function portrait(id){if(PORT[id])return PORT[id];
   if(!sp.scarf){put(CX,CY+19,shade(sp.shirt,-.35));put(CX,CY+21,shade(sp.shirt,.2));put(CX,CY+24,shade(sp.shirt,.2));}
   if(fc.age>=3){put(CX-2,NY+3,sk(-.2));put(CX-1,NY+4,sk(-.2));put(CX+2,NY+3,sk(-.26));}
   /* ears */
-  const EY=CY+fc.ey,eh=Math.round(3*fc.ears);
-  for(const s of [-1,1]){const ex=CX+s*(faceHW(EY+1)+1);for(let y=EY-eh+1;y<=EY+eh+1;y++)for(let i=0;i<(fc.ears>1.15?3:2);i++){const x=ex+s*i,c=s>0?sk(-.14):skin;if(!(i>0&&(y===EY-eh+1||y===EY+eh+1)))put(x,y,c);}
+  const EY=CY+fc.ey,erh=Math.round(3*fc.ears);
+  for(const s of [-1,1]){const ex=CX+s*(faceHW(EY+1)+1);for(let y=EY-erh+1;y<=EY+erh+1;y++)for(let i=0;i<(fc.ears>1.15?3:2);i++){const x=ex+s*i,c=s>0?sk(-.14):skin;if(!(i>0&&(y===EY-erh+1||y===EY+erh+1)))put(x,y,c);}
     put(ex,EY,sk(-.26));put(ex,EY+1,sk(-.26));put(ex+s,EY+2,sk(-.2));}
   /* face with shading */
   for(let y=CY-14;y<=CY+14;y++)for(let x=CX-14;x<=CX+14;x++){if(!inFace(x,y))continue;const dx=x-CX,dy=y-CY,hw=faceHW(y);let c=skin;
@@ -4177,53 +4209,74 @@ function portrait(id){if(PORT[id])return PORT[id];
   if(fc.chub){const by=CY+Math.round(fc.bot);for(let x=CX-5;x<=CX+5;x++){put(x,by+1,x>CX+2?sk(-.24):sk(-.12));}for(let x=CX-4;x<=CX+4;x++)put(x,by,sk(-.04));}
   if(fc.bones)for(const s of [-1,1]){const hw=faceHW(EY+4);put(CX+s*(hw-2),EY+4,sk(-.12));put(CX+s*(hw-3),EY+5,sk(-.12));put(CX+s*(hw-3),EY+6,sk(-.08));}
   /* eyes and brows */
-  const lowest={v:EY+1};
-  for(const s of [-1,1]){const x0=s<0?CX-fc.sep-3:CX+fc.sep,outer=s<0?x0-1:x0+4,inner=s<0?x0+3:x0,io=s<0?x0:x0+3,ii=s<0?x0+3:x0;
-    const E=shade(eyeC,-.3),iris=(y,rows)=>{put(x0+1,y,'#ffffff');put(x0+2,y,E);for(let r=1;r<rows;r++){put(x0+1,y+r,r===2?eyeC:E);put(x0+2,y+r,r===2?eyeC:E);}};
-    const flick=dy=>{put(outer,EY-1+dy,lidC);};
-    const ty=fc.tilt;
-    switch(fc.eye){
-      case 'big':rect(x0,EY,4,3,'#f6f2ee');iris(EY,3);put(x0+1,EY+2,shade(eyeC,.1));rect(x0,EY-1,4,1,lidC);flick(-ty);put(outer,EY-2-Math.max(0,ty),dark?'#2a1e22':'#5a4040');for(let i=0;i<4;i++)tint(x0+i,EY+3,'#000000',.07);lowest.v=EY+2;break;
-      case 'small':put(x0+1,EY,'#ffffff');put(x0+2,EY,'#1c1620');put(x0+1,EY+1,'#1c1620');put(x0+2,EY+1,'#1c1620');for(let i=0;i<4;i++)tint(x0+i,EY-1,'#000000',.12);break;
-      case 'narrow':rect(x0,EY,4,1,lidC);put(outer,EY+(ty<0?1:0),lidC);put(io,EY+1,'#e8e2dc');put(ii,EY+1,'#e8e2dc');put(x0+1,EY+1,'#ffffff');put(x0+2,EY+1,shade(eyeC,-.35));for(let i=0;i<4;i++)tint(x0+i,EY+2,'#000000',.1);break;
-      case 'happy':put(x0,EY+1,lidC);put(x0+1,EY,lidC);put(x0+2,EY,lidC);put(x0+3,EY+1,lidC);put(outer,EY+(s<0?1:1),shade(lidC,.3));for(let i=0;i<4;i++)tint(x0+i,EY+2,'#ffffff',.06);break;
-      case 'heavy':rect(x0,EY-2,4,1,sk(-.14));rect(x0,EY-1,4,1,lidC);rect(x0,EY-1+1,4,2,'#f6f2ee');iris(EY,2);put(outer,EY-1,lidC);break;
-      case 'almond':put(io,EY,sk(-.1));for(let i=0;i<4;i++)if(x0+i!==io)put(x0+i,EY,'#f6f2ee');rect(x0,EY+1,4,1,'#f6f2ee');iris(EY,2);rect(x0,EY-1,4,1,lidC);put(io,EY,lidC);flick(-ty);put(outer,EY-1-ty,lidC);break;
-      default:rect(x0,EY,4,2,'#f6f2ee');iris(EY,2);rect(x0,EY-1,4,1,lidC);flick(-ty);put(outer,EY-2,dark?'#2a1e22':'#5a4040');for(let i=0;i<4;i++)tint(x0+i,EY+2,'#000000',.08);}
-    if(fc.age>=2){put(outer+s,EY,sk(-.18));put(outer+s,EY+2,sk(-.16));}
-    if(fc.age>=3)for(let i=0;i<3;i++)tint(x0+(s<0?1:0)+i,lowest.v+2,'#000000',.12);
-    // brows: arch, angle (stern = inner end low), thickness, one raised
-    const B=fc.brow,by=EY+(B.y??-4)-(B.raise&&s>0?1:0),a=Math.max(0,B.a||0);
-    for(let i=-1;i<=4;i++){const innerness=s<0?(i+1)/5:(4-i)/5,arch=(i===-1||i===4)?1:(B.raise&&s>0&&(i===1||i===2)?-1:0);
-      const y=by+arch+Math.round(a*(innerness-.5)*2.2);if((i===-1&&s>0)||(i===4&&s<0)){if(innerness>.9)put(x0+i,y,shade(brow,.12));continue;}put(x0+i,y,brow);if(B.t===2&&i>=0&&i<=3)put(x0+i,y+1,shade(brow,.12));}}
+  const ew=EYE.w,eh=EYE.h,iw=ew===5?3:(ew===4?2:1),Ei=shade(eyeC,-.3),EYX=s=>s<0?CX-fc.sep-ew:CX+fc.sep;
+  for(const s of [-1,1]){const x0=EYX(s),outer=s<0?x0:x0+ew-1,ic=x0+((ew-iw)>>1),tl=EYE.tilt||0;
+    if(EYE.closed==='arc'){put(x0,EY+1,lidC);for(let i=1;i<ew-1;i++)put(x0+i,EY,lidC);put(x0+ew-1,EY+1,lidC);put(outer+s,EY+2,shade(lidC,.4));}
+    else if(EYE.closed==='line'){put(x0,EY,lidC);for(let i=1;i<ew-1;i++)put(x0+i,EY+1,lidC);put(x0+ew-1,EY,lidC);put(outer+s,EY-1,shade(lidC,.4));}
+    else{rect(x0,EY,ew,eh,'#f6f2ee');
+      for(let r=0;r<eh;r++)for(let k=0;k<iw;k++)put(ic+k,EY+r,r===2?eyeC:Ei);
+      put(ic,EY,iw>1?'#ffffff':Ei);if(iw===1&&eh>1)put(ic,EY,'#ffffff');
+      const lid=EYE.lid||'thin';
+      if(lid==='hood')rect(x0,EY-2,ew,1,sk(-.15));
+      if(lid==='crease')for(let i=1;i<ew-1;i++)put(x0+i,EY-3,sk(-.13));
+      rect(x0,EY-1,ew,1,lidC);
+      if(lid==='thick'){put(outer+s,EY-1,lidC);put(outer,EY,lidC);for(let i=0;i<ew;i++)tint(x0+i,EY-2,'#000000',.12);}
+      if(lid==='lash'){put(outer+s,EY-1,lidC);put(outer+s,EY-2,lidC);put(outer,EY-2,lidC);}
+      if(lid==='wing'){put(outer+s,EY-1,lidC);put(outer+2*s,EY-2,lidC);}
+      if(tl>0)put(outer+s,EY-2,lidC);if(tl<0){put(outer,EY,lidC);put(outer+s,EY,lidC);}
+      if(EYE.low)for(let i=0;i<ew;i++)tint(x0+i,EY+eh,'#000000',.15);}
+    if(fc.age>=2){put(outer+2*s,EY,sk(-.18));put(outer+2*s,EY+2,sk(-.16));}
+    if(fc.age>=3)for(let i=0;i<ew-1;i++)tint(x0+(s<0?1:0)+i,EY+eh+1,'#000000',.12);
+    // brow
+    const B=FT.brow,len=B.len||5,bx0=x0+((ew-len)>>1)-(s<0?0:0),by=EY+(B.y??-4)-(B.raise&&s>0?1:0),a=B.a||0,ar=B.arch??1;
+    for(let i=0;i<len;i++){const t=i/(len-1),inner=s<0?t:1-t,end=(i===0||i===len-1);
+      let y=by+Math.round(a*(inner-.5)*2.2);if(ar>=1&&end)y+=1;if(ar>=2&&!end&&Math.abs(t-.5)<.3)y-=1;if(B.raise&&s>0&&!end)y-=1;
+      const x=bx0+i;if(end&&inner>.9&&B.t===1){put(x,y,shade(brow,.15));continue;}put(x,y,brow);
+      if(B.t>=2&&!end)put(x,y+1,shade(brow,.12));if(B.t>=3){put(x,y+1,brow);if((i+hs)%2===0)put(x,y-1,shade(brow,.1));}}}
   /* nose */
   const NB=EY+1,NT=EY+fc.nl;
-  switch(fc.nose){
+  switch(FT.nose.k){
     case 'long':for(let y=NB;y<=NT;y++)put(CX+1,y,sk(-.13));put(CX,NT,sk(.07));put(CX-1,NT+1,sk(-.2));put(CX+1,NT+1,sk(-.26));put(CX,NT+1,sk(-.08));put(CX-1,NB+2,sk(.08));break;
     case 'broad':for(let y=NB+1;y<NT;y++)put(CX+1,y,sk(-.12));put(CX-3,NT,sk(-.1));put(CX-2,NT,sk(-.2));put(CX-1,NT,sk(-.08));put(CX,NT-1,sk(.08));put(CX,NT,sk(.02));put(CX+1,NT,sk(-.12));put(CX+2,NT,sk(-.26));put(CX+3,NT,sk(-.14));put(CX-1,NT+1,sk(-.16));put(CX+1,NT+1,sk(-.2));break;
     case 'wide':for(let y=NB+1;y<NT;y++)put(CX+1,y,sk(-.1));put(CX-2,NT,sk(-.16));put(CX-1,NT,sk(-.1));put(CX,NT-1,sk(.08));put(CX+1,NT,sk(-.14));put(CX+2,NT,sk(-.22));put(CX-1,NT+1,sk(-.12));put(CX+1,NT+1,sk(-.18));break;
     case 'hook':for(let y=NB;y<=NT;y++)put(CX+1,y,sk(-.12));put(CX+2,NB+2,sk(-.14));put(CX+2,NB+3,sk(-.18));put(CX,NB+2,sk(.08));put(CX,NT,sk(-.06));put(CX+1,NT+1,sk(-.26));put(CX,NT+1,sk(-.2));put(CX-1,NT,sk(-.14));break;
     case 'pointed':for(let y=NB;y<NT;y++)put(CX+1,y,sk(-.1));put(CX,NT-1,sk(.08));put(CX,NT,sk(-.16));put(CX-1,NT,sk(-.24));put(CX+1,NT,sk(-.12));break;
+    case 'upturned':put(CX+1,NT-1,sk(-.1));put(CX,NT-1,sk(.1));put(CX,NT,sk(.04));put(CX-1,NT,sk(-.3));put(CX+1,NT,sk(-.34));break;
+    case 'round':put(CX+1,NT-3,sk(-.08));put(CX+1,NT-2,sk(-.1));put(CX-1,NT-1,sk(.08));put(CX,NT-1,sk(.12));put(CX+1,NT-1,sk(-.04));put(CX-2,NT,sk(-.14));put(CX+2,NT,sk(-.2));put(CX-1,NT+1,sk(-.18));put(CX,NT+1,sk(-.14));put(CX+1,NT+1,sk(-.24));break;
+    case 'straight':for(let y=NB;y<=NT;y++)put(CX+1,y,sk(-.1));put(CX,NT,sk(-.1));put(CX+1,NT,sk(-.18));break;
+    case 'snub':put(CX,NT-1,sk(.1));put(CX-1,NT,sk(-.22));put(CX,NT,sk(-.06));put(CX+1,NT,sk(-.26));break;
+    case 'bulb':for(let y=NB+1;y<NT-1;y++)put(CX+1,y,sk(-.1));put(CX-1,NT-1,sk(.12));put(CX,NT-1,sk(.08));put(CX+1,NT-1,sk(-.08));put(CX-2,NT,sk(-.08));put(CX-1,NT,sk(.04));put(CX,NT,sk(-.02));put(CX+1,NT,sk(-.14));put(CX+2,NT,sk(-.22));put(CX-1,NT+1,sk(-.2));put(CX,NT+1,sk(-.22));put(CX+1,NT+1,sk(-.28));break;
+    case 'roman':for(let y=NB;y<=NT;y++)put(CX+1,y,sk(-.12));put(CX+2,NB+1,sk(-.12));put(CX,NB+1,sk(.1));put(CX,NT,sk(-.04));put(CX,NT+1,sk(-.24));put(CX+1,NT+1,sk(-.22));put(CX-1,NT,sk(-.16));break;
+    case 'crooked':for(let y=NB;y<=NT;y++)put(CX+(y<NB+3?1:2),y,sk(-.13));put(CX+1,NB+2,sk(.08));put(CX,NT,sk(.04));put(CX-1,NT+1,sk(-.18));put(CX+1,NT+1,sk(-.2));put(CX+3,NT,sk(-.2));break;
+    case 'dainty':put(CX,NT-1,sk(.06));put(CX-1,NT,sk(-.14));put(CX+1,NT,sk(-.18));break;
+    case 'flared':for(let y=NB+1;y<NT-1;y++)put(CX+1,y,sk(-.1));put(CX,NT-1,sk(.06));put(CX-3,NT-1,sk(-.08));put(CX+3,NT-1,sk(-.12));put(CX-3,NT,sk(-.22));put(CX-2,NT,sk(-.12));put(CX-1,NT,sk(-.26));put(CX,NT,sk(-.04));put(CX+1,NT,sk(-.28));put(CX+2,NT,sk(-.16));put(CX+3,NT,sk(-.26));break;
     default:put(CX+1,NT-2,sk(-.1));put(CX+1,NT-1,sk(-.12));put(CX,NT-1,sk(.07));put(CX-1,NT,sk(-.16));put(CX+1,NT,sk(-.22));put(CX,NT,sk(-.05));}
   /* cheeks, freckles, marks */
-  const blush=dark?'#c0606a':'#f07a80',bk=(dark?.2:.28)*fc.blush,ch=fc.eye==='happy'?EY+3:EY+4;
-  for(const s of [-1,1]){const bx=s<0?CX-fc.sep-4:CX+fc.sep+1;for(let i=0;i<3;i++){tint(bx+i,ch,blush,bk);tint(bx+i,ch+1,blush,bk*.6);}}
+  const blush=dark?'#c0606a':'#f07a80',bk=(dark?.2:.28)*fc.blush,ch=EY+(EYE.closed?2:eh+2);
+  for(const s of [-1,1]){const bx=s<0?EYX(s)-1:EYX(s)+ew-2;for(let i=0;i<3;i++){tint(bx+i,ch,blush,bk);tint(bx+i,ch+1,blush,bk*.6);}}
   if(sp.freckles)for(const [a,b] of [[-6,4],[-4,5],[-7,6],[3,4],[5,5],[6,4],[-2,3],[2,3],[4,6]])put(CX+a,EY+b,sk(-.24));
   if(fc.mole)put(CX+fc.mole[0],EY+fc.mole[1],sk(-.42));
   if(fc.dimple){const y=CY+Math.round(fc.bot)-2;put(CX,y,sk(-.16));}
   /* mouth */
-  const lip=dark?mixH(skin,'#3a1418',.55):mixH(skin,'#8a2a30',.55),lipL=mixH(skin,'#c05a5a',.22),MY=EY+fc.my,mw=fc.mw;
-  switch(fc.mouth){
-    case 'grin':for(let x=CX-mw;x<=CX+mw;x++)put(x,MY-1,lip);put(CX-mw-1,MY-2,lip);put(CX+mw+1,MY-2,lip);for(let x=CX-mw+1;x<=CX+mw-1;x++)put(x,MY,'#f4efe6');put(CX-mw,MY,lip);put(CX+mw,MY,lip);
-      for(let x=CX-mw+1;x<=CX+mw-1;x++)put(x,MY+1,lip);for(let x=CX-mw+2;x<=CX+mw-2;x++)put(x,MY+2,lipL);break;
-    case 'laugh':for(let x=CX-mw;x<=CX+mw;x++)put(x,MY-1,lip);put(CX-mw-1,MY-2,lip);put(CX+mw+1,MY-2,lip);for(let x=CX-mw+1;x<=CX+mw-1;x++){put(x,MY,'#f4efe6');put(x,MY+1,'#5a1a22');}
-      put(CX-mw,MY,lip);put(CX+mw,MY,lip);put(CX-mw+1,MY+1,lip);put(CX+mw-1,MY+1,lip);for(let x=CX-1;x<=CX+1;x++)put(x,MY+1,'#c0505a');for(let x=CX-mw+2;x<=CX+mw-2;x++)put(x,MY+2,lip);put(CX,MY+3,lipL);break;
-    case 'flat':for(let x=CX-mw;x<=CX+mw;x++)put(x,MY,lip);for(let x=CX-mw+1;x<=CX+mw-1;x++)put(x,MY+1,lipL);put(CX,MY+2,sk(-.1));break;
-    case 'smirk':for(let x=CX-mw;x<=CX+mw;x++)put(x,MY,lip);put(CX+mw+1,MY-1,lip);put(CX+mw+2,MY-2,sk(-.16));for(let x=CX-mw+1;x<=CX+mw-1;x++)put(x,MY+1,lipL);put(CX,MY+2,sk(-.1));break;
-    case 'small':for(let x=CX-1;x<=CX+1;x++)put(x,MY,lip);put(CX-2,MY-1,mixH(lip,skin,.4));put(CX+2,MY-1,mixH(lip,skin,.4));put(CX,MY+1,lipL);break;
-    case 'pursed':put(CX-1,MY,lip);put(CX,MY,shade(lip,-.1));put(CX+1,MY,lip);put(CX,MY+1,lipL);put(CX-2,MY,sk(-.12));put(CX+2,MY,sk(-.16));put(CX,MY+2,sk(-.1));break;
-    default:for(let x=CX-mw;x<=CX+mw;x++)put(x,MY,lip);put(CX-mw-1,MY-1,lip);put(CX+mw+1,MY-1,lip);put(CX-mw-2,MY-2,sk(-.12));put(CX+mw+2,MY-2,sk(-.16));
-      for(let x=CX-mw+1;x<=CX+mw-1;x++)put(x,MY+1,lipL);put(CX,MY+2,sk(-.1));}
+  const lip=dark?mixH(skin,'#3a1418',.55):mixH(skin,'#8a2a30',.55),lipL=mixH(skin,'#c05a5a',.22),MY=EY+fc.my,mw=fc.mw,TE='#f4efe6',IN='#5a1a22';
+  const row=(y,a,b,c)=>{for(let x=CX+a;x<=CX+b;x++)put(x,y,c);};
+  switch(FT.mouth.k){
+    case 'grin':row(MY-1,-mw,mw,lip);put(CX-mw-1,MY-2,lip);put(CX+mw+1,MY-2,lip);row(MY,-mw+1,mw-1,TE);put(CX-mw,MY,lip);put(CX+mw,MY,lip);row(MY+1,-mw+1,mw-1,lip);row(MY+2,-mw+2,mw-2,lipL);break;
+    case 'laugh':row(MY-1,-mw,mw,lip);put(CX-mw-1,MY-2,lip);put(CX+mw+1,MY-2,lip);row(MY,-mw+1,mw-1,TE);row(MY+1,-mw+1,mw-1,IN);put(CX-mw,MY,lip);put(CX+mw,MY,lip);put(CX-mw+1,MY+1,lip);put(CX+mw-1,MY+1,lip);row(MY+1,-1,1,'#c0505a');row(MY+2,-mw+2,mw-2,lip);put(CX,MY+3,lipL);break;
+    case 'flat':row(MY,-mw,mw,lip);row(MY+1,-mw+1,mw-1,lipL);put(CX,MY+2,sk(-.1));break;
+    case 'smirk':row(MY,-mw,mw,lip);put(CX+mw+1,MY-1,lip);put(CX+mw+2,MY-2,sk(-.16));row(MY+1,-mw+1,mw-1,lipL);put(CX,MY+2,sk(-.1));break;
+    case 'small':row(MY,-1,1,lip);put(CX-2,MY-1,mixH(lip,skin,.4));put(CX+2,MY-1,mixH(lip,skin,.4));put(CX,MY+1,lipL);break;
+    case 'pursed':row(MY,-mw,mw,lip);put(CX,MY,shade(lip,-.12));row(MY+1,-mw+1,mw-1,lipL);put(CX-mw-1,MY,sk(-.12));put(CX+mw+1,MY,sk(-.16));put(CX,MY+2,sk(-.1));break;
+    case 'soft':row(MY,-mw,mw,lip);put(CX-mw-1,MY-1,lip);put(CX+mw+1,MY-1,lip);row(MY+1,-mw+1,mw-1,mixH(skin,'#d06a70',.4));row(MY+2,-mw+2,mw-2,lipL);break;
+    case 'wide':row(MY,-mw,mw,lip);put(CX-mw-1,MY-1,lip);put(CX+mw+1,MY-1,lip);put(CX-mw-2,MY-2,lip);put(CX+mw+2,MY-2,lip);put(CX,MY+1,lipL);break;
+    case 'beam':row(MY-1,-mw,mw,lip);put(CX-mw-1,MY-2,lip);put(CX+mw+1,MY-2,lip);row(MY,-mw+1,mw-1,TE);put(CX-mw,MY,lip);put(CX+mw,MY,lip);row(MY+1,-mw+2,mw-2,IN);put(CX-mw+1,MY+1,lip);put(CX+mw-1,MY+1,lip);row(MY+2,-mw+2,mw-2,lip);break;
+    case 'gap':row(MY-1,-mw,mw,lip);put(CX-mw-1,MY-2,lip);put(CX+mw+1,MY-2,lip);row(MY,-mw+1,mw-1,TE);put(CX,MY,IN);put(CX-mw,MY,lip);put(CX+mw,MY,lip);row(MY+1,-mw+1,mw-1,IN);put(CX-mw+1,MY+1,lip);put(CX+mw-1,MY+1,lip);put(CX,MY+1,'#c0505a');row(MY+2,-mw+2,mw-2,lip);put(CX,MY+3,lipL);break;
+    case 'toothy':row(MY-1,-mw,mw,lip);put(CX-mw-1,MY-2,lip);put(CX+mw+1,MY-2,lip);row(MY,-mw+1,mw-1,TE);row(MY+1,-mw+1,mw-1,TE);for(let x=CX-mw+2;x<=CX+mw-2;x+=2)put(x,MY+1,'#d8d0c4');put(CX-mw,MY,lip);put(CX+mw,MY,lip);put(CX-mw,MY+1,lip);put(CX+mw,MY+1,lip);row(MY+2,-mw+1,mw-1,lip);break;
+    case 'tongue':row(MY,-mw,mw,lip);put(CX-mw-1,MY-1,lip);put(CX+mw+1,MY-1,lip);put(CX,MY+1,'#e06a7a');put(CX+1,MY+1,'#e06a7a');put(CX,MY+2,'#c0505a');break;
+    case 'lopsided':row(MY,-mw,mw,lip);put(CX+mw+1,MY-1,lip);put(CX+mw+2,MY-2,lip);row(MY+1,0,mw,TE);put(CX-1,MY+1,lip);put(CX+mw+1,MY,lip);row(MY+2,0,mw-1,lip);break;
+    case 'content':row(MY,-mw+1,mw-1,lip);put(CX-mw,MY-1,lip);put(CX+mw,MY-1,lip);put(CX-mw-1,MY-1,sk(-.2));put(CX+mw+1,MY-1,sk(-.24));put(CX-mw-1,MY,sk(-.14));put(CX+mw+1,MY,sk(-.18));put(CX,MY+1,lipL);break;
+    case 'cheer':row(MY-1,-mw,mw,lip);put(CX-mw-1,MY-2,lip);put(CX+mw+1,MY-2,lip);row(MY,-mw+1,mw-1,IN);row(MY+1,-mw+2,mw-2,IN);row(MY+1,-1,1,'#d05a6a');put(CX-mw,MY,lip);put(CX+mw,MY,lip);put(CX-mw+1,MY+1,lip);put(CX+mw-1,MY+1,lip);row(MY+2,-mw+2,mw-2,lip);break;
+    default:row(MY,-mw,mw,lip);put(CX-mw-1,MY-1,lip);put(CX+mw+1,MY-1,lip);put(CX-mw-2,MY-2,sk(-.12));put(CX+mw+2,MY-2,sk(-.16));row(MY+1,-mw+1,mw-1,lipL);put(CX,MY+2,sk(-.1));}
   // smile lines and forehead lines with age
   if(fc.age>=1){const ox=mw+3;put(CX-ox,MY-3,sk(-.12));put(CX-ox,MY-2,sk(-.14));put(CX-ox+1,MY-1,sk(-.1));put(CX+ox,MY-3,sk(-.18));put(CX+ox,MY-2,sk(-.2));put(CX+ox-1,MY-1,sk(-.14));}
   if(fc.age>=2&&!HT){const fy=CY-Math.round(fc.top)+5;for(let x=CX-4;x<=CX+3;x++)put(x,fy,sk(-.08));}
@@ -4253,9 +4306,9 @@ function portrait(id){if(PORT[id])return PORT[id];
     if(FH==='stache')stache(2,1,1);}
   if(HS==='bald'&&!HT){const ty=CY-Math.round(fc.top);put(CX-4,ty+2,sk(.18));put(CX-3,ty+2,sk(.22));put(CX-3,ty+3,sk(.15));put(CX-5,ty+3,sk(.12));}
   /* glasses */
-  if(sp.glasses){const g='#2a2030',gb=fc.eye==='big'?4:3;for(const s of [-1,1]){const ox=(s<0?CX-fc.sep-3:CX+fc.sep)-1;for(let i=0;i<6;i++){put(ox+i,EY-2,g);put(ox+i,EY+gb,g);}for(let j=-1;j<gb;j++){put(ox,EY+j,g);put(ox+5,EY+j,g);}
-      for(let i=1;i<5;i++)for(let j=-1;j<gb;j++)tint(ox+i,EY+j,'#cfe8ff',.18);put(ox+1,EY-1,'#ffffff');}
-    for(let x=CX-fc.sep+2;x<=CX+fc.sep-2;x++)put(x,EY-1,g);const hw=faceHW(EY);put(CX-hw-1,EY,g);put(CX+hw,EY,g);}
+  if(sp.glasses){const g='#2a2030',gb=Math.max(eh,2)+1;for(const s of [-1,1]){const ox=EYX(s)-1,fw=ew+2;for(let i=0;i<fw;i++){put(ox+i,EY-2,g);put(ox+i,EY+gb,g);}for(let j=-1;j<gb;j++){put(ox,EY+j,g);put(ox+fw-1,EY+j,g);}
+      for(let i=1;i<fw-1;i++)for(let j=-1;j<gb;j++)tint(ox+i,EY+j,'#cfe8ff',.18);put(ox+1,EY-1,'#ffffff');}
+    for(let x=CX-fc.sep+1;x<=CX+fc.sep-2;x++)put(x,EY-1,g);const hw=faceHW(EY);put(CX-hw-1,EY,g);put(CX+hw,EY,g);}
   /* hair and hats on top */
   fit(HF,F);
   /* scarf */
