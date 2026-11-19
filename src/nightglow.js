@@ -78,7 +78,8 @@ const NIGHT_GLOW=(function nightGlow(){
     if(best){put('hollowmist',best,best.h,'The Breathing Hollow','On still nights blue mist rises out of the hollow and drifts up toward the stars. Nobody has found where it comes from.');
       for(let i=0;i<160;i++){const a=r()*TAU,d=Math.sqrt(r())*40,x=best.x+Math.cos(a)*d,z=best.z+Math.sin(a)*d;addP(x,Math.max(best.h,groundH(x,z))+.5,z,r()<.7?0x7ac8ff:0xc8e8ff,1+(r()<.2?1:0),6);}}}
   /* daytime oddities (no glow): the last mailbox on Westmost and the giant's chair on the Anvil */
-  {const p=find('westmost',(x,z)=>flatAt(x,z,3,200,.25),4000,300);
+  {const W_=STRIPS.find(st=>isleAt(st.x,st.z)==='westmost');let p=null;if(W_){for(let k=0;k<200&&!p;k++){const e=r()<.5?1:-1,w=toWorld(W_,e*(W_.len/2-20-r()*40),(r()<.5?1:-1)*(W_.wid/2+10+r()*14));if(flatAt(w.x,w.z,1,200,.3))p={x:w.x,z:w.z};}}
+    if(!p)p=find('westmost',(x,z)=>flatAt(x,z,3,200,.3),4000,100);
     if(p){const y=groundH(p.x,p.z);sights.lastbox={x:p.x,z:p.z,y,name:'The Last Mailbox',desc:'A red post box on the edge of the world. Mabel swears nobody has posted a letter from Westmost in forty years. It was emptied this morning.'};
       scene.add(new THREE.Mesh(merge([{geo:new THREE.CylinderGeometry(.55,.6,1.7,10),m:M([p.x,y+.85,p.z]),color:0xd2302a},{geo:new THREE.SphereGeometry(.6,10,5,0,TAU,0,Math.PI/2),m:M([p.x,y+1.7,p.z]),color:0xd2302a},
         {geo:new THREE.BoxGeometry(.6,.1,.1),m:M([p.x,y+1.3,p.z+.56]),color:0x2c2833},{geo:new THREE.CylinderGeometry(.66,.66,.2,10),m:M([p.x,y+.1,p.z]),color:0x2c2833}]),toon()));}}

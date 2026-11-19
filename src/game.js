@@ -482,7 +482,8 @@ function crash(why,v){
   setTimeout(()=>{const [t,b]=REASONS[why];const bad=(x,ok)=>ok?x:`<b style="color:#c2453a">${x}</b>`;
     const extra=`<div class="rows"><span class="k">SPEED</span><span>${bad(Math.round(cn.kt)+' kt',cn.kt>=45&&cn.kt<=62)}</span><span class="s">AIM 50–55</span><span class="k">DESCENT</span><span>${bad(Math.round(cn.fpm)+' ft/min',cn.fpm<500)}</span><span class="s">UNDER 300</span><span class="k">BANK</span><span>${bad(Math.round(cn.bank)+'°',cn.bank<10)}</span><span class="s">UNDER 10°</span><span class="k">NOSE</span><span>${bad((cn.pitch>=0?'up ':'down ')+Math.abs(Math.round(cn.pitch))+'°',cn.pitch>=0&&cn.pitch<12)}</span><span class="s">UP 2–8°</span></div>`;
     showCard(`<div class="who"><img src="${portrait('gus')}" alt=""><div><b>${t}</b><span>GUS PATCHES IT UP · THE MAIL IS STILL IN THE BAG</span></div></div><p>${b}</p>${extra}`,[
-      ['Try that approach again',()=>spawnApproach(dest),true],['Back to '+stripById(ac.lastField).name,()=>spawnField(stripById(ac.lastField))]]);},900);
+      ...(()=>{const landed=STRIPS.filter(s=>(log.fields[s.id]||{}).landings||s.id==='harbor'),near=landed.reduce((a,s)=>Math.hypot(s.x-ac.pos.x,s.z-ac.pos.z)<Math.hypot(a.x-ac.pos.x,a.z-ac.pos.z)?s:a,landed[0]);
+        const b=[['Take off from '+near.name,()=>spawnField(near),true]];if(dest&&why!=='rock'&&why!=='tree')b.push(['Try that approach again',()=>spawnApproach(dest)]);return [b];})()[0]]);},900);
 }
 function resetAc(){if(typeof refillParcels==='function'){refillParcels();lookDown=false;}if(typeof resetSwitches==='function')resetSwitches();ac.boostT=0;ac.bst=0;ac.gusts=[];ac.ups=[];ac.ust=0;ac.w.set(0,0,0);ac.td=null;ac.brake=0;ac.brakeHeld=false;ac.trimHold=0;ac.ice=0;smokeBurst.forEach(m=>m.visible=false);snapCam=true;}
 function intoWindDir(s){return (s.fx*WIND.x+s.fz*WIND.z)<0?1:-1;}

@@ -116,6 +116,30 @@ const FORMS=[];
     cap(-100,rib(1).b,8+25*.95+6,8);cap(50,rib(4).b,8+25*.95+6,8);
     gate('h_ribs1','Into the Ribcage',rib(0).a,rib(0).b,-1,8+25*.95-7.5,17,'Seven stone ribs over a winding channel. In one end, out the other, without touching.');
     gate('h_ribs2','Out of the Ribcage',rib(6).a,rib(6).b,-1,8+25*.95-7.5,17,'Seven stone ribs over a winding channel. In one end, out the other, without touching.');shoal(160);}
+  /* 19. The Sea Serpent: six rock humps in a zigzag line, a head at one end; weave under every hump */
+  if(place(220,'h_serpent','The Sea Serpent')){const hump=k=>({a:-140+k*52,b:(k%2?1:-1)*13,R:14+(k%2)*4});for(let k=0;k<6;k++){const {a,b,R}=hump(k);ring(a,b,0,R,R*1.15,0,5.5,0,Math.PI);}
+    rock(-200,0,6,10,8);rock(-206,0,17,8,7);rock(-214,-4,22,4,3);rock(-214,4,22,4,3);for(let k=0;k<4;k++)rock(175+k*14,(k%2?1:-1)*6,1-k*.5,5-k,4-k*.6);
+    gate('h_serp1','Under the Sea Serpent',hump(0).a,hump(0).b,-1,14*1.15-5.5,14-6,'A rock sea serpent, six humps long. Under every hump, head to tail.');
+    gate('h_serp2','Off the Serpent\'s tail',hump(5).a,hump(5).b,-1,18*1.15-5.5,18-6,'A rock sea serpent, six humps long. Under every hump, head to tail.');shoal(190);}
+  /* 20. The Spiral Stair: seven stone rings on stalks, each higher than the last, curving as they climb */
+  if(place(200,'h_stair','The Spiral Stair')){const st=k=>({a:-130+k*42,b:Math.sin(k*.9)*30,cy:16+k*10});for(let k=0;k<7;k++){const {a,b,cy}=st(k);ring(a,b,cy,10.5,10.5,0,4.5);column(a,b,-12,cy-10.5,4,3);}
+    gate('h_stair1','Up the Spiral Stair',st(0).a,st(0).b,16-6,16+6,5,'Seven rings, each higher than the last. Climb through every one.');
+    gate('h_stair2','Top of the Spiral Stair',st(6).a,st(6).b,76-6,76+6,5,'Seven rings, each higher than the last. Climb through every one.');shoal(170);}
+  /* 21. The Doorways: five stone door frames, each stepped sideways from the last */
+  if(place(200,'h_doors','The Doorways')){const dr=[0,18,-14,20,-8];for(let k=0;k<5;k++){const a=-140+k*70,b=dr[k];for(const e of [-1,1])column(a,b+e*10,-12,30,4.2,3.6);for(let q=-3;q<=3;q++)rock(a,b+q*3.4,33,3.2,2.6);cap(a,b,36,6);}
+    gate('h_door1','Through the first Doorway',-140,dr[0],-1,27,5.5,'Five stone doorways in a crooked row. Through every one without scraping the paint.');
+    gate('h_door2','Through the last Doorway',140,dr[4],-1,27,5.5,'Five stone doorways in a crooked row. Through every one without scraping the paint.');shoal(170);}
+  /* 22. The Pipe Organ: a crowd of tall columns with two narrow lanes crossing in the middle */
+  if(place(150,'h_organ','The Pipe Organ')){for(let a=-96;a<=96;a+=16)for(let b=-80;b<=80;b+=16){if(Math.abs(b)<9||Math.abs(a)<9)continue;if(fr()<.25)continue;const h=28+fr()*70;column(a+(fr()-.5)*4,b+(fr()-.5)*4,-12,h,4.2,2.6);}
+    gate('h_organ1','Down the Pipe Organ',-104,0,-1,26,6,'A forest of stone pipes. Two lanes cross in the middle: fly both.');
+    gate('h_organ2','Across the Pipe Organ',0,-88,-1,26,6,'A forest of stone pipes. Two lanes cross in the middle: fly both.');}
+  /* 23. The Big O: one stone ring, so tall you can fly a loop inside it */
+  if(place(110,'h_bigo','The Big O')){const cy=72,R=62,th=9;ring(0,0,cy,R,R,0,th);for(const e of [-1,1])column(0,e*22,-12,cy-R+4,11,8);cap(0,0,cy+R+th,10);
+    gate('h_bigo','Through the Big O',0,0,cy-R+th,cy+R-th,R-th-4,'A ring of rock taller than the lighthouse. Big enough to fly a loop inside, if you\'re brave.');shoal(90);}
+  /* 24. The Gauntlet: eight slabs leaning in from alternate sides; zigzag between them */
+  if(place(210,'h_gauntlet','The Gauntlet')){for(let k=0;k<8;k++){const a=-160+k*44,sd=k%2?1:-1;for(let q=0;q<=8;q++){const t=q/8;rock(a+(fr()-.5)*3,sd*lerp(34,6,t),lerp(-4,44,t),lerp(9,5,t),lerp(8,5,t));}}
+    gate('h_gaunt1','Into the Gauntlet',-200,0,-1,30,12,'Eight leaning slabs, left, right, left. Zigzag all the way through.');
+    gate('h_gaunt2','Out of the Gauntlet',190,0,-1,30,12,'Eight leaning slabs, left, right, left. Zigzag all the way through.');shoal(180);}
   NEAR=null;
 
   scene.add(shadowy(new THREE.Mesh(merge(it),toon())));if(grass.length)scene.add(shadowy(new THREE.Mesh(merge(grass),toon())));

@@ -1689,6 +1689,30 @@ const FORMS=[];
     cap(-100,rib(1).b,8+25*.95+6,8);cap(50,rib(4).b,8+25*.95+6,8);
     gate('h_ribs1','Into the Ribcage',rib(0).a,rib(0).b,-1,8+25*.95-7.5,17,'Seven stone ribs over a winding channel. In one end, out the other, without touching.');
     gate('h_ribs2','Out of the Ribcage',rib(6).a,rib(6).b,-1,8+25*.95-7.5,17,'Seven stone ribs over a winding channel. In one end, out the other, without touching.');shoal(160);}
+  /* 19. The Sea Serpent: six rock humps in a zigzag line, a head at one end; weave under every hump */
+  if(place(220,'h_serpent','The Sea Serpent')){const hump=k=>({a:-140+k*52,b:(k%2?1:-1)*13,R:14+(k%2)*4});for(let k=0;k<6;k++){const {a,b,R}=hump(k);ring(a,b,0,R,R*1.15,0,5.5,0,Math.PI);}
+    rock(-200,0,6,10,8);rock(-206,0,17,8,7);rock(-214,-4,22,4,3);rock(-214,4,22,4,3);for(let k=0;k<4;k++)rock(175+k*14,(k%2?1:-1)*6,1-k*.5,5-k,4-k*.6);
+    gate('h_serp1','Under the Sea Serpent',hump(0).a,hump(0).b,-1,14*1.15-5.5,14-6,'A rock sea serpent, six humps long. Under every hump, head to tail.');
+    gate('h_serp2','Off the Serpent\'s tail',hump(5).a,hump(5).b,-1,18*1.15-5.5,18-6,'A rock sea serpent, six humps long. Under every hump, head to tail.');shoal(190);}
+  /* 20. The Spiral Stair: seven stone rings on stalks, each higher than the last, curving as they climb */
+  if(place(200,'h_stair','The Spiral Stair')){const st=k=>({a:-130+k*42,b:Math.sin(k*.9)*30,cy:16+k*10});for(let k=0;k<7;k++){const {a,b,cy}=st(k);ring(a,b,cy,10.5,10.5,0,4.5);column(a,b,-12,cy-10.5,4,3);}
+    gate('h_stair1','Up the Spiral Stair',st(0).a,st(0).b,16-6,16+6,5,'Seven rings, each higher than the last. Climb through every one.');
+    gate('h_stair2','Top of the Spiral Stair',st(6).a,st(6).b,76-6,76+6,5,'Seven rings, each higher than the last. Climb through every one.');shoal(170);}
+  /* 21. The Doorways: five stone door frames, each stepped sideways from the last */
+  if(place(200,'h_doors','The Doorways')){const dr=[0,18,-14,20,-8];for(let k=0;k<5;k++){const a=-140+k*70,b=dr[k];for(const e of [-1,1])column(a,b+e*10,-12,30,4.2,3.6);for(let q=-3;q<=3;q++)rock(a,b+q*3.4,33,3.2,2.6);cap(a,b,36,6);}
+    gate('h_door1','Through the first Doorway',-140,dr[0],-1,27,5.5,'Five stone doorways in a crooked row. Through every one without scraping the paint.');
+    gate('h_door2','Through the last Doorway',140,dr[4],-1,27,5.5,'Five stone doorways in a crooked row. Through every one without scraping the paint.');shoal(170);}
+  /* 22. The Pipe Organ: a crowd of tall columns with two narrow lanes crossing in the middle */
+  if(place(150,'h_organ','The Pipe Organ')){for(let a=-96;a<=96;a+=16)for(let b=-80;b<=80;b+=16){if(Math.abs(b)<9||Math.abs(a)<9)continue;if(fr()<.25)continue;const h=28+fr()*70;column(a+(fr()-.5)*4,b+(fr()-.5)*4,-12,h,4.2,2.6);}
+    gate('h_organ1','Down the Pipe Organ',-104,0,-1,26,6,'A forest of stone pipes. Two lanes cross in the middle: fly both.');
+    gate('h_organ2','Across the Pipe Organ',0,-88,-1,26,6,'A forest of stone pipes. Two lanes cross in the middle: fly both.');}
+  /* 23. The Big O: one stone ring, so tall you can fly a loop inside it */
+  if(place(110,'h_bigo','The Big O')){const cy=72,R=62,th=9;ring(0,0,cy,R,R,0,th);for(const e of [-1,1])column(0,e*22,-12,cy-R+4,11,8);cap(0,0,cy+R+th,10);
+    gate('h_bigo','Through the Big O',0,0,cy-R+th,cy+R-th,R-th-4,'A ring of rock taller than the lighthouse. Big enough to fly a loop inside, if you\'re brave.');shoal(90);}
+  /* 24. The Gauntlet: eight slabs leaning in from alternate sides; zigzag between them */
+  if(place(210,'h_gauntlet','The Gauntlet')){for(let k=0;k<8;k++){const a=-160+k*44,sd=k%2?1:-1;for(let q=0;q<=8;q++){const t=q/8;rock(a+(fr()-.5)*3,sd*lerp(34,6,t),lerp(-4,44,t),lerp(9,5,t),lerp(8,5,t));}}
+    gate('h_gaunt1','Into the Gauntlet',-200,0,-1,30,12,'Eight leaning slabs, left, right, left. Zigzag all the way through.');
+    gate('h_gaunt2','Out of the Gauntlet',190,0,-1,30,12,'Eight leaning slabs, left, right, left. Zigzag all the way through.');shoal(180);}
   NEAR=null;
 
   scene.add(shadowy(new THREE.Mesh(merge(it),toon())));if(grass.length)scene.add(shadowy(new THREE.Mesh(merge(grass),toon())));
@@ -1776,7 +1800,8 @@ const NIGHT_GLOW=(function nightGlow(){
     if(best){put('hollowmist',best,best.h,'The Breathing Hollow','On still nights blue mist rises out of the hollow and drifts up toward the stars. Nobody has found where it comes from.');
       for(let i=0;i<160;i++){const a=r()*TAU,d=Math.sqrt(r())*40,x=best.x+Math.cos(a)*d,z=best.z+Math.sin(a)*d;addP(x,Math.max(best.h,groundH(x,z))+.5,z,r()<.7?0x7ac8ff:0xc8e8ff,1+(r()<.2?1:0),6);}}}
   /* daytime oddities (no glow): the last mailbox on Westmost and the giant's chair on the Anvil */
-  {const p=find('westmost',(x,z)=>flatAt(x,z,3,200,.25),4000,300);
+  {const W_=STRIPS.find(st=>isleAt(st.x,st.z)==='westmost');let p=null;if(W_){for(let k=0;k<200&&!p;k++){const e=r()<.5?1:-1,w=toWorld(W_,e*(W_.len/2-20-r()*40),(r()<.5?1:-1)*(W_.wid/2+10+r()*14));if(flatAt(w.x,w.z,1,200,.3))p={x:w.x,z:w.z};}}
+    if(!p)p=find('westmost',(x,z)=>flatAt(x,z,3,200,.3),4000,100);
     if(p){const y=groundH(p.x,p.z);sights.lastbox={x:p.x,z:p.z,y,name:'The Last Mailbox',desc:'A red post box on the edge of the world. Mabel swears nobody has posted a letter from Westmost in forty years. It was emptied this morning.'};
       scene.add(new THREE.Mesh(merge([{geo:new THREE.CylinderGeometry(.55,.6,1.7,10),m:M([p.x,y+.85,p.z]),color:0xd2302a},{geo:new THREE.SphereGeometry(.6,10,5,0,TAU,0,Math.PI/2),m:M([p.x,y+1.7,p.z]),color:0xd2302a},
         {geo:new THREE.BoxGeometry(.6,.1,.1),m:M([p.x,y+1.3,p.z+.56]),color:0x2c2833},{geo:new THREE.CylinderGeometry(.66,.66,.2,10),m:M([p.x,y+.1,p.z]),color:0x2c2833}]),toon()));}}
@@ -2536,7 +2561,8 @@ function crash(why,v){
   setTimeout(()=>{const [t,b]=REASONS[why];const bad=(x,ok)=>ok?x:`<b style="color:#c2453a">${x}</b>`;
     const extra=`<div class="rows"><span class="k">SPEED</span><span>${bad(Math.round(cn.kt)+' kt',cn.kt>=45&&cn.kt<=62)}</span><span class="s">AIM 50–55</span><span class="k">DESCENT</span><span>${bad(Math.round(cn.fpm)+' ft/min',cn.fpm<500)}</span><span class="s">UNDER 300</span><span class="k">BANK</span><span>${bad(Math.round(cn.bank)+'°',cn.bank<10)}</span><span class="s">UNDER 10°</span><span class="k">NOSE</span><span>${bad((cn.pitch>=0?'up ':'down ')+Math.abs(Math.round(cn.pitch))+'°',cn.pitch>=0&&cn.pitch<12)}</span><span class="s">UP 2–8°</span></div>`;
     showCard(`<div class="who"><img src="${portrait('gus')}" alt=""><div><b>${t}</b><span>GUS PATCHES IT UP · THE MAIL IS STILL IN THE BAG</span></div></div><p>${b}</p>${extra}`,[
-      ['Try that approach again',()=>spawnApproach(dest),true],['Back to '+stripById(ac.lastField).name,()=>spawnField(stripById(ac.lastField))]]);},900);
+      ...(()=>{const landed=STRIPS.filter(s=>(log.fields[s.id]||{}).landings||s.id==='harbor'),near=landed.reduce((a,s)=>Math.hypot(s.x-ac.pos.x,s.z-ac.pos.z)<Math.hypot(a.x-ac.pos.x,a.z-ac.pos.z)?s:a,landed[0]);
+        const b=[['Take off from '+near.name,()=>spawnField(near),true]];if(dest&&why!=='rock'&&why!=='tree')b.push(['Try that approach again',()=>spawnApproach(dest)]);return [b];})()[0]]);},900);
 }
 function resetAc(){if(typeof refillParcels==='function'){refillParcels();lookDown=false;}if(typeof resetSwitches==='function')resetSwitches();ac.boostT=0;ac.bst=0;ac.gusts=[];ac.ups=[];ac.ust=0;ac.w.set(0,0,0);ac.td=null;ac.brake=0;ac.brakeHeld=false;ac.trimHold=0;ac.ice=0;smokeBurst.forEach(m=>m.visible=false);snapCam=true;}
 function intoWindDir(s){return (s.fx*WIND.x+s.fz*WIND.z)<0?1:-1;}
@@ -3073,7 +3099,7 @@ function settingsCard(){
   const mv=[['OFF',0],['SOFT',.5],['ON',1]].map(([n,v])=>`<button data-mv="${v}" class="${(settings.music??.5)==v?'primary':''}">${n}</button>`).join('');
   const st=STATIONS.map(S=>`<button data-st="${S.id}" class="${settings.station===S.id?'primary':''}">${S.fq} ${S.name.toUpperCase()}</button>`).join('');
   const lt=Object.keys(TOD).map(k=>`<button data-lt="${k}" class="${settings.light===k?'primary':''}">${TOD[k].name.toUpperCase()}</button>`).join('');
-  showCard(`<h2>Settings</h2><div class="sub">ASSISTS · TURN THEM OFF ONE AT A TIME AS YOU IMPROVE</div>${rows}<h3>ENGINE VOLUME</h3><div class="btns">${ev}</div><h3>RADIO VOLUME</h3><div class="btns">${mv}</div><h3>RADIO STATION · OR TAP THE DIAL UP TOP WHILE FLYING</h3><div class="btns">${st}</div><h3>TIME OF DAY</h3><div class="btns">${lt}</div><h3>WEATHER · TRYING IT OUT</h3><div class="btns">${Object.entries(WX).map(([k,W])=>`<button data-wx="${k}" class="${settings.weather===k?'primary':''}">${W.name.toUpperCase()}</button>`).join('')}</div><h3>PIXELS</h3><div class="btns">${px}</div><div class="sub" style="margin-top:14px">BUILD 5646404</div>`,[['Back',back,true]]);
+  showCard(`<h2>Settings</h2><div class="sub">ASSISTS · TURN THEM OFF ONE AT A TIME AS YOU IMPROVE</div>${rows}<h3>ENGINE VOLUME</h3><div class="btns">${ev}</div><h3>RADIO VOLUME</h3><div class="btns">${mv}</div><h3>RADIO STATION · OR TAP THE DIAL UP TOP WHILE FLYING</h3><div class="btns">${st}</div><h3>TIME OF DAY</h3><div class="btns">${lt}</div><h3>WEATHER · TRYING IT OUT</h3><div class="btns">${Object.entries(WX).map(([k,W])=>`<button data-wx="${k}" class="${settings.weather===k?'primary':''}">${W.name.toUpperCase()}</button>`).join('')}</div><h3>PIXELS</h3><div class="btns">${px}</div><div class="sub" style="margin-top:14px">BUILD ab5608c</div>`,[['Back',back,true]]);
   const cb=$('cardBody');
   cb.querySelectorAll('[data-k]').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.k;if(k==='tilt'){if(!settings.tilt){settings.tilt=true;saveS();enableTilt().then(()=>{updTiltUI();settingsCard();});}else{settings.tilt=false;saveS();disableTilt();updTiltUI();settingsCard();}return;}settings[k]=!settings[k];saveS();if(k==='sound')snd.setOn(settings.sound);if(k==='fps'){$('fps').hidden=!settings.fps;$('fps').textContent='FPS: measuring…';fpsN=fpsT=0;fpsLast=0;}if(k==='sound')music.setVol();settingsCard();}));
   cb.querySelectorAll('[data-px]').forEach(b=>b.addEventListener('click',()=>{settings.pixels=b.dataset.px;pixMode=settings.pixels;saveS();resize();settingsCard();}));
