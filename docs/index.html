@@ -1989,7 +1989,7 @@ function setTOD(k){tod=k;const T=TOD[k];
   const w=waterMat.uniforms;w.fogColor.value.setHex(T.hor);w.fogNear.value=T.fogN;w.fogFar.value=T.fogF;w.cDeep.value.setHex(T.deep);w.cMid.value.setHex(T.mid);w.cShal.value.setHex(T.shal);w.cGlint.value.setHex(T.glint);
   const pu=postMat.uniforms;pu.con.value=T.con;pu.sat.value=T.sat;pu.vig.value=T.vig;
   lightPts.visible=T.lights>0;lightPts.material.color.setScalar(T.lights);navPts.visible=T.lights>0;
-  NIGHT_GLOW.set(T.lights>=1?1:0);bakeTerrainShadow(sunDir,{noon:0,golden:0,sunset:0,dusk:.6,night:.3}[k]||0);fogK=-1;}
+  NIGHT_GLOW.set(T.lights>=1?1:0);bakeTerrainShadow(sunDir,{noon:0,golden:0,sunset:0,dusk:.6,night:.3}[k]||0);fogK=-1;if(typeof applyWeather==='function')applyWeather();}
 
 /* ---------- save data ---------- */
 const sightOn=v=>!v.night||TOD[tod].lights>=1;
@@ -2068,33 +2068,7 @@ const CHARS={
 };
 function shade(hex,a){const n=parseInt(hex.slice(1),16);let r=n>>16,g=(n>>8)&255,b=n&255;const f=v=>clamp(Math.round(a<0?v*(1+a):v+(255-v)*a),0,255);return '#'+[f(r),f(g),f(b)].map(v=>v.toString(16).padStart(2,'0')).join('');}
 const PORT={};
-function portrait(id){if(PORT[id])return PORT[id];const sp=CHARS[id].sp;const c=document.createElement('canvas');c.width=c.height=32;const x=c.getContext('2d');
-  const P=(col,px,py,w=1,h=1)=>{x.fillStyle=col;x.fillRect(px,py,w,h);};
-  const ell=(cx,cy,rx,ry,col)=>{for(let j=-ry;j<=ry;j++)for(let i=-rx;i<=rx;i++)if((i*i)/(rx*rx)+(j*j)/(ry*ry)<=1.05)P(col,cx+i,cy+j);};
-  P(sp.bg,0,0,32,32);P(shade(sp.bg,-.08),0,24,32,8);
-  ell(16,33,13,9,sp.shirt);P(shade(sp.shirt,-.18),3,31,26,1);
-  if(sp.plaid)for(let i=5;i<28;i+=4){P(shade(sp.shirt,-.3),i,25,1,7);P(shade(sp.shirt,-.3),4,28,24,1);}
-  P(shade(sp.skin,-.15),14,21,5,4);
-  if(sp.style==='long'){ell(16,10,9,7,sp.hair);P(sp.hair,7,10,3,13);P(sp.hair,22,10,3,13);P(shade(sp.hair,-.15),7,22,3,1);P(shade(sp.hair,-.15),22,22,3,1);}
-  if(sp.style==='bun')ell(16,5,3,3,sp.hair);
-  ell(16,14,7,8,sp.skin);P(sp.skin,8,13,1,3);P(sp.skin,24,13,1,3);P(shade(sp.skin,-.12),9,18,14,1);
-  if(sp.style==='short'||sp.style==='long'||sp.style==='bun'){for(let i=-7;i<=7;i++){const hh=5-Math.round(Math.abs(i)/2.4);P(sp.hair,16+i,6,1,hh);}P(sp.hair,8,9,1,4);P(sp.hair,24,9,1,4);}
-  if(sp.style==='curly'){for(let k=0;k<11;k++){const a=Math.PI*(k/10);ell(16+Math.round(Math.cos(a)*7),9-Math.round(Math.sin(a)*3),2,2,sp.hair);}}
-  P('#2a2230',12,14,2,2);P('#2a2230',18,14,2,2);P('#ffffff',12,14,1,1);P('#ffffff',18,14,1,1);
-  P(shade(sp.hair,-.15),11,12,3,1);P(shade(sp.hair,-.15),18,12,3,1);
-  P('rgba(230,100,90,.35)',10,17,2,1);P('rgba(230,100,90,.35)',20,17,2,1);
-  P(shade(sp.skin,-.18),15,16,2,2);
-  if(sp.freckles){for(const [a,b] of [[10,16],[12,17],[19,16],[21,17],[11,18],[20,18]])P(shade(sp.skin,-.25),a,b);}
-  if(sp.beard){for(let j=17;j<=23;j++){const w=8-Math.max(0,j-20)*2;P(sp.beard,16-w,j,w*2,1);}}
-  P('#7a3a3a',14,19,4,1);
-  if(sp.mustache)P(sp.mustache,13,18,6,1);
-  if(sp.glasses){const g='#2a2230';for(const ox of [11,17]){P(g,ox,13,4,1);P(g,ox,16,4,1);P(g,ox,13,1,4);P(g,ox+3,13,1,4);}P(g,15,14,2,1);}
-  if(sp.hat==='cap'){ell(16,7,8,4,sp.hatc);P(sp.hatc,8,8,17,2);P(shade(sp.hatc,-.2),18,9,9,2);}
-  if(sp.hat==='beanie'){ell(16,8,8,5,sp.hatc);P(shade(sp.hatc,-.2),8,10,17,2);P(shade(sp.hatc,.3),15,2,3,2);}
-  if(sp.hat==='ranger'){P(sp.hatc,3,9,26,2);P(sp.hatc,9,3,14,7);P(shade(sp.hatc,-.25),9,8,14,1);}
-  if(sp.hat==='aviator'){ell(16,9,8,6,sp.hatc);P(sp.hatc,8,11,2,7);P(sp.hatc,22,11,2,7);P('#9ad0e0',10,7,5,2);P('#9ad0e0',17,7,5,2);P('#4a3020',15,7,2,1);}
-  if(sp.scarf){P(sp.scarf,9,22,14,3);P(shade(sp.scarf,-.2),20,24,3,5);}
-  PORT[id]=c.toDataURL();return PORT[id];}
+/* portrait(id) lives in portraits.js */
 
 /* ---------- the mail ---------- */
 const DAYS=[
@@ -2518,7 +2492,7 @@ function finishLanding(){
   const zoneTxt=dist<0?'Short of the runway':Math.abs(zd)<Math.max(30,s.len*.08)?'On the markers':zd<0?`${Math.round(-zd)} m early`:`${Math.round(zd)} m long`;
   const stopped=stripAt(ac.pos.x,ac.pos.z)===s;
   let total=Math.round((soft+cen+zone)/3);if(!stopped)total=Math.max(1,total-1);
-  const F=log.fields[s.id]||(log.fields[s.id]={landings:0,best:0});F.landings++;F.best=Math.max(F.best,total);
+  const F=log.fields[s.id]||(log.fields[s.id]={landings:0,best:0});F.landings++;if(chartIsle(isleOfStrip(s),2))setTimeout(()=>toast(`${ISLES[isleOfStrip(s)].name} is on your chart now.`,2.6),1800);F.best=Math.max(F.best,total);
   const fromId=ac.from,isTrip=fromId&&fromId!==s.id&&fromId!=='__approach';
   const ck=td.check,ckOk=ck.carb&&ck.mix&&ck.flaps&&ck.light;
   const news=[];const g=id=>{if(goal(id,true))news.push(GOALS.find(x=>x.id===id).name);};
@@ -2844,17 +2818,50 @@ function setStation(id,quiet){if(id==='off'){if((settings.music??.5)>0)settings.
   const S=stationAt(id);if(!quiet)toast(`RADIO ${S.fq} · ${S.name}\n${S.desc}${settings.sound?'':'\n(Sound is off in Settings.)'}`,2.2);}
 function turnDial(){const i=dialIndex();setStation(DIAL[(i+1)%DIAL.length]);snd.click();}
 /* ---------- maps ---------- */
-const MAPX=SIZEX,MAPZ=SIZEZ,mapBase=(()=>{const NX=1072,N=512,c=document.createElement('canvas');c.width=NX;c.height=N;const x=c.getContext('2d'),img=x.createImageData(NX,N);
+const MAPX=SIZEX,MAPZ=SIZEZ,MAPNX=1072,MAPNY=512,ISLE_IDS=Object.keys(ISLES),mapOwner=new Uint8Array(MAPNX*MAPNY),mapBase=(()=>{const NX=MAPNX,N=MAPNY,c=document.createElement('canvas');c.width=NX;c.height=N;const x=c.getContext('2d'),img=x.createImageData(NX,N);
   for(let j=0;j<N;j++)for(let i=0;i<NX;i++){const wx=-MAPX/2+(i+.5)*MAPX/NX,wz=-MAPZ/2+(j+.5)*MAPZ/N,h=groundH(wx,wz);let r,g,b;
     if(h<0){const d=clamp(-h/40,0,1);r=lerp(70,30,d);g=lerp(150,72,d);b=lerp(170,120,d);}
     else if(h<4){r=226;g=205;b=150;}
     else{const t=clamp(h/600,0,1),sl=slopeAt(wx,wz);r=lerp(118,190,t*t);g=lerp(166,178,t);b=lerp(84,150,t*t);if(sl>.45){r=150;g=136;b=126;}
       if(isFarm(wx,wz,h,sl)){const fc=fieldColor(wx,wz);if(fc>=0){r=(fc>>16)&255;g=(fc>>8)&255;b=fc&255;}}
       if(((h/60)|0)!==((groundH(wx+MAPX/NX,wz)/60)|0)){r*=.82;g*=.82;b*=.82;}}
+    if(h>=0)mapOwner[j*NX+i]=ISLE_IDS.indexOf(isleAt(wx,wz))+1;
     const k=(j*NX+i)*4;img.data[k]=r;img.data[k+1]=g;img.data[k+2]=b;img.data[k+3]=255;}
   x.putImageData(img,0,0);return c;})();
+/* ---------- the uncharted map ----------
+   You start with Ferrow and Gull Point on the chart. Everything else is uncharted haze. Fly over an island and its
+   outline goes on the chart; land on one of its runways and the whole island is charted, names and all. A job to an
+   uncharted field shows only as an X over the haze. */
+if(!log.chart){log.chart={ferrow:2,gull:2};for(const st of STRIPS)if((log.fields[st.id]||{}).landings)log.chart[isleAt(st.x,st.z)]=2;}
+const isleOfStrip=st=>st.__isle||(st.__isle=isleAt(st.x,st.z));
+const charted=st=>log.chart[isleOfStrip(st)]===2;
+const mapView=(()=>{const c=document.createElement('canvas');c.width=MAPNX;c.height=MAPNY;return c;})();
+const mapBaseData=mapBase.getContext('2d').getImageData(0,0,MAPNX,MAPNY).data;
+function rebuildChart(){const NX=MAPNX,NY=MAPNY,n=NX*NY,D=new Float32Array(n).fill(1e9),own=mapOwner;
+  for(let q=0;q<n;q++){const o=own[q];if(o&&log.chart[ISLE_IDS[o-1]]===2)D[q]=0;}
+  // two-pass chamfer distance (in map pixels) from charted land, so the sea round a charted island shows too
+  for(let j=0;j<NY;j++)for(let i=0;i<NX;i++){const q=j*NX+i;let d=D[q];if(i>0)d=Math.min(d,D[q-1]+1);if(j>0){d=Math.min(d,D[q-NX]+1);if(i>0)d=Math.min(d,D[q-NX-1]+1.41);if(i<NX-1)d=Math.min(d,D[q-NX+1]+1.41);}D[q]=d;}
+  for(let j=NY-1;j>=0;j--)for(let i=NX-1;i>=0;i--){const q=j*NX+i;let d=D[q];if(i<NX-1)d=Math.min(d,D[q+1]+1);if(j<NY-1){d=Math.min(d,D[q+NX]+1);if(i<NX-1)d=Math.min(d,D[q+NX+1]+1.41);if(i>0)d=Math.min(d,D[q+NX-1]+1.41);}D[q]=d;}
+  const x=mapView.getContext('2d'),img=x.createImageData(NX,NY),o=img.data,B=mapBaseData;
+  const seenL=(q)=>{const v=own[q];return v&&log.chart[ISLE_IDS[v-1]]===1;};
+  for(let j=0;j<NY;j++)for(let i=0;i<NX;i++){const q=j*NX+i,k=q*4,v=own[q],st=v?log.chart[ISLE_IDS[v-1]]:0,d=D[q];let r,g,b;
+    const hz=Math.sin(i*.045+Math.sin(j*.07)*2.2)*Math.sin(j*.06+i*.011),fogL=((i+j*3)%9===0||hz>.82);
+    const fog=()=>{r=fogL?52:40;g=fogL?92:78;b=fogL?132:116;};
+    if(st===2||(!v&&d<=12)||(!v&&d<=17&&((i+j)%2===0||d<=14.5))){r=B[k];g=B[k+1];b=B[k+2];}
+    else if(st===1){const edge=!seenL(q-1)||!seenL(q+1)||!seenL(q-NX)||!seenL(q+NX);if(edge){r=226;g=232;b=232;}else if((i+j)%3===0){r=120;g=150;b=168;}else fog();}
+    else fog();
+    o[k]=r;o[k+1]=g;o[k+2]=b;o[k+3]=255;}
+  x.putImageData(img,0,0);}
+rebuildChart();
+function chartIsle(id,lvl){if(!id||(log.chart[id]||0)>=lvl)return false;log.chart[id]=lvl;saveL();rebuildChart();return true;}
+let seenT=0;
+function updCharting(dt){seenT+=dt;if(seenT<.5||ac.ground)return;seenT=0;if(groundH(ac.pos.x,ac.pos.z)<1)return;const id=isleAt(ac.pos.x,ac.pos.z);
+  if(!log.chart[id]&&chartIsle(id,1))toast(`Land below! Its outline is on your chart now.\nLand on its runway to chart it properly.`,3);}
+/* an X over the haze for a field you haven't charted */
+function drawX(x,px,pz,q,col){x.save();x.strokeStyle='#241c2e';x.lineWidth=q*.9;x.beginPath();x.moveTo(px-q,pz-q);x.lineTo(px+q,pz+q);x.moveTo(px+q,pz-q);x.lineTo(px-q,pz+q);x.stroke();
+  x.strokeStyle=col;x.lineWidth=q*.45;x.beginPath();x.moveTo(px-q,pz-q);x.lineTo(px+q,pz+q);x.moveTo(px+q,pz-q);x.lineTo(px-q,pz+q);x.stroke();x.restore();}
 const mctx=$('mapc').getContext('2d');
-function drawStripsOn(x,k,highlight){for(const s of STRIPS){const a=toWorld(s,-s.len/2,0),b=toWorld(s,s.len/2,0);const hi=s===highlight;
+function drawStripsOn(x,k,highlight){for(const s of STRIPS){if(!charted(s)){if(s===highlight)drawX(x,s.x,s.z,7/k,'#8ff0e8');continue;}const a=toWorld(s,-s.len/2,0),b=toWorld(s,s.len/2,0);const hi=s===highlight;
   if(hi){x.save();x.fillStyle='#8ff0e8';for(const d of GATE_D){const p=gatePos(s,gateDir,d);x.fillRect(p.x-3/k,p.z-3/k,6/k,6/k);}x.strokeStyle='#8ff0e8';x.lineWidth=1.3/k;x.setLineDash([5/k,4/k]);for(const e of [-1,1]){const p0=toWorld(s,e*s.len/2,0),p1=toWorld(s,e*(s.len/2+2600),0);x.beginPath();x.moveTo(p0.x,p0.z);x.lineTo(p1.x,p1.z);x.stroke();}x.restore();}
   x.strokeStyle=hi?'#ffffff':'#f5e8cf';x.lineWidth=(hi?3:2.2)/k;x.beginPath();x.moveTo(a.x,a.z);x.lineTo(b.x,b.z);x.stroke();}}
 let mapT=0;
@@ -2862,10 +2869,10 @@ function drawMiniMap(dt){mapT-=dt;if(mapT>0)return;mapT=.08;const W=96,x=mctx;x.
   axes();const hdg=ac.ground?-ac.gYaw:Math.atan2(_f.x,-_f.z);
   const near=dest?Math.hypot(dest.x-ac.pos.x,dest.z-ac.pos.z):1e9,R=near<2600?1500:2800,k=(W/2)/R,cy=W/2+14;
   x.fillStyle='#1d2a44';x.fillRect(0,0,W,W);x.save();x.translate(W/2,cy);x.rotate(-hdg);x.scale(k,k);x.translate(-ac.pos.x,-ac.pos.z);
-  x.drawImage(mapBase,-MAPX/2,-MAPZ/2,MAPX,MAPZ);drawStripsOn(x,k,dest);
+  x.drawImage(mapView,-MAPX/2,-MAPZ/2,MAPX,MAPZ);drawStripsOn(x,k,dest);
   x.fillStyle='#ffb02e';for(const [k_,v] of Object.entries(sights))if(log.sights[k_])x.fillRect(v.x-2/k,v.z-2/k,4/k,4/k);x.fillStyle='#8ff0e8';for(const g of FLYGATES)if(log.gates[g.id])x.fillRect(g.x-2/k,g.z-2/k,4/k,4/k);
   dropMarks(x,(a,b)=>[a,b],1/k);
-  if(dest){x.fillStyle='#8ff0e8';x.beginPath();x.arc(dest.x,dest.z,3.5/k,0,TAU);x.fill();}
+  if(dest&&charted(dest)){x.fillStyle='#8ff0e8';x.beginPath();x.arc(dest.x,dest.z,3.5/k,0,TAU);x.fill();}
   x.restore();
   x.fillStyle='#fff8ec';x.strokeStyle='#241c2e';x.lineWidth=1;x.beginPath();x.moveTo(W/2,cy-6);x.lineTo(W/2-4,cy+4);x.lineTo(W/2,cy+2);x.lineTo(W/2+4,cy+4);x.closePath();x.fill();x.stroke();
   const na=-hdg;x.fillStyle='#ffb02e';x.font='13px VT323, monospace';x.textAlign='center';x.textBaseline='middle';x.fillText('N',clamp(W/2+Math.sin(na)*40,6,W-6),clamp(cy-Math.cos(na)*40,6,W-6));
@@ -2876,12 +2883,12 @@ function chartResize(){if($('chartOv'))drawChart();}
 function bigMap(){hideModal();if(mode==='fly')mode='paused';let o=$('chartOv');
   if(!o){o=document.createElement('div');o.id='chartOv';o.innerHTML=`<canvas id="bigmap"></canvas><div id="chartLeg"></div><button id="chartX" aria-label="Close the chart">✕</button>`;document.body.appendChild(o);
     $('chartX').addEventListener('click',e=>{e.stopPropagation();closeChart();});addEventListener('resize',chartResize);}
-  $('chartLeg').innerHTML=`<b>BEA'S CHART</b> · ★ ${log.score.toLocaleString()}<br>${Object.keys(sights).filter(q=>log.sights[q]).length}/${Object.keys(sights).length} landmarks (orange) · ${FLYGATES.filter(g=>log.gates[g.id]).length}/${FLYGATES.length} gaps (cyan)${activeDrops().length?' · '+activeDrops().length+' air drops (orange rings)':''}${activeErrands().length?'<br>Errands: '+activeErrands().map(errLine).join(', '):''}`;
+  $('chartLeg').innerHTML=`<b>BEA'S CHART</b> · ★ ${log.score.toLocaleString()}<br>${ISLE_IDS.filter(q=>log.chart[q]===2).length}/${ISLE_IDS.length} islands charted · ${Object.keys(sights).filter(q=>log.sights[q]).length}/${Object.keys(sights).length} landmarks (orange) · ${FLYGATES.filter(g=>log.gates[g.id]).length}/${FLYGATES.length} gaps (cyan)${activeDrops().length?' · '+activeDrops().length+' air drops (orange rings)':''}${activeErrands().length?'<br>Errands: '+activeErrands().map(errLine).join(', '):''}`;
   drawChart();}
 function drawChart(){const c=$('bigmap'),r=rectL(c),W=Math.max(200,Math.round(r.width)),H=Math.max(150,Math.round(r.height));c.width=W;c.height=H;
   const x=c.getContext('2d');x.imageSmoothingEnabled=false;const k=Math.min(W/45200,H/20600),CX=0,CZ=500,sc=clamp(Math.min(W/512,H/384),1,2.2);
   x.fillStyle='#1e4878';x.fillRect(0,0,W,H);x.save();x.translate(W/2-CX*k,H/2-CZ*k);x.scale(k,k);
-  x.drawImage(mapBase,-MAPX/2,-MAPZ/2,MAPX,MAPZ);drawStripsOn(x,k/sc,dest);
+  x.drawImage(mapView,-MAPX/2,-MAPZ/2,MAPX,MAPZ);drawStripsOn(x,k/sc,dest);
   x.restore();
   const P=(wx,wz)=>[W/2+(wx-CX)*k,H/2+(wz-CZ)*k];x.textBaseline='middle';
   x.font=`${Math.round(13*sc)}px VT323, monospace`;
@@ -2889,8 +2896,8 @@ function drawChart(){const c=$('bigmap'),r=rectL(c),W=Math.max(200,Math.round(r.
   for(const [k_,v] of Object.entries(sights)){if(!log.sights[k_])continue;const [a,b]=P(v.x,v.z);x.fillStyle='#241c2e';x.fillRect(a-3*sc,b-3*sc,6*sc,6*sc);x.fillStyle='#ffb02e';x.fillRect(a-2*sc,b-2*sc,4*sc,4*sc);}
   for(const g of FLYGATES){if(!log.gates[g.id])continue;const [a,b]=P(g.x,g.z),q=4*sc;x.fillStyle='#8ff0e8';x.beginPath();x.moveTo(a,b-q);x.lineTo(a+q,b);x.lineTo(a,b+q);x.lineTo(a-q,b);x.closePath();x.fill();}
   dropMarks(x,P,sc);
-  for(const I of Object.values(ISLES))label(I.name.toUpperCase(),I.x,I.z+(I.r?Math.min(I.r*.6,600)+260:1500),'#ffd890',0);
-  if(dest)label(dest.name.toUpperCase(),dest.x,dest.z,'#8ff0e8',-11);
+  for(const [id,I] of Object.entries(ISLES))if(log.chart[id]===2)label(I.name.toUpperCase(),I.x,I.z+(I.r?Math.min(I.r*.6,600)+260:1500),'#ffd890',0);
+  if(dest)label(charted(dest)?dest.name.toUpperCase():dest.name.toUpperCase()+' (UNCHARTED)',dest.x,dest.z,'#8ff0e8',charted(dest)?-11:-16);
   const [px,pz]=P(ac.pos.x,ac.pos.z);axes();const hdg=ac.ground?-ac.gYaw:Math.atan2(_f.x,-_f.z);x.save();x.translate(px,pz);x.rotate(hdg);x.scale(sc,sc);x.fillStyle='#fff8ec';x.strokeStyle='#241c2e';x.lineWidth=1.5;x.beginPath();x.moveTo(0,-9);x.lineTo(-6,6);x.lineTo(0,3);x.lineTo(6,6);x.closePath();x.fill();x.stroke();x.restore();
   const wx=W-30*sc,wy=H-34*sc,wd=70*DEG;x.fillStyle='#ffb02e';x.textAlign='center';x.fillText('N ↑',30*sc,H-14*sc);
   x.strokeStyle='#fff8ec';x.lineWidth=2;x.beginPath();x.moveTo(wx-Math.sin(wd)*12*sc,wy+Math.cos(wd)*12*sc);x.lineTo(wx+Math.sin(wd)*12*sc,wy-Math.cos(wd)*12*sc);x.stroke();x.fillStyle='#fff8ec';x.fillText('WIND',wx,H-12*sc);}
@@ -2953,8 +2960,8 @@ function openMenu(){if(mode==='fly')mode='paused';showCard(`<h2>Paused</h2><div 
 /* each pause-menu button gets its own color so they're easy to tell apart at a glance */
 const MENU_COL={'Mail bag':'#f2c25a',"Bea's chart":'#7cc4d4',"Bea's logbook":'#a6d38a','Practice a landing':'#c4aee6','Start at a field':'#f0a77c','Your logbook':'#9fc4ef','Settings':'#cfc6b4','Hangar':'#f2a8d4'};
 function picker(kind){
-  const items=STRIPS.map(s=>{const F=log.fields[s.id];return `<button class="item" data-id="${s.id}"><span><b>${s.name}</b><span class="d">${DESC[s.id]}</span></span><span class="r">${F&&F.best?stars(F.best):'NOT YET'}</span></button>`;}).join('');
-  showCard(`<h2>${kind==='practice'?'Practice a landing':'Start at a field'}</h2><div class="sub">${kind==='practice'?'START 1.5 KM OUT, LINED UP, ON THE GLIDE PATH':'START ON THE RUNWAY, ENGINE AT IDLE'}</div><div class="list">${items}</div>`,[['Back',back]]);
+  const items=STRIPS.filter(charted).map(s=>{const F=log.fields[s.id];return `<button class="item" data-id="${s.id}"><span><b>${s.name}</b><span class="d">${DESC[s.id]}</span></span><span class="r">${F&&F.best?stars(F.best):'NOT YET'}</span></button>`;}).join('');
+  showCard(`<h2>${kind==='practice'?'Practice a landing':'Start at a field'}</h2><div class="sub">${kind==='practice'?'START 1.5 KM OUT, LINED UP, ON THE GLIDE PATH':'START ON THE RUNWAY, ENGINE AT IDLE'} · FIELDS ON YOUR CHART</div><div class="list">${items}</div>`,[['Back',back]]);
   $('cardBody').querySelectorAll('.item').forEach(b=>b.addEventListener('click',()=>{const s=stripById(b.dataset.id);if(kind==='practice')spawnApproach(s);else if(s.id==='harbor'&&!mail.active&&mode==='title')offerDay(()=>spawnField(s));else spawnField(s);}));}
 function logbook(){
   const f=STRIPS.map(s=>{const F=log.fields[s.id]||{};return `<div class="item ${F.landings?'done':''}"><span><b>${s.name}</b><span class="d">${F.landings?F.landings+' landing'+(F.landings>1?'s':''):'Not visited yet'}</span></span><span class="r">${F.best?stars(F.best):''}</span></div>`;}).join('');
@@ -2973,13 +2980,14 @@ function settingsCard(){
   const mv=[['OFF',0],['SOFT',.5],['ON',1]].map(([n,v])=>`<button data-mv="${v}" class="${(settings.music??.5)==v?'primary':''}">${n}</button>`).join('');
   const st=STATIONS.map(S=>`<button data-st="${S.id}" class="${settings.station===S.id?'primary':''}">${S.fq} ${S.name.toUpperCase()}</button>`).join('');
   const lt=Object.keys(TOD).map(k=>`<button data-lt="${k}" class="${settings.light===k?'primary':''}">${TOD[k].name.toUpperCase()}</button>`).join('');
-  showCard(`<h2>Settings</h2><div class="sub">ASSISTS · TURN THEM OFF ONE AT A TIME AS YOU IMPROVE</div>${rows}<h3>ENGINE VOLUME</h3><div class="btns">${ev}</div><h3>RADIO VOLUME</h3><div class="btns">${mv}</div><h3>RADIO STATION · OR TAP THE DIAL UP TOP WHILE FLYING</h3><div class="btns">${st}</div><h3>TIME OF DAY</h3><div class="btns">${lt}</div><h3>PIXELS</h3><div class="btns">${px}</div><div class="sub" style="margin-top:14px">BUILD aba6d77</div>`,[['Back',back,true]]);
+  showCard(`<h2>Settings</h2><div class="sub">ASSISTS · TURN THEM OFF ONE AT A TIME AS YOU IMPROVE</div>${rows}<h3>ENGINE VOLUME</h3><div class="btns">${ev}</div><h3>RADIO VOLUME</h3><div class="btns">${mv}</div><h3>RADIO STATION · OR TAP THE DIAL UP TOP WHILE FLYING</h3><div class="btns">${st}</div><h3>TIME OF DAY</h3><div class="btns">${lt}</div><h3>WEATHER · TRYING IT OUT</h3><div class="btns">${Object.entries(WX).map(([k,W])=>`<button data-wx="${k}" class="${settings.weather===k?'primary':''}">${W.name.toUpperCase()}</button>`).join('')}</div><h3>PIXELS</h3><div class="btns">${px}</div><div class="sub" style="margin-top:14px">BUILD e24ba3f</div>`,[['Back',back,true]]);
   const cb=$('cardBody');
   cb.querySelectorAll('[data-k]').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.k;if(k==='tilt'){if(!settings.tilt){settings.tilt=true;saveS();enableTilt().then(()=>{updTiltUI();settingsCard();});}else{settings.tilt=false;saveS();disableTilt();updTiltUI();settingsCard();}return;}settings[k]=!settings[k];saveS();if(k==='sound')snd.setOn(settings.sound);if(k==='fps'){$('fps').hidden=!settings.fps;$('fps').textContent='FPS: measuring…';fpsN=fpsT=0;fpsLast=0;}if(k==='sound')music.setVol();settingsCard();}));
   cb.querySelectorAll('[data-px]').forEach(b=>b.addEventListener('click',()=>{settings.pixels=b.dataset.px;pixMode=settings.pixels;saveS();resize();settingsCard();}));
   cb.querySelectorAll('[data-mv]').forEach(b=>b.addEventListener('click',()=>{settings.music=+b.dataset.mv;saveS();snd.init();music.start();music.setVol();updRadioBtn();settingsCard();}));
   cb.querySelectorAll('[data-st]').forEach(b=>b.addEventListener('click',()=>{setStation(b.dataset.st);settingsCard();}));
   cb.querySelectorAll('[data-ev]').forEach(b=>b.addEventListener('click',()=>{settings.engVol=+b.dataset.ev;saveS();settingsCard();}));
+  cb.querySelectorAll('[data-wx]').forEach(b=>b.addEventListener('click',()=>{settings.weather=b.dataset.wx;saveS();setTOD(tod);settingsCard();}));
   cb.querySelectorAll('[data-lt]').forEach(b=>b.addEventListener('click',()=>{settings.light=b.dataset.lt;saveS();setTOD(settings.light);updTodBtn();settingsCard();}));}
 function showHowTo(){mode='card';
   showCard(`<h2>How to fly</h2><div class="sub">TWO THUMBS</div>
@@ -3041,7 +3049,7 @@ function drawHUD(dt){
     if(agl>160||ac.ground)lastCall=999;
     if(dest){const d=Math.hypot(dest.x-ac.pos.x,dest.z-ac.pos.z);$('destTxt').textContent=`${dest.name} ${d<1000?Math.round(d/10)*10+' m':(d/1000).toFixed(1)+' km'}`;$('arr').style.transform=`rotate(${brg-hdg}deg)`;}}
   $('stallBan').hidden=!(ac.stallWarn&&mode==='fly');
-  if(mode==='fly')drawMiniMap(dt);
+  if(mode==='fly'){drawMiniMap(dt);updCharting(dt);}
   if(lookDown&&(mode==='fly'||mode==='paused')){pb.clear();drawDropSight(dt);pb.flush();hudWasDrawn=true;return;}
   if(camMode==='chase'||mode==='title'){pb.clear();if(mode==='fly'&&approachMeter()){pb.flush();hudWasDrawn=true;}else if(hudWasDrawn){pb.flush();hudWasDrawn=false;}return;}
   hudWasDrawn=true;const bank=Math.atan2(-_r.y,_u.y),pitch=Math.asin(clamp(_f.y,-1,1));
@@ -3964,6 +3972,175 @@ function shopCard(s){const meet=!log.met.gus;if(meet){log.met.gus=1;saveL();}
     if(!own){if(!pay(price))return;SH[kind].owned.push(it[0]);}SH[kind].sel=it[0];saveL();applyUpgrades();snd.click();shopCard(s);}));}
 applyUpgrades();window.__shopReady=true;updScore();
 
+/* ---------- character portraits ----------
+   48x48 pixel art, drawn from each character's traits in CHARS (skin, hair style and color, hat, glasses, beard,
+   scarf, freckles, shirt). The figure is drawn into its own layer, given a soft dark outline, then laid over a
+   background with a little glow behind the head. Light comes from the upper left. Older folks (white or grey hair)
+   get smile lines. */
+function portrait(id){if(PORT[id])return PORT[id];
+  const sp=CHARS[id].sp,N=48,F=new Array(N*N).fill(null),Z=new Array(N*N).fill(0);
+  const hx=h=>{const n=parseInt(h.slice(1),16);return [n>>16,(n>>8)&255,n&255];},toH=c=>'#'+c.map(v=>clamp(Math.round(v),0,255).toString(16).padStart(2,'0')).join('');
+  const mixH=(a,b,t)=>{const A=hx(a),B=hx(b);return toH(A.map((v,i)=>v+(B[i]-v)*t));};
+  const lum=h=>{const c=hx(h);return c[0]*.3+c[1]*.59+c[2]*.11;},sat=h=>{const c=hx(h);return Math.max(...c)-Math.min(...c);};
+  let hs=0;for(const ch of id)hs=(hs*31+ch.charCodeAt(0))>>>0;
+  const put=(x,y,c,z=0)=>{x=Math.round(x);y=Math.round(y);if(x<0||y<0||x>=N||y>=N)return;F[y*N+x]=c;Z[y*N+x]=z;};
+  const get=(x,y)=>F[y*N+x];
+  const rect=(x,y,w,h,c,z)=>{for(let j=0;j<h;j++)for(let i=0;i<w;i++)put(x+i,y+j,c,z);};
+  const ell=(cx,cy,rx,ry,c,fn)=>{for(let j=Math.floor(-ry);j<=ry;j++)for(let i=Math.floor(-rx);i<=rx;i++)if((i*i)/(rx*rx)+(j*j)/(ry*ry)<=1.02){const col=fn?fn(i,j,c):c;if(col)put(cx+i,cy+j,col);}};
+  const tint=(x,y,c,t)=>{const o=get(x,y);if(o)F[y*N+x]=mixH(o,c,t);};
+  const skin=sp.skin,hair=sp.hair,old=lum(hair)>185&&sat(hair)<40,dark=lum(skin)<120;
+  const hairD=shade(hair,old?-.22:-.3),hairL=shade(hair,old?.25:.3),hairDD=shade(hair,-.5);
+  const eyeC=['#5a3a22','#3a6a9a','#4a7a4a','#6a4a2a','#3a3040','#6a6a3a'][hs%6];
+  const brow=old?shade(hair,-.15):(sp.style==='long'||lum(hair)>150?shade(hair,-.35):hair);
+  const CX=24,CY=21;
+  // face mask: rounder forehead, softer narrowing jaw
+  const inFace=(x,y)=>{const dx=x-CX,dy=y-CY;return dy<=0?Math.pow(Math.abs(dx)/10.2,2.4)+Math.pow(-dy/12,2)<=1:Math.pow(Math.abs(dx)/10.2,1.8)+Math.pow(dy/11.6,2)<=1;};
+  /* long hair falls behind everything */
+  if(sp.style==='long'){for(let y=8;y<44;y++){const t=(y-8)/36,w=y<16?8+(y-8)*.9:Math.min(15,14.2-Math.max(0,y-36)*.6);for(let x=Math.round(CX-w);x<=Math.round(CX+w);x++){const e=Math.abs(x-CX)/w;
+      let c=e>.86?hairD:(x<CX-3&&((x+y)%5===0)?hairL:hair);if(y>40)c=hairD;put(x,y,c);}}
+    for(let y=14;y<42;y+=3){put(CX-11,y,hairD);put(CX+11,y+1,hairD);}}
+  /* shoulders and shirt */
+  for(let y=35;y<N;y++){const w=Math.min(23,11+(y-35)*1.6);for(let x=Math.ceil(CX-w);x<=Math.floor(CX+w);x++){const e=(x-CX)/w;
+      let c=sp.shirt;if(e<-.55&&y<41)c=shade(sp.shirt,.12);if(e>.5)c=shade(sp.shirt,-.16);if(e>.82||y>45)c=shade(sp.shirt,-.26);
+      if(sp.plaid&&((x%5===0)||(y%5===2)))c=shade(c,-.32);put(x,y,c);}}
+  // shoulder seams / arm creases
+  for(let y=40;y<N;y++){put(CX-15+((y-40)>>2),y,shade(sp.shirt,-.22));put(CX+15-((y-40)>>2),y,shade(sp.shirt,-.3));}
+  /* neck */
+  for(let y=29;y<38;y++)for(let x=CX-4;x<=CX+4;x++)put(x,y,x>CX+1?shade(skin,-.18):shade(skin,-.08));
+  // collar: open neck showing a V of skin, folded collar points
+  for(let k=0;k<5;k++){for(let x=CX-4+k;x<=CX+4-k;x++)put(x,36+k,x>CX+1?shade(skin,-.16):shade(skin,-.06));}
+  const col=shade(sp.shirt,.28),colD=shade(sp.shirt,-.1);
+  for(let k=0;k<5;k++){put(CX-5-k,35+k,col);put(CX-4-k,36+k,col);put(CX-5+k,36+k,colD);put(CX+5+k,35+k,colD);put(CX+4+k,36+k,colD);put(CX+5-k,36+k,col);}
+  if(!sp.scarf){put(CX,40,shade(sp.shirt,-.35));put(CX,42,shade(sp.shirt,.2));put(CX,45,shade(sp.shirt,.2));}
+  /* ears */
+  for(const [ex,s] of [[CX-11,-1],[CX+11,1]]){for(let y=18;y<=24;y++)for(let i=0;i<2;i++){const x=ex+s*i,c=s>0?shade(skin,-.14):skin;if(!(i===1&&(y===18||y===24)))put(x,y,c);}
+    put(ex,20,shade(skin,-.26));put(ex,21,shade(skin,-.26));put(ex+s,22,shade(skin,-.2));}
+  /* face with shading */
+  for(let y=CY-13;y<=CY+12;y++)for(let x=CX-11;x<=CX+11;x++){if(!inFace(x,y))continue;const dx=x-CX,dy=y-CY;let c=skin;
+    if(dx>=6||(dy>=8&&dx>=2))c=shade(skin,-.12);if(dx>=9||(dy>=10))c=shade(skin,-.2);
+    if(dx<=-5&&dx>=-8&&dy>=-4&&dy<=4)c=shade(skin,.07);if(dx<=-2&&dx>=-6&&dy>=-10&&dy<=-6)c=shade(skin,.09);
+    put(x,y,c);}
+  /* brows, eyes */
+  const EY=CY;
+  for(const [ex,s] of [[CX-6,-1],[CX+5,1]]){
+    // whites
+    rect(ex-1,EY,4,2,'#f6f2ee');
+    // iris centered, darker pupil, a glint top left
+    put(ex,EY,'#ffffff');put(ex+1,EY,shade(eyeC,-.15));put(ex,EY+1,eyeC);put(ex+1,EY+1,shade(eyeC,-.45));
+    // upper lid line with a lash flick
+    rect(ex-1,EY-1,4,1,dark?'#1c1418':'#3a2a2a');put(s<0?ex-2:ex+3,EY-1,dark?'#1c1418':'#3a2a2a');put(s<0?ex-2:ex+3,EY-2,dark?'#2a1e22':'#5a4040');
+    // lower lid / under-eye
+    for(let i=0;i<4;i++)tint(ex-1+i,EY+2,'#000000',.08);
+    if(old){put(s<0?ex-2:ex+3,EY+1,shade(skin,-.2));for(let i=0;i<3;i++)tint(ex+i,EY+3,'#000000',.1);}
+    // brow, a gentle arch
+    const by=EY-4;put(ex-1,by+1,brow);put(ex,by,brow);put(ex+1,by,brow);put(ex+2,by,brow);put(s<0?ex+3:ex-2,by+1,shade(brow,.1));
+    if(!old||lum(hair)<200)put(s<0?ex-1:ex+2,by,brow);}
+  /* nose: shadow down the right side, a soft tip */
+  for(let y=EY+1;y<=EY+5;y++)put(CX+1,y,shade(skin,-.13));put(CX,EY+5,shade(skin,.06));put(CX-1,EY+6,shade(skin,-.18));put(CX+1,EY+6,shade(skin,-.24));put(CX,EY+6,shade(skin,-.08));put(CX-1,EY+3,shade(skin,.08));
+  /* cheeks */
+  const blush=dark?'#c0606a':'#f07a80';for(const bx of [CX-8,CX+5])for(let i=0;i<3;i++){tint(bx+i,EY+4,blush,dark?.22:.3);tint(bx+i,EY+5,blush,dark?.14:.18);}
+  if(sp.freckles)for(const [a,b] of [[-6,4],[-4,5],[-7,6],[3,4],[5,5],[6,4],[-2,3],[2,3],[4,6]])put(CX+a,EY+b,shade(skin,-.24));
+  /* mouth: a friendly closed smile */
+  const lip=dark?mixH(skin,'#3a1418',.55):mixH(skin,'#8a2a30',.55),MY=EY+9;
+  for(let x=CX-3;x<=CX+3;x++)put(x,MY,lip);put(CX-4,MY-1,lip);put(CX+4,MY-1,lip);put(CX-5,MY-2,shade(skin,-.12));put(CX+5,MY-2,shade(skin,-.16));
+  for(let x=CX-2;x<=CX+2;x++)put(x,MY+1,mixH(skin,'#c05a5a',.22));put(CX,MY+2,shade(skin,-.1));
+  if(old){put(CX-5,MY-2,shade(skin,-.16));put(CX-5,MY-1,shade(skin,-.14));put(CX+5,MY-2,shade(skin,-.2));put(CX+5,MY-1,shade(skin,-.18));}
+  /* facial hair */
+  if(sp.beard){const b=sp.beard,bD=shade(b,-.25),bL=shade(b,.22);
+    for(let y=EY+5;y<=CY+15;y++)for(let x=CX-11;x<=CX+11;x++){const dx=x-CX,dy=y-EY;if(!(inFace(x,y)||(y>CY+10&&Math.abs(dx)<9-(y-CY-10)*2)))continue;
+      if(dy<8&&Math.abs(dx)<8)continue;if(Math.abs(dx)<=3&&y>=MY-1&&y<=MY+1)continue;
+      let c=(x+y*3+hs)%7===0?bL:((x*5+y)%6===0?bD:b);if(dx>5)c=shade(c,-.15);put(x,y,c);}
+    for(let x=CX-4;x<=CX+4;x++)put(x,MY-1,x>CX?bD:b);put(CX-5,MY,b);put(CX+5,MY,bD);
+    for(let x=CX-3;x<=CX+3;x++)put(x,MY,lip);}
+  if(sp.mustache&&!sp.beard){const m=sp.mustache;for(let x=CX-4;x<=CX+4;x++){put(x,MY-2,x>CX+1?shade(m,-.2):m);}for(const s of [-1,1]){put(CX+s*5,MY-1,m);put(CX+s*5,MY,shade(m,-.2));}put(CX,MY-3,shade(skin,-.1));}
+  /* glasses */
+  if(sp.glasses){const g='#2a2030';for(const ox of [CX-8,CX+3]){for(let i=0;i<6;i++){put(ox+i,EY-2,g);put(ox+i,EY+3,g);}for(let j=-1;j<3;j++){put(ox,EY+j,g);put(ox+5,EY+j,g);}
+      for(let i=1;i<5;i++)for(let j=-1;j<3;j++)tint(ox+i,EY+j,'#cfe8ff',.18);put(ox+1,EY-1,'#ffffff');}
+    put(CX-2,EY-1,g);put(CX-1,EY-1,g);put(CX+1,EY-1,g);put(CX+2,EY-1,g);put(CX,EY-1,g);put(CX-12,EY,g);put(CX+11,EY,g);}
+  /* hair on top */
+  const strands=(x,y)=>((x*3+y*7+hs)%9===0)?hairD:((x+y*2)%11===0&&x<CX?hairL:hair);
+  if(sp.style==='short'||sp.style==='bun'||sp.style==='long'){
+    for(let y=CY-15;y<=CY+3;y++)for(let x=CX-12;x<=CX+12;x++){const dx=x-CX,dy=y-CY;
+      const top=Math.pow(Math.abs(dx)/11.6,2.2)+Math.pow((dy+1)/14,2)<=1&&dy<-6+Math.round(Math.abs(dx)*.12+(dx<0?Math.max(0,3-Math.abs(dx+4)):0)*.6);
+      const side=Math.abs(dx)>=9&&Math.abs(dx)<=11&&dy>=-7&&dy<=(sp.style==='long'?6:-2);
+      if(!(top||side))continue;let c=strands(x,y);if(dx>6)c=hairD;if(dx<-2&&dx>-8&&dy<-10)c=hairL;put(x,y,c);}
+    // a part on the left, a little swoop across the forehead
+    for(let k=0;k<5;k++)put(CX-4+k,CY-12+(k>>1),hairD);for(let x=CX-8;x<=CX+2;x++)put(x,CY-9+((x+CX)%3===0?1:0),strands(x,CY-9));}
+  if(sp.style==='bun'){ell(CX+1,CY-16,4.6,4,hair,(i,j)=>i>1?hairD:(i<-1&&j<0?hairL:strands(i,j)));for(let i=-2;i<=2;i++)put(CX+1+i,CY-12,hairD);}
+  if(sp.style==='curly'){const cur=[];for(let k=0;k<15;k++){const a=Math.PI*(-.08+k/14*1.16);cur.push([CX+Math.cos(a)*10.5,CY-5-Math.sin(a)*8.5,3.2]);}
+    for(let k=0;k<6;k++){const a=Math.PI*(.2+k/5*.6);cur.push([CX+Math.cos(a)*6,CY-9-Math.sin(a)*3.5,3]);}
+    for(const [x0,y0,r] of cur)ell(Math.round(x0),Math.round(y0),r,r,hair,(i,j)=>i+j>2?hairD:(i+j<-3?hairL:hair));
+    for(const [x0,y0] of cur){put(Math.round(x0)-1,Math.round(y0)-1,hairL);put(Math.round(x0)+2,Math.round(y0)+1,hairDD);}}
+  /* hats */
+  if(sp.hat){const h=sp.hatc,hD=shade(h,-.22),hL=shade(h,.2),hDD=shade(h,-.4);
+    if(sp.hat==='cap'){ell(CX,CY-11,11,6.5,h,(i,j)=>j>3?null:(i>5?hD:(i<-4&&j<-2?hL:h)));for(let x=CX-11;x<=CX+11;x++)put(x,CY-7,hD);
+      for(let x=CX-4;x<=CX+15;x++){put(x,CY-6,hDD);put(x,CY-7,x>CX+11?hD:get(x,CY-7));}put(CX,CY-17,hL);for(let j=0;j<5;j++)put(CX+(j>>1),CY-16+j,hD);}
+    if(sp.hat==='beanie'){ell(CX,CY-11,11.4,7.5,h,(i,j)=>j>3?null:((i+40)%3===0?hD:(i<-5?hL:h)));for(let x=CX-12;x<=CX+12;x++)for(let j=0;j<3;j++)put(x,CY-8+j,((x)%2===0)?hD:h);
+      ell(CX,CY-19,2.6,2.2,shade(h,.38),(i,j)=>i>0&&j>0?shade(h,.15):shade(h,.38));}
+    if(sp.hat==='ranger'){for(let x=CX-17;x<=CX+17;x++){put(x,CY-8,x>CX+8?hD:h);put(x,CY-7,hDD);}for(let x=CX-15;x<=CX+15;x++)put(x,CY-9,h);
+      for(let y=CY-17;y<=CY-9;y++)for(let x=CX-9;x<=CX+9;x++){if(y===CY-17&&Math.abs(x-CX)>6)continue;let c=x>CX+4?hD:(x<CX-5?hL:h);if(y===CY-11||y===CY-10)c=shade(h,-.45);if(Math.abs(x-CX)<2&&y<CY-14)c=hD;put(x,y,c);}}
+    if(sp.hat==='aviator'){ell(CX,CY-8,12,10,h,(i,j)=>j>2?null:(i>6?hD:(i<-5&&j<-4?hL:h)));for(const s of [-1,1])for(let y=CY-6;y<=CY+8;y++)for(let i=0;i<4;i++)put(CX+s*(9+i),y,s>0||i>2?hD:h);
+      for(const s of [-1,1])put(CX+s*11,CY+8,hDD);for(let x=CX-12;x<=CX+12;x++)put(x,CY-10,'#4a3020');
+      for(const gx of [CX-6,CX+5]){ell(gx,CY-11,3.2,2.6,'#8a8070');ell(gx,CY-11,2.2,1.6,'#9ad6e8',(i,j)=>i<0&&j<0?'#e8faff':'#9ad6e8');}}}
+  /* scarf */
+  if(sp.scarf){const s=sp.scarf,sD=shade(s,-.22),sL=shade(s,.18);for(let y=33;y<=37;y++)for(let x=CX-9+(y-33);x<=CX+9-(y-33)*.5;x++)put(x,y,(x+y)%4===0?sD:(x<CX-4?sL:s));
+    for(let y=37;y<=45;y++)for(let x=CX+3;x<=CX+6;x++)put(x+((y-37)>>2),y,x===CX+6?sD:((y%3===0)?sD:s));put(CX+4,46,sD);put(CX+6,46,sD);}
+  /* paint: background, a glow behind the head, soft outline round the figure */
+  const c=document.createElement('canvas');c.width=c.height=N;const x=c.getContext('2d');
+  const bg=sp.bg,bgL=shade(bg,.22),bgD=shade(bg,-.1);
+  for(let j=0;j<N;j++)for(let i=0;i<N;i++){const d=Math.hypot(i-CX,(j-CY+2)*1.05);let col=d<17?bgL:(d<19&&(i+j)%2===0?bgL:bg);if(j>40)col=bgD;if(j===40&&i%2===0)col=bgD;
+    const v=F[j*N+i];if(v){col=v;}else{let nb=null;for(const [a,b] of [[1,0],[-1,0],[0,1],[0,-1]]){const q=F[(j+b)*N+i+a];if(i+a>=0&&i+a<N&&j+b>=0&&j+b<N&&q){nb=q;break;}}if(nb)col=mixH(shade(nb,-.55),col,.25);}
+    x.fillStyle=col;x.fillRect(i,j,1,1);}
+  PORT[id]=c.toDataURL();return PORT[id];}
+
+/* ---------- weather (a test, picked in Settings) ----------
+   Clear, Cloudy, Showers, Stormy. Cloudy greys the sky, softens the sun, pulls the haze in and dims the sea glint.
+   Showers adds rain streaks round the plane, a hiss of rain and a few bumps. Stormy is darker, windier, bumpier, with
+   the odd lightning flash and a roll of thunder. Nothing here fights you hard: it's a change of mood. */
+if(!settings.weather)settings.weather='clear';
+const WX={clear:{name:'Clear',o:0,rain:0,bump:0,wind:1},cloudy:{name:'Cloudy',o:.6,rain:0,bump:.15,wind:1.4},
+  rain:{name:'Showers',o:.8,rain:.55,bump:.45,wind:1.8},storm:{name:'Stormy',o:1,rain:1,bump:1,wind:3}};
+const WIND0=WIND.clone();
+const _wc=new THREE.Color(),_wg=new THREE.Color();
+function greyed(c,o,dk){const l=c.r*.3+c.g*.59+c.b*.11;_wg.setRGB(l*.96,l*.99,l*1.04).multiplyScalar(1-dk);return c.lerp(_wg,o);}
+function applyWeather(){const W=WX[settings.weather]||WX.clear,o=W.o;WIND.copy(WIND0).multiplyScalar(W.wind);
+  for(const m of cloudGroup.children)m.material.color&&m.material.color.setScalar(1-o*.32);
+  if(!o)return;const T=TOD[tod],dk=o*.22;
+  sunL.intensity=T.sunI*(1-o*.65);hemi.intensity=T.hemiI*(1+o*.2);
+  const u=skyMat.uniforms;for(const k of ['cZen','cHigh','cHor','cHaze'])greyed(u[k].value,o*.85,dk);u.cSun.value.lerp(u.cHor.value,o*.8);u.uDisc.value=T.disc*(1-o*.9);u.uStars.value=T.stars*(1-o);
+  scene.fog.color.copy(u.cHor.value);scene.fog.near=T.fogN*(1-o*.5);scene.fog.far=T.fogF*(1-o*.42);
+  const w=waterMat.uniforms;w.fogColor.value.copy(u.cHor.value);w.fogNear.value=scene.fog.near;w.fogFar.value=scene.fog.far;
+  for(const k of ['cDeep','cMid','cShal'])greyed(w[k].value,o*.45,dk*.6);w.cGlint.value.multiplyScalar(1-o*.75);
+  const pu=postMat.uniforms;pu.sat.value=T.sat*(1-o*.3);pu.con.value=T.con*(1-o*.06);fogK=-1;}
+/* rain: streaks in a box that follows the camera */
+const RAIN=(()=>{const N=2400,BX=150,BY=90,P=new Float32Array(N*6),seed=[];for(let i=0;i<N;i++)seed.push([Math.random()*BX,Math.random()*BY,Math.random()*BX,.8+Math.random()*.4]);
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(P,3));
+  const m=new THREE.LineBasicMaterial({color:0xdde6f0,transparent:true,opacity:.4,depthWrite:false,fog:false});
+  const L=new THREE.LineSegments(g,m);L.frustumCulled=false;L.visible=false;L.renderOrder=7;scene.add(L);
+  let fall=0;
+  return {update(dt){const W=WX[settings.weather]||WX.clear;L.visible=W.rain>0&&mode!=='title';if(!L.visible)return;
+    const n=Math.round(N*W.rain);g.setDrawRange(0,n*2);fall+=dt*38;const c=camera.position,wx=WIND.x*.25,wz=WIND.z*.25;
+    for(let i=0;i<n;i++){const s=seed[i],y=((s[1]-fall*s[3])%BY+BY)%BY;
+      const x=c.x+(((s[0]-c.x+fall*wx)%BX+BX)%BX)-BX/2,z=c.z+(((s[2]-c.z+fall*wz)%BX+BX)%BX)-BX/2,yy=c.y-BY/2+y,len=1.6*s[3];
+      const k=i*6;P[k]=x;P[k+1]=yy;P[k+2]=z;P[k+3]=x+wx*.08;P[k+4]=yy+len;P[k+5]=z+wz*.08;}
+    g.attributes.position.needsUpdate=true;m.opacity=.28+.18*W.rain;}};})();
+/* rain sound: soft filtered noise, louder in a storm */
+const rainSnd={g:null,start(){const c=snd.ctx;if(!c||this.g)return;const b=c.createBuffer(1,c.sampleRate*2,c.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;
+    const s=c.createBufferSource();s.buffer=b;s.loop=true;const f=c.createBiquadFilter();f.type='bandpass';f.frequency.value=2600;f.Q.value=.5;const h=c.createBiquadFilter();h.type='highshelf';h.frequency.value=5000;h.gain.value=-8;
+    this.g=c.createGain();this.g.gain.value=0;s.connect(f).connect(h).connect(this.g).connect(c.destination);s.start();},
+  set(v){if(!snd.ctx)return;this.start();if(this.g)this.g.gain.setTargetAtTime(settings.sound?v:0,snd.ctx.currentTime,.4);}};
+function thunder(){const c=snd.ctx;if(!c||!settings.sound)return;const t=c.currentTime,b=c.createBuffer(1,c.sampleRate*3,c.sampleRate),d=b.getChannelData(0);let v=0;for(let i=0;i<d.length;i++){v=v*.98+(Math.random()*2-1)*.02;d[i]=v*8;}
+  const s=c.createBufferSource();s.buffer=b;const f=c.createBiquadFilter();f.type='lowpass';f.frequency.value=180;const g=c.createGain();g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.55,t+.25);g.gain.exponentialRampToValueAtTime(.001,t+2.9);
+  s.connect(f).connect(g).connect(c.destination);s.start(t);}
+let flashT=0,nextFlash=12,wxT=0;
+function stepWeather(dt){const W=WX[settings.weather]||WX.clear;if(!W.bump)return;const agl=ac.pos.y-AC.gearH-surfH(ac.pos.x,ac.pos.z);if(agl<8)return;const k=W.bump*clamp(agl/40,0,1);
+  ac.vel.y+=(vnoise(simT*.9,3,31)-.5)*5*k*dt;ac.vel.x+=(vnoise(simT*.5,4,31)-.5)*3*k*dt;ac.vel.z+=(vnoise(simT*.55,5,31)-.5)*3*k*dt;
+  ac.w.z+=(vnoise(simT*1.3,6,31)-.5)*.9*k*dt;ac.w.x+=(vnoise(simT*1.1,7,31)-.5)*.5*k*dt;}
+anims.push(t=>{const dt=clamp(t-wxT,0,.1);wxT=t;RAIN.update(dt);const W=WX[settings.weather]||WX.clear;
+  rainSnd.set(mode==='fly'||mode==='paused'?W.rain*(camMode==='cockpit'?.05:.08):0);
+  if(settings.weather==='storm'&&mode==='fly'){nextFlash-=dt;if(nextFlash<=0){nextFlash=9+Math.random()*16;flashT=.35;setTimeout(thunder,600+Math.random()*1800);}}
+  if(flashT>0){flashT-=dt;const f=flashT>0?(Math.sin(flashT*40)>0?1:.35)*flashT/.35:0;postMat.uniforms.mist.value=Math.max(postMat.uniforms.mist.value,f*.55);}});
+
 
 /* ---------- main loop ---------- */
 let acc=0,last=performance.now(),fpsN=0,fpsT=0,fpsLast=0,fpsPrev=0,fpsMin=999;renderer.info.autoReset=false;
@@ -3972,7 +4149,7 @@ function loop(now){
   skyMat.uniforms.uTime.value=t;waterMat.uniforms.uTime.value=t;for(const a of anims)a(t);
   cloudGroup.position.set((t*2.2)%4000,0,-(t*.8)%4000);
   {const pu=postMat.uniforms;pu.mist.value=lerp(pu.mist.value,cloudMist(camera.position),1-Math.exp(-dt*5));pu.mistC.value.copy(scene.fog.color).lerp(_mistW,.3);}
-  if(mode==='fly'){readInput(dt);acc+=dt;const H_=1/120;let n=0;while(acc>=H_&&n<10){if(ac.ground)stepGround(H_);else{stepAir(H_);stepBoost(H_);stepUp(H_);stepBumps(H_);}simT+=H_;acc-=H_;n++;if(mode!=='fly')break;}if(n>=10)acc=0;
+  if(mode==='fly'){readInput(dt);acc+=dt;const H_=1/120;let n=0;while(acc>=H_&&n<10){if(ac.ground)stepGround(H_);else{stepAir(H_);stepBoost(H_);stepUp(H_);stepBumps(H_);if(typeof stepWeather==='function')stepWeather(H_);}simT+=H_;acc-=H_;n++;if(mode!=='fly')break;}if(n>=10)acc=0;
     if(!Number.isFinite(ac.pos.x+ac.pos.y+ac.pos.z+ac.vel.x+ac.vel.y+ac.vel.z+ac.q.x+ac.q.w)){console.warn('sim NaN, respawning');spawnField(stripById(ac.lastField)||STRIPS[0]);}
     if(mode==='fly'){gameChecks(dt);playChecks(dt);}runTips(dt);}
   else acc=0;

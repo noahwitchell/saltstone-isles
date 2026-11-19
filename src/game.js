@@ -11,7 +11,7 @@ function setTOD(k){tod=k;const T=TOD[k];
   const w=waterMat.uniforms;w.fogColor.value.setHex(T.hor);w.fogNear.value=T.fogN;w.fogFar.value=T.fogF;w.cDeep.value.setHex(T.deep);w.cMid.value.setHex(T.mid);w.cShal.value.setHex(T.shal);w.cGlint.value.setHex(T.glint);
   const pu=postMat.uniforms;pu.con.value=T.con;pu.sat.value=T.sat;pu.vig.value=T.vig;
   lightPts.visible=T.lights>0;lightPts.material.color.setScalar(T.lights);navPts.visible=T.lights>0;
-  NIGHT_GLOW.set(T.lights>=1?1:0);bakeTerrainShadow(sunDir,{noon:0,golden:0,sunset:0,dusk:.6,night:.3}[k]||0);fogK=-1;}
+  NIGHT_GLOW.set(T.lights>=1?1:0);bakeTerrainShadow(sunDir,{noon:0,golden:0,sunset:0,dusk:.6,night:.3}[k]||0);fogK=-1;if(typeof applyWeather==='function')applyWeather();}
 
 /* ---------- save data ---------- */
 const sightOn=v=>!v.night||TOD[tod].lights>=1;
@@ -90,33 +90,7 @@ const CHARS={
 };
 function shade(hex,a){const n=parseInt(hex.slice(1),16);let r=n>>16,g=(n>>8)&255,b=n&255;const f=v=>clamp(Math.round(a<0?v*(1+a):v+(255-v)*a),0,255);return '#'+[f(r),f(g),f(b)].map(v=>v.toString(16).padStart(2,'0')).join('');}
 const PORT={};
-function portrait(id){if(PORT[id])return PORT[id];const sp=CHARS[id].sp;const c=document.createElement('canvas');c.width=c.height=32;const x=c.getContext('2d');
-  const P=(col,px,py,w=1,h=1)=>{x.fillStyle=col;x.fillRect(px,py,w,h);};
-  const ell=(cx,cy,rx,ry,col)=>{for(let j=-ry;j<=ry;j++)for(let i=-rx;i<=rx;i++)if((i*i)/(rx*rx)+(j*j)/(ry*ry)<=1.05)P(col,cx+i,cy+j);};
-  P(sp.bg,0,0,32,32);P(shade(sp.bg,-.08),0,24,32,8);
-  ell(16,33,13,9,sp.shirt);P(shade(sp.shirt,-.18),3,31,26,1);
-  if(sp.plaid)for(let i=5;i<28;i+=4){P(shade(sp.shirt,-.3),i,25,1,7);P(shade(sp.shirt,-.3),4,28,24,1);}
-  P(shade(sp.skin,-.15),14,21,5,4);
-  if(sp.style==='long'){ell(16,10,9,7,sp.hair);P(sp.hair,7,10,3,13);P(sp.hair,22,10,3,13);P(shade(sp.hair,-.15),7,22,3,1);P(shade(sp.hair,-.15),22,22,3,1);}
-  if(sp.style==='bun')ell(16,5,3,3,sp.hair);
-  ell(16,14,7,8,sp.skin);P(sp.skin,8,13,1,3);P(sp.skin,24,13,1,3);P(shade(sp.skin,-.12),9,18,14,1);
-  if(sp.style==='short'||sp.style==='long'||sp.style==='bun'){for(let i=-7;i<=7;i++){const hh=5-Math.round(Math.abs(i)/2.4);P(sp.hair,16+i,6,1,hh);}P(sp.hair,8,9,1,4);P(sp.hair,24,9,1,4);}
-  if(sp.style==='curly'){for(let k=0;k<11;k++){const a=Math.PI*(k/10);ell(16+Math.round(Math.cos(a)*7),9-Math.round(Math.sin(a)*3),2,2,sp.hair);}}
-  P('#2a2230',12,14,2,2);P('#2a2230',18,14,2,2);P('#ffffff',12,14,1,1);P('#ffffff',18,14,1,1);
-  P(shade(sp.hair,-.15),11,12,3,1);P(shade(sp.hair,-.15),18,12,3,1);
-  P('rgba(230,100,90,.35)',10,17,2,1);P('rgba(230,100,90,.35)',20,17,2,1);
-  P(shade(sp.skin,-.18),15,16,2,2);
-  if(sp.freckles){for(const [a,b] of [[10,16],[12,17],[19,16],[21,17],[11,18],[20,18]])P(shade(sp.skin,-.25),a,b);}
-  if(sp.beard){for(let j=17;j<=23;j++){const w=8-Math.max(0,j-20)*2;P(sp.beard,16-w,j,w*2,1);}}
-  P('#7a3a3a',14,19,4,1);
-  if(sp.mustache)P(sp.mustache,13,18,6,1);
-  if(sp.glasses){const g='#2a2230';for(const ox of [11,17]){P(g,ox,13,4,1);P(g,ox,16,4,1);P(g,ox,13,1,4);P(g,ox+3,13,1,4);}P(g,15,14,2,1);}
-  if(sp.hat==='cap'){ell(16,7,8,4,sp.hatc);P(sp.hatc,8,8,17,2);P(shade(sp.hatc,-.2),18,9,9,2);}
-  if(sp.hat==='beanie'){ell(16,8,8,5,sp.hatc);P(shade(sp.hatc,-.2),8,10,17,2);P(shade(sp.hatc,.3),15,2,3,2);}
-  if(sp.hat==='ranger'){P(sp.hatc,3,9,26,2);P(sp.hatc,9,3,14,7);P(shade(sp.hatc,-.25),9,8,14,1);}
-  if(sp.hat==='aviator'){ell(16,9,8,6,sp.hatc);P(sp.hatc,8,11,2,7);P(sp.hatc,22,11,2,7);P('#9ad0e0',10,7,5,2);P('#9ad0e0',17,7,5,2);P('#4a3020',15,7,2,1);}
-  if(sp.scarf){P(sp.scarf,9,22,14,3);P(shade(sp.scarf,-.2),20,24,3,5);}
-  PORT[id]=c.toDataURL();return PORT[id];}
+/* portrait(id) lives in portraits.js */
 
 /* ---------- the mail ---------- */
 const DAYS=[
@@ -540,7 +514,7 @@ function finishLanding(){
   const zoneTxt=dist<0?'Short of the runway':Math.abs(zd)<Math.max(30,s.len*.08)?'On the markers':zd<0?`${Math.round(-zd)} m early`:`${Math.round(zd)} m long`;
   const stopped=stripAt(ac.pos.x,ac.pos.z)===s;
   let total=Math.round((soft+cen+zone)/3);if(!stopped)total=Math.max(1,total-1);
-  const F=log.fields[s.id]||(log.fields[s.id]={landings:0,best:0});F.landings++;F.best=Math.max(F.best,total);
+  const F=log.fields[s.id]||(log.fields[s.id]={landings:0,best:0});F.landings++;if(chartIsle(isleOfStrip(s),2))setTimeout(()=>toast(`${ISLES[isleOfStrip(s)].name} is on your chart now.`,2.6),1800);F.best=Math.max(F.best,total);
   const fromId=ac.from,isTrip=fromId&&fromId!==s.id&&fromId!=='__approach';
   const ck=td.check,ckOk=ck.carb&&ck.mix&&ck.flaps&&ck.light;
   const news=[];const g=id=>{if(goal(id,true))news.push(GOALS.find(x=>x.id===id).name);};
@@ -866,17 +840,50 @@ function setStation(id,quiet){if(id==='off'){if((settings.music??.5)>0)settings.
   const S=stationAt(id);if(!quiet)toast(`RADIO ${S.fq} · ${S.name}\n${S.desc}${settings.sound?'':'\n(Sound is off in Settings.)'}`,2.2);}
 function turnDial(){const i=dialIndex();setStation(DIAL[(i+1)%DIAL.length]);snd.click();}
 /* ---------- maps ---------- */
-const MAPX=SIZEX,MAPZ=SIZEZ,mapBase=(()=>{const NX=1072,N=512,c=document.createElement('canvas');c.width=NX;c.height=N;const x=c.getContext('2d'),img=x.createImageData(NX,N);
+const MAPX=SIZEX,MAPZ=SIZEZ,MAPNX=1072,MAPNY=512,ISLE_IDS=Object.keys(ISLES),mapOwner=new Uint8Array(MAPNX*MAPNY),mapBase=(()=>{const NX=MAPNX,N=MAPNY,c=document.createElement('canvas');c.width=NX;c.height=N;const x=c.getContext('2d'),img=x.createImageData(NX,N);
   for(let j=0;j<N;j++)for(let i=0;i<NX;i++){const wx=-MAPX/2+(i+.5)*MAPX/NX,wz=-MAPZ/2+(j+.5)*MAPZ/N,h=groundH(wx,wz);let r,g,b;
     if(h<0){const d=clamp(-h/40,0,1);r=lerp(70,30,d);g=lerp(150,72,d);b=lerp(170,120,d);}
     else if(h<4){r=226;g=205;b=150;}
     else{const t=clamp(h/600,0,1),sl=slopeAt(wx,wz);r=lerp(118,190,t*t);g=lerp(166,178,t);b=lerp(84,150,t*t);if(sl>.45){r=150;g=136;b=126;}
       if(isFarm(wx,wz,h,sl)){const fc=fieldColor(wx,wz);if(fc>=0){r=(fc>>16)&255;g=(fc>>8)&255;b=fc&255;}}
       if(((h/60)|0)!==((groundH(wx+MAPX/NX,wz)/60)|0)){r*=.82;g*=.82;b*=.82;}}
+    if(h>=0)mapOwner[j*NX+i]=ISLE_IDS.indexOf(isleAt(wx,wz))+1;
     const k=(j*NX+i)*4;img.data[k]=r;img.data[k+1]=g;img.data[k+2]=b;img.data[k+3]=255;}
   x.putImageData(img,0,0);return c;})();
+/* ---------- the uncharted map ----------
+   You start with Ferrow and Gull Point on the chart. Everything else is uncharted haze. Fly over an island and its
+   outline goes on the chart; land on one of its runways and the whole island is charted, names and all. A job to an
+   uncharted field shows only as an X over the haze. */
+if(!log.chart){log.chart={ferrow:2,gull:2};for(const st of STRIPS)if((log.fields[st.id]||{}).landings)log.chart[isleAt(st.x,st.z)]=2;}
+const isleOfStrip=st=>st.__isle||(st.__isle=isleAt(st.x,st.z));
+const charted=st=>log.chart[isleOfStrip(st)]===2;
+const mapView=(()=>{const c=document.createElement('canvas');c.width=MAPNX;c.height=MAPNY;return c;})();
+const mapBaseData=mapBase.getContext('2d').getImageData(0,0,MAPNX,MAPNY).data;
+function rebuildChart(){const NX=MAPNX,NY=MAPNY,n=NX*NY,D=new Float32Array(n).fill(1e9),own=mapOwner;
+  for(let q=0;q<n;q++){const o=own[q];if(o&&log.chart[ISLE_IDS[o-1]]===2)D[q]=0;}
+  // two-pass chamfer distance (in map pixels) from charted land, so the sea round a charted island shows too
+  for(let j=0;j<NY;j++)for(let i=0;i<NX;i++){const q=j*NX+i;let d=D[q];if(i>0)d=Math.min(d,D[q-1]+1);if(j>0){d=Math.min(d,D[q-NX]+1);if(i>0)d=Math.min(d,D[q-NX-1]+1.41);if(i<NX-1)d=Math.min(d,D[q-NX+1]+1.41);}D[q]=d;}
+  for(let j=NY-1;j>=0;j--)for(let i=NX-1;i>=0;i--){const q=j*NX+i;let d=D[q];if(i<NX-1)d=Math.min(d,D[q+1]+1);if(j<NY-1){d=Math.min(d,D[q+NX]+1);if(i<NX-1)d=Math.min(d,D[q+NX+1]+1.41);if(i>0)d=Math.min(d,D[q+NX-1]+1.41);}D[q]=d;}
+  const x=mapView.getContext('2d'),img=x.createImageData(NX,NY),o=img.data,B=mapBaseData;
+  const seenL=(q)=>{const v=own[q];return v&&log.chart[ISLE_IDS[v-1]]===1;};
+  for(let j=0;j<NY;j++)for(let i=0;i<NX;i++){const q=j*NX+i,k=q*4,v=own[q],st=v?log.chart[ISLE_IDS[v-1]]:0,d=D[q];let r,g,b;
+    const hz=Math.sin(i*.045+Math.sin(j*.07)*2.2)*Math.sin(j*.06+i*.011),fogL=((i+j*3)%9===0||hz>.82);
+    const fog=()=>{r=fogL?52:40;g=fogL?92:78;b=fogL?132:116;};
+    if(st===2||(!v&&d<=12)||(!v&&d<=17&&((i+j)%2===0||d<=14.5))){r=B[k];g=B[k+1];b=B[k+2];}
+    else if(st===1){const edge=!seenL(q-1)||!seenL(q+1)||!seenL(q-NX)||!seenL(q+NX);if(edge){r=226;g=232;b=232;}else if((i+j)%3===0){r=120;g=150;b=168;}else fog();}
+    else fog();
+    o[k]=r;o[k+1]=g;o[k+2]=b;o[k+3]=255;}
+  x.putImageData(img,0,0);}
+rebuildChart();
+function chartIsle(id,lvl){if(!id||(log.chart[id]||0)>=lvl)return false;log.chart[id]=lvl;saveL();rebuildChart();return true;}
+let seenT=0;
+function updCharting(dt){seenT+=dt;if(seenT<.5||ac.ground)return;seenT=0;if(groundH(ac.pos.x,ac.pos.z)<1)return;const id=isleAt(ac.pos.x,ac.pos.z);
+  if(!log.chart[id]&&chartIsle(id,1))toast(`Land below! Its outline is on your chart now.\nLand on its runway to chart it properly.`,3);}
+/* an X over the haze for a field you haven't charted */
+function drawX(x,px,pz,q,col){x.save();x.strokeStyle='#241c2e';x.lineWidth=q*.9;x.beginPath();x.moveTo(px-q,pz-q);x.lineTo(px+q,pz+q);x.moveTo(px+q,pz-q);x.lineTo(px-q,pz+q);x.stroke();
+  x.strokeStyle=col;x.lineWidth=q*.45;x.beginPath();x.moveTo(px-q,pz-q);x.lineTo(px+q,pz+q);x.moveTo(px+q,pz-q);x.lineTo(px-q,pz+q);x.stroke();x.restore();}
 const mctx=$('mapc').getContext('2d');
-function drawStripsOn(x,k,highlight){for(const s of STRIPS){const a=toWorld(s,-s.len/2,0),b=toWorld(s,s.len/2,0);const hi=s===highlight;
+function drawStripsOn(x,k,highlight){for(const s of STRIPS){if(!charted(s)){if(s===highlight)drawX(x,s.x,s.z,7/k,'#8ff0e8');continue;}const a=toWorld(s,-s.len/2,0),b=toWorld(s,s.len/2,0);const hi=s===highlight;
   if(hi){x.save();x.fillStyle='#8ff0e8';for(const d of GATE_D){const p=gatePos(s,gateDir,d);x.fillRect(p.x-3/k,p.z-3/k,6/k,6/k);}x.strokeStyle='#8ff0e8';x.lineWidth=1.3/k;x.setLineDash([5/k,4/k]);for(const e of [-1,1]){const p0=toWorld(s,e*s.len/2,0),p1=toWorld(s,e*(s.len/2+2600),0);x.beginPath();x.moveTo(p0.x,p0.z);x.lineTo(p1.x,p1.z);x.stroke();}x.restore();}
   x.strokeStyle=hi?'#ffffff':'#f5e8cf';x.lineWidth=(hi?3:2.2)/k;x.beginPath();x.moveTo(a.x,a.z);x.lineTo(b.x,b.z);x.stroke();}}
 let mapT=0;
@@ -884,10 +891,10 @@ function drawMiniMap(dt){mapT-=dt;if(mapT>0)return;mapT=.08;const W=96,x=mctx;x.
   axes();const hdg=ac.ground?-ac.gYaw:Math.atan2(_f.x,-_f.z);
   const near=dest?Math.hypot(dest.x-ac.pos.x,dest.z-ac.pos.z):1e9,R=near<2600?1500:2800,k=(W/2)/R,cy=W/2+14;
   x.fillStyle='#1d2a44';x.fillRect(0,0,W,W);x.save();x.translate(W/2,cy);x.rotate(-hdg);x.scale(k,k);x.translate(-ac.pos.x,-ac.pos.z);
-  x.drawImage(mapBase,-MAPX/2,-MAPZ/2,MAPX,MAPZ);drawStripsOn(x,k,dest);
+  x.drawImage(mapView,-MAPX/2,-MAPZ/2,MAPX,MAPZ);drawStripsOn(x,k,dest);
   x.fillStyle='#ffb02e';for(const [k_,v] of Object.entries(sights))if(log.sights[k_])x.fillRect(v.x-2/k,v.z-2/k,4/k,4/k);x.fillStyle='#8ff0e8';for(const g of FLYGATES)if(log.gates[g.id])x.fillRect(g.x-2/k,g.z-2/k,4/k,4/k);
   dropMarks(x,(a,b)=>[a,b],1/k);
-  if(dest){x.fillStyle='#8ff0e8';x.beginPath();x.arc(dest.x,dest.z,3.5/k,0,TAU);x.fill();}
+  if(dest&&charted(dest)){x.fillStyle='#8ff0e8';x.beginPath();x.arc(dest.x,dest.z,3.5/k,0,TAU);x.fill();}
   x.restore();
   x.fillStyle='#fff8ec';x.strokeStyle='#241c2e';x.lineWidth=1;x.beginPath();x.moveTo(W/2,cy-6);x.lineTo(W/2-4,cy+4);x.lineTo(W/2,cy+2);x.lineTo(W/2+4,cy+4);x.closePath();x.fill();x.stroke();
   const na=-hdg;x.fillStyle='#ffb02e';x.font='13px VT323, monospace';x.textAlign='center';x.textBaseline='middle';x.fillText('N',clamp(W/2+Math.sin(na)*40,6,W-6),clamp(cy-Math.cos(na)*40,6,W-6));
@@ -898,12 +905,12 @@ function chartResize(){if($('chartOv'))drawChart();}
 function bigMap(){hideModal();if(mode==='fly')mode='paused';let o=$('chartOv');
   if(!o){o=document.createElement('div');o.id='chartOv';o.innerHTML=`<canvas id="bigmap"></canvas><div id="chartLeg"></div><button id="chartX" aria-label="Close the chart">✕</button>`;document.body.appendChild(o);
     $('chartX').addEventListener('click',e=>{e.stopPropagation();closeChart();});addEventListener('resize',chartResize);}
-  $('chartLeg').innerHTML=`<b>BEA'S CHART</b> · ★ ${log.score.toLocaleString()}<br>${Object.keys(sights).filter(q=>log.sights[q]).length}/${Object.keys(sights).length} landmarks (orange) · ${FLYGATES.filter(g=>log.gates[g.id]).length}/${FLYGATES.length} gaps (cyan)${activeDrops().length?' · '+activeDrops().length+' air drops (orange rings)':''}${activeErrands().length?'<br>Errands: '+activeErrands().map(errLine).join(', '):''}`;
+  $('chartLeg').innerHTML=`<b>BEA'S CHART</b> · ★ ${log.score.toLocaleString()}<br>${ISLE_IDS.filter(q=>log.chart[q]===2).length}/${ISLE_IDS.length} islands charted · ${Object.keys(sights).filter(q=>log.sights[q]).length}/${Object.keys(sights).length} landmarks (orange) · ${FLYGATES.filter(g=>log.gates[g.id]).length}/${FLYGATES.length} gaps (cyan)${activeDrops().length?' · '+activeDrops().length+' air drops (orange rings)':''}${activeErrands().length?'<br>Errands: '+activeErrands().map(errLine).join(', '):''}`;
   drawChart();}
 function drawChart(){const c=$('bigmap'),r=rectL(c),W=Math.max(200,Math.round(r.width)),H=Math.max(150,Math.round(r.height));c.width=W;c.height=H;
   const x=c.getContext('2d');x.imageSmoothingEnabled=false;const k=Math.min(W/45200,H/20600),CX=0,CZ=500,sc=clamp(Math.min(W/512,H/384),1,2.2);
   x.fillStyle='#1e4878';x.fillRect(0,0,W,H);x.save();x.translate(W/2-CX*k,H/2-CZ*k);x.scale(k,k);
-  x.drawImage(mapBase,-MAPX/2,-MAPZ/2,MAPX,MAPZ);drawStripsOn(x,k/sc,dest);
+  x.drawImage(mapView,-MAPX/2,-MAPZ/2,MAPX,MAPZ);drawStripsOn(x,k/sc,dest);
   x.restore();
   const P=(wx,wz)=>[W/2+(wx-CX)*k,H/2+(wz-CZ)*k];x.textBaseline='middle';
   x.font=`${Math.round(13*sc)}px VT323, monospace`;
@@ -911,8 +918,8 @@ function drawChart(){const c=$('bigmap'),r=rectL(c),W=Math.max(200,Math.round(r.
   for(const [k_,v] of Object.entries(sights)){if(!log.sights[k_])continue;const [a,b]=P(v.x,v.z);x.fillStyle='#241c2e';x.fillRect(a-3*sc,b-3*sc,6*sc,6*sc);x.fillStyle='#ffb02e';x.fillRect(a-2*sc,b-2*sc,4*sc,4*sc);}
   for(const g of FLYGATES){if(!log.gates[g.id])continue;const [a,b]=P(g.x,g.z),q=4*sc;x.fillStyle='#8ff0e8';x.beginPath();x.moveTo(a,b-q);x.lineTo(a+q,b);x.lineTo(a,b+q);x.lineTo(a-q,b);x.closePath();x.fill();}
   dropMarks(x,P,sc);
-  for(const I of Object.values(ISLES))label(I.name.toUpperCase(),I.x,I.z+(I.r?Math.min(I.r*.6,600)+260:1500),'#ffd890',0);
-  if(dest)label(dest.name.toUpperCase(),dest.x,dest.z,'#8ff0e8',-11);
+  for(const [id,I] of Object.entries(ISLES))if(log.chart[id]===2)label(I.name.toUpperCase(),I.x,I.z+(I.r?Math.min(I.r*.6,600)+260:1500),'#ffd890',0);
+  if(dest)label(charted(dest)?dest.name.toUpperCase():dest.name.toUpperCase()+' (UNCHARTED)',dest.x,dest.z,'#8ff0e8',charted(dest)?-11:-16);
   const [px,pz]=P(ac.pos.x,ac.pos.z);axes();const hdg=ac.ground?-ac.gYaw:Math.atan2(_f.x,-_f.z);x.save();x.translate(px,pz);x.rotate(hdg);x.scale(sc,sc);x.fillStyle='#fff8ec';x.strokeStyle='#241c2e';x.lineWidth=1.5;x.beginPath();x.moveTo(0,-9);x.lineTo(-6,6);x.lineTo(0,3);x.lineTo(6,6);x.closePath();x.fill();x.stroke();x.restore();
   const wx=W-30*sc,wy=H-34*sc,wd=70*DEG;x.fillStyle='#ffb02e';x.textAlign='center';x.fillText('N ↑',30*sc,H-14*sc);
   x.strokeStyle='#fff8ec';x.lineWidth=2;x.beginPath();x.moveTo(wx-Math.sin(wd)*12*sc,wy+Math.cos(wd)*12*sc);x.lineTo(wx+Math.sin(wd)*12*sc,wy-Math.cos(wd)*12*sc);x.stroke();x.fillStyle='#fff8ec';x.fillText('WIND',wx,H-12*sc);}
@@ -975,8 +982,8 @@ function openMenu(){if(mode==='fly')mode='paused';showCard(`<h2>Paused</h2><div 
 /* each pause-menu button gets its own color so they're easy to tell apart at a glance */
 const MENU_COL={'Mail bag':'#f2c25a',"Bea's chart":'#7cc4d4',"Bea's logbook":'#a6d38a','Practice a landing':'#c4aee6','Start at a field':'#f0a77c','Your logbook':'#9fc4ef','Settings':'#cfc6b4','Hangar':'#f2a8d4'};
 function picker(kind){
-  const items=STRIPS.map(s=>{const F=log.fields[s.id];return `<button class="item" data-id="${s.id}"><span><b>${s.name}</b><span class="d">${DESC[s.id]}</span></span><span class="r">${F&&F.best?stars(F.best):'NOT YET'}</span></button>`;}).join('');
-  showCard(`<h2>${kind==='practice'?'Practice a landing':'Start at a field'}</h2><div class="sub">${kind==='practice'?'START 1.5 KM OUT, LINED UP, ON THE GLIDE PATH':'START ON THE RUNWAY, ENGINE AT IDLE'}</div><div class="list">${items}</div>`,[['Back',back]]);
+  const items=STRIPS.filter(charted).map(s=>{const F=log.fields[s.id];return `<button class="item" data-id="${s.id}"><span><b>${s.name}</b><span class="d">${DESC[s.id]}</span></span><span class="r">${F&&F.best?stars(F.best):'NOT YET'}</span></button>`;}).join('');
+  showCard(`<h2>${kind==='practice'?'Practice a landing':'Start at a field'}</h2><div class="sub">${kind==='practice'?'START 1.5 KM OUT, LINED UP, ON THE GLIDE PATH':'START ON THE RUNWAY, ENGINE AT IDLE'} · FIELDS ON YOUR CHART</div><div class="list">${items}</div>`,[['Back',back]]);
   $('cardBody').querySelectorAll('.item').forEach(b=>b.addEventListener('click',()=>{const s=stripById(b.dataset.id);if(kind==='practice')spawnApproach(s);else if(s.id==='harbor'&&!mail.active&&mode==='title')offerDay(()=>spawnField(s));else spawnField(s);}));}
 function logbook(){
   const f=STRIPS.map(s=>{const F=log.fields[s.id]||{};return `<div class="item ${F.landings?'done':''}"><span><b>${s.name}</b><span class="d">${F.landings?F.landings+' landing'+(F.landings>1?'s':''):'Not visited yet'}</span></span><span class="r">${F.best?stars(F.best):''}</span></div>`;}).join('');
@@ -995,13 +1002,14 @@ function settingsCard(){
   const mv=[['OFF',0],['SOFT',.5],['ON',1]].map(([n,v])=>`<button data-mv="${v}" class="${(settings.music??.5)==v?'primary':''}">${n}</button>`).join('');
   const st=STATIONS.map(S=>`<button data-st="${S.id}" class="${settings.station===S.id?'primary':''}">${S.fq} ${S.name.toUpperCase()}</button>`).join('');
   const lt=Object.keys(TOD).map(k=>`<button data-lt="${k}" class="${settings.light===k?'primary':''}">${TOD[k].name.toUpperCase()}</button>`).join('');
-  showCard(`<h2>Settings</h2><div class="sub">ASSISTS · TURN THEM OFF ONE AT A TIME AS YOU IMPROVE</div>${rows}<h3>ENGINE VOLUME</h3><div class="btns">${ev}</div><h3>RADIO VOLUME</h3><div class="btns">${mv}</div><h3>RADIO STATION · OR TAP THE DIAL UP TOP WHILE FLYING</h3><div class="btns">${st}</div><h3>TIME OF DAY</h3><div class="btns">${lt}</div><h3>PIXELS</h3><div class="btns">${px}</div><div class="sub" style="margin-top:14px">BUILD __BUILD__</div>`,[['Back',back,true]]);
+  showCard(`<h2>Settings</h2><div class="sub">ASSISTS · TURN THEM OFF ONE AT A TIME AS YOU IMPROVE</div>${rows}<h3>ENGINE VOLUME</h3><div class="btns">${ev}</div><h3>RADIO VOLUME</h3><div class="btns">${mv}</div><h3>RADIO STATION · OR TAP THE DIAL UP TOP WHILE FLYING</h3><div class="btns">${st}</div><h3>TIME OF DAY</h3><div class="btns">${lt}</div><h3>WEATHER · TRYING IT OUT</h3><div class="btns">${Object.entries(WX).map(([k,W])=>`<button data-wx="${k}" class="${settings.weather===k?'primary':''}">${W.name.toUpperCase()}</button>`).join('')}</div><h3>PIXELS</h3><div class="btns">${px}</div><div class="sub" style="margin-top:14px">BUILD __BUILD__</div>`,[['Back',back,true]]);
   const cb=$('cardBody');
   cb.querySelectorAll('[data-k]').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.k;if(k==='tilt'){if(!settings.tilt){settings.tilt=true;saveS();enableTilt().then(()=>{updTiltUI();settingsCard();});}else{settings.tilt=false;saveS();disableTilt();updTiltUI();settingsCard();}return;}settings[k]=!settings[k];saveS();if(k==='sound')snd.setOn(settings.sound);if(k==='fps'){$('fps').hidden=!settings.fps;$('fps').textContent='FPS: measuring…';fpsN=fpsT=0;fpsLast=0;}if(k==='sound')music.setVol();settingsCard();}));
   cb.querySelectorAll('[data-px]').forEach(b=>b.addEventListener('click',()=>{settings.pixels=b.dataset.px;pixMode=settings.pixels;saveS();resize();settingsCard();}));
   cb.querySelectorAll('[data-mv]').forEach(b=>b.addEventListener('click',()=>{settings.music=+b.dataset.mv;saveS();snd.init();music.start();music.setVol();updRadioBtn();settingsCard();}));
   cb.querySelectorAll('[data-st]').forEach(b=>b.addEventListener('click',()=>{setStation(b.dataset.st);settingsCard();}));
   cb.querySelectorAll('[data-ev]').forEach(b=>b.addEventListener('click',()=>{settings.engVol=+b.dataset.ev;saveS();settingsCard();}));
+  cb.querySelectorAll('[data-wx]').forEach(b=>b.addEventListener('click',()=>{settings.weather=b.dataset.wx;saveS();setTOD(tod);settingsCard();}));
   cb.querySelectorAll('[data-lt]').forEach(b=>b.addEventListener('click',()=>{settings.light=b.dataset.lt;saveS();setTOD(settings.light);updTodBtn();settingsCard();}));}
 function showHowTo(){mode='card';
   showCard(`<h2>How to fly</h2><div class="sub">TWO THUMBS</div>
@@ -1063,7 +1071,7 @@ function drawHUD(dt){
     if(agl>160||ac.ground)lastCall=999;
     if(dest){const d=Math.hypot(dest.x-ac.pos.x,dest.z-ac.pos.z);$('destTxt').textContent=`${dest.name} ${d<1000?Math.round(d/10)*10+' m':(d/1000).toFixed(1)+' km'}`;$('arr').style.transform=`rotate(${brg-hdg}deg)`;}}
   $('stallBan').hidden=!(ac.stallWarn&&mode==='fly');
-  if(mode==='fly')drawMiniMap(dt);
+  if(mode==='fly'){drawMiniMap(dt);updCharting(dt);}
   if(lookDown&&(mode==='fly'||mode==='paused')){pb.clear();drawDropSight(dt);pb.flush();hudWasDrawn=true;return;}
   if(camMode==='chase'||mode==='title'){pb.clear();if(mode==='fly'&&approachMeter()){pb.flush();hudWasDrawn=true;}else if(hudWasDrawn){pb.flush();hudWasDrawn=false;}return;}
   hudWasDrawn=true;const bank=Math.atan2(-_r.y,_u.y),pitch=Math.asin(clamp(_f.y,-1,1));
@@ -1175,7 +1183,7 @@ function loop(now){
   skyMat.uniforms.uTime.value=t;waterMat.uniforms.uTime.value=t;for(const a of anims)a(t);
   cloudGroup.position.set((t*2.2)%4000,0,-(t*.8)%4000);
   {const pu=postMat.uniforms;pu.mist.value=lerp(pu.mist.value,cloudMist(camera.position),1-Math.exp(-dt*5));pu.mistC.value.copy(scene.fog.color).lerp(_mistW,.3);}
-  if(mode==='fly'){readInput(dt);acc+=dt;const H_=1/120;let n=0;while(acc>=H_&&n<10){if(ac.ground)stepGround(H_);else{stepAir(H_);stepBoost(H_);stepUp(H_);stepBumps(H_);}simT+=H_;acc-=H_;n++;if(mode!=='fly')break;}if(n>=10)acc=0;
+  if(mode==='fly'){readInput(dt);acc+=dt;const H_=1/120;let n=0;while(acc>=H_&&n<10){if(ac.ground)stepGround(H_);else{stepAir(H_);stepBoost(H_);stepUp(H_);stepBumps(H_);if(typeof stepWeather==='function')stepWeather(H_);}simT+=H_;acc-=H_;n++;if(mode!=='fly')break;}if(n>=10)acc=0;
     if(!Number.isFinite(ac.pos.x+ac.pos.y+ac.pos.z+ac.vel.x+ac.vel.y+ac.vel.z+ac.q.x+ac.q.w)){console.warn('sim NaN, respawning');spawnField(stripById(ac.lastField)||STRIPS[0]);}
     if(mode==='fly'){gameChecks(dt);playChecks(dt);}runTips(dt);}
   else acc=0;
