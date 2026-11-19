@@ -2142,7 +2142,7 @@ const COCK=(()=>{const g=new THREE.Group();g.rotation.x=12*DEG;g.visible=false;c
   B(.1,.072,.085,[0,-.215,PZ+.08],blk);B(.074,.042,.004,[0,-.212,PZ+.124],cream);B(.004,.044,.006,[0,-.212,PZ+.127],red);for(let k=-2;k<=2;k++)if(k)B(.003,.012,.006,[k*.014,-.204,PZ+.127],blk);B(.02,.04,.02,[0,-.27,PZ+.08],blk);
   // windshield posts, leaning in toward the wing, and the brace at the top
   const post=(ax,ay,bx,by,z,th)=>{const dx=bx-ax,dy=by-ay,L=Math.hypot(dx,dy);B(th,L,th,[(ax+bx)/2,(ay+by)/2,z],0x2e2834,[0,0,Math.atan2(-dx,dy)]);B(th*.4,L,th*1.02,[(ax+bx)/2+th*.3,(ay+by)/2,z],0x4a4252,[0,0,Math.atan2(-dx,dy)]);};
-  post(-.78,-.26,-.56,.7,PZ+.06,.05);post(.78,-.26,.56,.7,PZ+.06,.05);
+  post(-.8,-.26,-.6,.7,PZ+.06,.034);post(.8,-.26,.6,.7,PZ+.06,.034);
   // the door on the left: wall, sill cap, handle and a map pocket
   B(.05,.8,1.1,[-.68,-.68,-.3],panD);B(.1,.04,1.1,[-.65,-.28,-.3],trim);B(.1,.012,1.1,[-.65,-.302,-.3],blk);B(.03,.022,.14,[-.64,-.4,-.48],chrome);B(.02,.16,.3,[-.645,-.56,-.36],0x2e2834);B(.022,.02,.3,[-.64,-.48,-.36],trim);
   // the right seat: tucked leather back with a roll on top, and its cushion
@@ -3238,7 +3238,7 @@ function settingsCard(){
   const mv=[['OFF',0],['SOFT',.5],['ON',1]].map(([n,v])=>`<button data-mv="${v}" class="${(settings.music??.5)==v?'primary':''}">${n}</button>`).join('');
   const st=STATIONS.map(S=>`<button data-st="${S.id}" class="${settings.station===S.id?'primary':''}">${S.fq} ${S.name.toUpperCase()}</button>`).join('');
   const lt=Object.keys(TOD).map(k=>`<button data-lt="${k}" class="${settings.light===k?'primary':''}">${TOD[k].name.toUpperCase()}</button>`).join('');
-  showCard(`<h2>Settings</h2><div class="sub">ASSISTS · TURN THEM OFF ONE AT A TIME AS YOU IMPROVE</div>${rows}<h3>ENGINE VOLUME</h3><div class="btns">${ev}</div><h3>RADIO VOLUME</h3><div class="btns">${mv}</div><h3>RADIO STATION · OR TAP THE DIAL UP TOP WHILE FLYING</h3><div class="btns">${st}</div><h3>TIME OF DAY</h3><div class="btns">${lt}</div><h3>WEATHER · TRYING IT OUT</h3><div class="btns">${Object.entries(WX).map(([k,W])=>`<button data-wx="${k}" class="${settings.weather===k?'primary':''}">${W.name.toUpperCase()}</button>`).join('')}</div><h3>PIXELS</h3><div class="btns">${px}</div><div class="sub" style="margin-top:14px">BUILD b663e24</div>`,[['Back',back,true]]);
+  showCard(`<h2>Settings</h2><div class="sub">ASSISTS · TURN THEM OFF ONE AT A TIME AS YOU IMPROVE</div>${rows}<h3>ENGINE VOLUME</h3><div class="btns">${ev}</div><h3>RADIO VOLUME</h3><div class="btns">${mv}</div><h3>RADIO STATION · OR TAP THE DIAL UP TOP WHILE FLYING</h3><div class="btns">${st}</div><h3>TIME OF DAY</h3><div class="btns">${lt}</div><h3>WEATHER · TRYING IT OUT</h3><div class="btns">${Object.entries(WX).map(([k,W])=>`<button data-wx="${k}" class="${settings.weather===k?'primary':''}">${W.name.toUpperCase()}</button>`).join('')}</div><h3>PIXELS</h3><div class="btns">${px}</div><div class="sub" style="margin-top:14px">BUILD edbaf3b</div>`,[['Back',back,true]]);
   const cb=$('cardBody');
   cb.querySelectorAll('[data-k]').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.k;if(k==='tilt'){if(!settings.tilt){settings.tilt=true;saveS();enableTilt().then(()=>{updTiltUI();settingsCard();});}else{settings.tilt=false;saveS();disableTilt();updTiltUI();settingsCard();}return;}settings[k]=!settings[k];saveS();if(k==='sound')snd.setOn(settings.sound);if(k==='fps'){$('fps').hidden=!settings.fps;$('fps').textContent='FPS: measuring…';fpsN=fpsT=0;fpsLast=0;}if(k==='sound')music.setVol();settingsCard();}));
   cb.querySelectorAll('[data-px]').forEach(b=>b.addEventListener('click',()=>{settings.pixels=b.dataset.px;pixMode=settings.pixels;saveS();resize();settingsCard();}));
@@ -3553,12 +3553,12 @@ function updDog(dt,t){if(lookDown){dog.root.visible=false;return;}const U=plane.
   if(cock){/* in the cockpit he sits in the right seat, bottom-right of the view: head, collar and chest above the dash */
     dog.root.visible=dog.body.visible=true;
     if(dog.root.parent!==COCK)COCK.add(dog.root);   // sits in the right seat of the 3D cockpit, so it rides with the view
-    dog.up=lerp(dog.up||0,b?1:0,1-Math.exp(-dt*8));const k=.55;
-    dog.root.position.set(.5,-.3+(dog.dy||0)*k+dog.up*.05+Math.abs(Math.sin(t*14))*b*.025,-.6);
-    dog.root.scale.setScalar(k*(dog.k||1));dog.root.rotation.set(0,1.0,0);
+    dog.up=lerp(dog.up||0,b?1:0,1-Math.exp(-dt*8));const k=.5;   // up on the seat with its front paws on the dash, head against the windshield
+    dog.root.position.set(.48,-.15+(dog.dy||0)*k+dog.up*.04+Math.abs(Math.sin(t*14))*b*.02,-.74);
+    dog.root.scale.setScalar(k*(dog.k||1));dog.root.rotation.set(0,1.45,0);
     // now and then he turns to look at you; otherwise he watches out of the windshield
     dog.glanceT-=dt;if(dog.glanceT<=0){dog.glanceT=14+Math.random()*14;dog.glance=1.6;}dog.glance=Math.max(0,dog.glance-dt);
-    const want=b?dog.yaw-1.0:dog.glance>0?1.35:-.7+Math.sin(t*.31)*.3+Math.sin(t*.13)*.2;dog.hy=lerp(dog.hy||0,want,1-Math.exp(-dt*(b?8:3)));
+    const want=b?dog.yaw-1.45:dog.glance>0?1.1:-.15+Math.sin(t*.31)*.3+Math.sin(t*.13)*.2;dog.hy=lerp(dog.hy||0,want,1-Math.exp(-dt*(b?8:3)));
     dog.g.position.set(0,dog.up*.06,0);dog.g.rotation.set(.05-(b?Math.abs(Math.sin(t*14))*.22:0),dog.hy,dog.glance>0?.22:Math.sin(t*.5)*.12);
     dog.chest.scale.y=1+Math.sin(t*(b?9:3.2))*.03;dog.tail.rotation.y=Math.sin(t*(b?16:6))*(b?.8:.45);
     dog.eL.rotation.x=dog.eR.rotation.x=-.1+Math.sin(t*3)*.05;dog.eL.rotation.z=-.15;dog.eR.rotation.z=.15;dog.tongue.rotation.x=Math.sin(t*9)*.15;return;}
@@ -3651,7 +3651,7 @@ const streaks=(()=>{const SRC=[[-5.2,.8,.3,1],[5.2,.8,.3,1],[-5.2,.95,.3,1],[5.2
    new version. When the game comes back to the front (and every ten minutes), check the build number on the site; if
    it's changed, reload straight away from the title screen, or offer a one-tap update in flight (the flight is saved
    first, so "Pick up where you left off" puts you right back) */
-const BUILD_ID='b663e24';let updOffered=false;
+const BUILD_ID='edbaf3b';let updOffered=false;
 function checkUpdate(){if(!/^https?:/.test(location.protocol)||/claude/.test(location.hostname))return;
   fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.text():null).then(v=>{v=v&&v.trim();if(!v||v===BUILD_ID||v.length>12)return;
     if(mode==='title'){location.reload();return;}if(updOffered)return;updOffered=true;
@@ -4132,14 +4132,14 @@ function petParts(sp,f,l,d){const dk=0x2c2833,pink=0xe86a7a;
     ear:[{geo:new THREE.ConeGeometry(.065,.17,4).translate(0,.085,0),m:M([0,0,0],[0,Math.PI/4,0]),color:f},{geo:new THREE.ConeGeometry(.035,.1,4).translate(0,.055,-.02),m:M([0,0,0],[0,Math.PI/4,0]),color:l}],earR:null,tongue:false,
     chest:[{geo:BOX(.2,.44,.2),m:M([0,-.34,.07]),color:f},{geo:BOX(.13,.3,.04),m:M([0,-.33,-.04]),color:l}],
     rest:[O([0,-.66,.24],[.19,.16,.27],f),...[-1,1].map(e=>({geo:BOX(.055,.42,.055),m:M([e*.055,-.6,-.01]),color:f})),...[-1,1].map(e=>({geo:BOX(.075,.045,.09),m:M([e*.055,-.81,-.04]),color:l})),...[-1,1].map(e=>({geo:BOX(.08,.045,.17),m:M([e*.15,-.81,.16]),color:l}))],
-    tail:[{geo:BOX(.05,.05,.24).translate(0,0,.12),m:M([0,0,0]),color:f},{geo:BOX(.05,.34,.05),m:M([0,.15,.24]),color:f},{geo:BOX(.05,.05,.13),m:M([0,.32,.19]),color:d}],tailPos:[0,-.74,.44],tailRx:0,earY:.11,earX:.085,stiff:true};
+    tail:[{geo:BOX(.05,.05,.24).translate(0,0,.12),m:M([0,0,0]),color:f},{geo:BOX(.05,.34,.05),m:M([0,.15,.24]),color:f},{geo:BOX(.05,.05,.13),m:M([0,.32,.19]),color:d}],tailPos:[0,-.74,.44],tailRx:0,earY:.11,earX:.085,stiff:true,collar:[.23,-.15,.08,.23]};
   if(sp==='frog')return {head:[{geo:BOX(.46,.15,.36),m:M([0,-.02,0]),color:f},{geo:BOX(.42,.05,.32),m:M([0,-.1,-.01]),color:l},{geo:BOX(.4,.014,.02),m:M([0,-.07,-.18]),color:dk},
       ...[-1,1].map(e=>({geo:BOX(.03,.02,.02),m:M([e*.06,.01,-.185]),color:dk})),...[-1,1].map(e=>O([e*.17,-.05,-.12],[.05,.035,.04],0xe86a7a))],
     ear:[{geo:new THREE.SphereGeometry(.09,8,6).translate(0,.04,0),m:M([0,0,0]),color:f},{geo:new THREE.SphereGeometry(.065,8,6).translate(0,.06,-.05),m:M([0,0,0]),color:0xf4f0e0},{geo:BOX(.06,.03,.02),m:M([0,.065,-.112]),color:dk}],earR:null,tongue:'frog',
     chest:[O([0,-.13,-.09],[.15,.06,.11],l)],
     rest:[O([0,-.2,.2],[.27,.19,.3],f),O([0,-.17,.32],[.18,.12,.16],d),...[-1,1].map(e=>({geo:BOX(.06,.22,.06),m:M([e*.17,-.28,-.1],[0,0,e*.35]),color:f})),...[-1,1].map(e=>({geo:BOX(.13,.03,.11),m:M([e*.23,-.39,-.15]),color:l})),
       ...[-1,1].map(e=>O([e*.25,-.26,.3],[.1,.1,.2],f)),...[-1,1].map(e=>({geo:BOX(.08,.06,.26),m:M([e*.3,-.36,.22]),color:d})),...[-1,1].map(e=>({geo:BOX(.17,.03,.14),m:M([e*.31,-.4,.06]),color:l}))],
-    tail:SPECK,earY:.07,earX:.13,stiff:true,dy:-.38};
+    tail:SPECK,earY:.07,earX:.13,stiff:true,dy:-.22,collar:null};
   if(sp==='bird')return {head:[O([0,0,0],[.13,.13,.13],f),O([0,-.03,-.07],[.09,.08,.07],l),{geo:BOX(.07,.08,.08),m:M([0,-.03,-.15]),color:0xf0c040},{geo:BOX(.05,.035,.05),m:M([0,-.08,-.13]),color:0x3a3036},
       ...[-1,1].map(e=>({geo:BOX(.02,.055,.055),m:M([e*.122,.03,-.04]),color:0xfafaf0})),...[-1,1].map(e=>({geo:BOX(.024,.032,.032),m:M([e*.125,.03,-.045]),color:dk}))],
     ear:[{geo:BOX(.035,.15,.05).translate(0,.075,0),m:M([0,0,0],[-.45,0,0]),color:d},{geo:BOX(.03,.12,.045).translate(0,.06,.05),m:M([0,0,0],[-.8,0,0]),color:l}],earR:SPECK,tongue:false,
@@ -4147,7 +4147,7 @@ function petParts(sp,f,l,d){const dk=0x2c2833,pink=0xe86a7a;
     rest:[...[-1,1].map(e=>({geo:BOX(.05,.3,.22),m:M([e*.15,-.33,.1],[.25,0,0]),color:d})),...[-1,1].map(e=>({geo:BOX(.04,.13,.13),m:M([e*.14,-.52,.22],[.5,0,0]),color:d})),
       ...[-1,1].map(e=>({geo:BOX(.03,.12,.03),m:M([e*.05,-.6,.04]),color:0x8a8890})),...[-1,1].map(e=>({geo:BOX(.07,.02,.06),m:M([e*.05,-.655,.03]),color:0x8a8890})),
       {geo:BOX(.56,.045,.045),m:M([0,-.68,.03]),color:0x8a6a48},...[-1,1].map(e=>({geo:BOX(.045,.16,.045),m:M([e*.24,-.76,.03]),color:0x7a5a3c})),{geo:BOX(.6,.03,.14),m:M([0,-.84,.03]),color:0x6a4a30}],
-    tail:[{geo:BOX(.11,.03,.42).translate(0,0,.21),m:M([0,0,0]),color:d},{geo:BOX(.06,.025,.34).translate(0,0,.17),m:M([0,.02,.04]),color:l}],tailPos:[0,-.5,.2],tailRx:1.05,earY:.11,earX:0,stiff:true,k:.85};
+    tail:[{geo:BOX(.11,.03,.42).translate(0,0,.21),m:M([0,0,0]),color:d},{geo:BOX(.06,.025,.34).translate(0,0,.17),m:M([0,.02,.04]),color:l}],tailPos:[0,-.5,.2],tailRx:1.05,earY:.11,earX:0,stiff:true,k:.85,collar:null};
   if(sp==='axolotl')return {head:[{geo:BOX(.42,.2,.32),m:M([0,-.02,0]),color:f},{geo:BOX(.38,.05,.28),m:M([0,-.11,-.01]),color:l},{geo:BOX(.3,.014,.02),m:M([0,-.07,-.165]),color:dk},...[-1,1].map(e=>({geo:BOX(.04,.025,.02),m:M([e*.14,-.06,-.162]),color:dk})),
       ...[-1,1].map(e=>({geo:BOX(.045,.045,.02),m:M([e*.12,.04,-.162]),color:dk})),...[-1,1].map(e=>({geo:BOX(.015,.015,.021),m:M([e*.11,.05,-.165]),color:0xffffff}))],
     ear:[0,1,2].map(k=>({geo:BOX(.03,.2,.05).translate(0,.1,0),m:M([0,-.02+k*.035,.06-k*.06],[-.5-k*.35,0,0]),color:d})).concat([0,1,2].map(k=>({geo:BOX(.034,.06,.06),m:M([0,.16-k*.02,-.02-k*.1],[-.5-k*.35,0,0]),color:d}))),earR:null,tongue:false,
@@ -4155,14 +4155,14 @@ function petParts(sp,f,l,d){const dk=0x2c2833,pink=0xe86a7a;
     rest:[O([0,-.44,.08],[.13,.12,.21],f),...[-1,1].map(e=>({geo:BOX(.06,.14,.06),m:M([e*.15,-.48,-.06],[0,0,e*.4]),color:f})),
       {geo:new THREE.TorusGeometry(.31,.03,4,16).rotateX(Math.PI/2),m:M([0,-.14,.08]),color:0xd8eef4},{geo:new THREE.CylinderGeometry(.31,.3,.06,16),m:M([0,-.81,.08]),color:0x9ab8c8},
       {geo:new THREE.CylinderGeometry(.33,.33,.05,16),m:M([0,-.88,.08]),color:0x6a5a52}],
-    tail:[{geo:BOX(.07,.12,.34).translate(0,0,.17),m:M([0,0,0]),color:f},{geo:BOX(.025,.24,.32).translate(0,0,.17),m:M([0,0,.03]),color:l}],tailPos:[0,-.56,.2],tailRx:-.5,earY:.0,earX:.2,stiff:true,jar:true};
+    tail:[{geo:BOX(.07,.12,.34).translate(0,0,.17),m:M([0,0,0]),color:f},{geo:BOX(.025,.24,.32).translate(0,0,.17),m:M([0,0,.03]),color:l}],tailPos:[0,-.56,.2],tailRx:-.5,earY:.0,earX:.2,stiff:true,jar:true,collar:null};
   /* bunny */
   return {head:[O([0,0,0],[.15,.14,.16],f),O([0,-.05,-.1],[.1,.07,.07],l),{geo:BOX(.045,.035,.03),m:M([0,-.03,-.17]),color:pink},{geo:BOX(.05,.04,.012),m:M([0,-.105,-.15]),color:0xffffff},
       ...[-1,1].map(e=>({geo:BOX(.045,.06,.02),m:M([e*.09,.03,-.13],[0,-e*.5,0]),color:dk})),...[-1,1].map(e=>({geo:BOX(.016,.016,.021),m:M([e*.085,.045,-.136],[0,-e*.5,0]),color:0xffffff}))],
     ear:[{geo:BOX(.075,.38,.05).translate(0,.19,0),m:M([0,0,0]),color:f},{geo:BOX(.04,.3,.02).translate(0,.17,-.026),m:M([0,0,0]),color:d}],earR:null,tongue:false,
     chest:[O([0,-.25,.02],[.14,.14,.13],f),O([0,-.26,-.07],[.09,.1,.06],l)],
     rest:[O([0,-.56,.22],[.25,.24,.3],f),...[-1,1].map(e=>({geo:BOX(.09,.06,.3),m:M([e*.15,-.8,.18]),color:l})),...[-1,1].map(e=>({geo:BOX(.06,.16,.06),m:M([e*.07,-.7,-.07]),color:f})),...[-1,1].map(e=>({geo:BOX(.065,.04,.08),m:M([e*.07,-.8,-.09]),color:l}))],
-    tail:[O([0,0,0],[.09,.09,.09],l)],tailPos:[0,-.55,.52],tailRx:0,earY:.11,earX:.065,stiff:true};}
+    tail:[O([0,0,0],[.09,.09,.09],l)],tailPos:[0,-.55,.52],tailRx:0,earY:.11,earX:.065,stiff:true,collar:[.2,-.15,.02,.2]};}
 /* the axolotl's jar: see-through glass and water (keeps the sea marker in alpha, like the foam) */
 const petJar=(()=>{const m=new THREE.MeshBasicMaterial({color:0xbfe6f2,transparent:true,opacity:.3,depthWrite:false,blending:THREE.CustomBlending,blendSrc:THREE.SrcAlphaFactor,blendDst:THREE.OneMinusSrcAlphaFactor,blendSrcAlpha:THREE.ZeroFactor,blendDstAlpha:THREE.OneFactor});
   const j=new THREE.Mesh(new THREE.CylinderGeometry(.3,.3,.66,16).translate(0,-.47,.08),m);j.renderOrder=6;j.visible=false;dog.body.add(j);return j;})();
@@ -4171,7 +4171,8 @@ function applyPet(){const P=settings.pet,S=PET_SPECIES[P.sp],c=S.cols[P.col]||S.
   const set=(mesh,items)=>{mesh.geometry.dispose();mesh.geometry=merge(items);};
   set(dog.g.children[0],parts.head);set(dog.eL,parts.ear);set(dog.eR,parts.earR||parts.ear);
   const ex=parts.earX??.18,ey=parts.earY??.12;dog.eL.position.set(-ex,ey,.03);dog.eR.position.set(ex,ey,.03);
-  dog.chest.geometry.dispose();dog.chest.geometry=merge([...parts.chest,{geo:BOX(.33,.07,.33),m:M([0,-.14,.12]),color:0xd2493c},{geo:BOX(.07,.07,.03),m:M([0,-.22,-.05]),color:0xf1c84a}]);
+  const cl=parts.collar===undefined?[.33,-.14,.12,.33]:parts.collar;   // [width, height, depth offset, depth], or none
+  dog.chest.geometry.dispose();dog.chest.geometry=merge([...parts.chest,...(cl?[{geo:BOX(cl[0],.06,cl[3]),m:M([0,cl[1],cl[2]]),color:0xd2493c},{geo:BOX(.06,.06,.03),m:M([0,cl[1]-.07,cl[2]-cl[3]/2-.01]),color:0xf1c84a}]:[])]);
   const rest=dog.body.children.find(o=>o!==dog.chest&&o!==dog.tail);if(rest){rest.geometry.dispose();rest.geometry=merge(parts.rest);}
   set(dog.tail.children[0],parts.tail);dog.tail.position.set(...(parts.tailPos||[0,-.62,.8]));dog.tail.rotation.x=parts.tailRx??.7;
   dog.k=parts.k||1;dog.dy=parts.dy||0;petJar.visible=!!parts.jar;

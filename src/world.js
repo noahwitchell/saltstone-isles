@@ -971,7 +971,7 @@ const COCK=(()=>{const g=new THREE.Group();g.rotation.x=12*DEG;g.visible=false;c
   B(.1,.072,.085,[0,-.215,PZ+.08],blk);B(.074,.042,.004,[0,-.212,PZ+.124],cream);B(.004,.044,.006,[0,-.212,PZ+.127],red);for(let k=-2;k<=2;k++)if(k)B(.003,.012,.006,[k*.014,-.204,PZ+.127],blk);B(.02,.04,.02,[0,-.27,PZ+.08],blk);
   // windshield posts, leaning in toward the wing, and the brace at the top
   const post=(ax,ay,bx,by,z,th)=>{const dx=bx-ax,dy=by-ay,L=Math.hypot(dx,dy);B(th,L,th,[(ax+bx)/2,(ay+by)/2,z],0x2e2834,[0,0,Math.atan2(-dx,dy)]);B(th*.4,L,th*1.02,[(ax+bx)/2+th*.3,(ay+by)/2,z],0x4a4252,[0,0,Math.atan2(-dx,dy)]);};
-  post(-.78,-.26,-.56,.7,PZ+.06,.05);post(.78,-.26,.56,.7,PZ+.06,.05);
+  post(-.8,-.26,-.6,.7,PZ+.06,.034);post(.8,-.26,.6,.7,PZ+.06,.034);
   // the door on the left: wall, sill cap, handle and a map pocket
   B(.05,.8,1.1,[-.68,-.68,-.3],panD);B(.1,.04,1.1,[-.65,-.28,-.3],trim);B(.1,.012,1.1,[-.65,-.302,-.3],blk);B(.03,.022,.14,[-.64,-.4,-.48],chrome);B(.02,.16,.3,[-.645,-.56,-.36],0x2e2834);B(.022,.02,.3,[-.64,-.48,-.36],trim);
   // the right seat: tucked leather back with a roll on top, and its cushion

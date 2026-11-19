@@ -38,14 +38,14 @@ function petParts(sp,f,l,d){const dk=0x2c2833,pink=0xe86a7a;
     ear:[{geo:new THREE.ConeGeometry(.065,.17,4).translate(0,.085,0),m:M([0,0,0],[0,Math.PI/4,0]),color:f},{geo:new THREE.ConeGeometry(.035,.1,4).translate(0,.055,-.02),m:M([0,0,0],[0,Math.PI/4,0]),color:l}],earR:null,tongue:false,
     chest:[{geo:BOX(.2,.44,.2),m:M([0,-.34,.07]),color:f},{geo:BOX(.13,.3,.04),m:M([0,-.33,-.04]),color:l}],
     rest:[O([0,-.66,.24],[.19,.16,.27],f),...[-1,1].map(e=>({geo:BOX(.055,.42,.055),m:M([e*.055,-.6,-.01]),color:f})),...[-1,1].map(e=>({geo:BOX(.075,.045,.09),m:M([e*.055,-.81,-.04]),color:l})),...[-1,1].map(e=>({geo:BOX(.08,.045,.17),m:M([e*.15,-.81,.16]),color:l}))],
-    tail:[{geo:BOX(.05,.05,.24).translate(0,0,.12),m:M([0,0,0]),color:f},{geo:BOX(.05,.34,.05),m:M([0,.15,.24]),color:f},{geo:BOX(.05,.05,.13),m:M([0,.32,.19]),color:d}],tailPos:[0,-.74,.44],tailRx:0,earY:.11,earX:.085,stiff:true};
+    tail:[{geo:BOX(.05,.05,.24).translate(0,0,.12),m:M([0,0,0]),color:f},{geo:BOX(.05,.34,.05),m:M([0,.15,.24]),color:f},{geo:BOX(.05,.05,.13),m:M([0,.32,.19]),color:d}],tailPos:[0,-.74,.44],tailRx:0,earY:.11,earX:.085,stiff:true,collar:[.23,-.15,.08,.23]};
   if(sp==='frog')return {head:[{geo:BOX(.46,.15,.36),m:M([0,-.02,0]),color:f},{geo:BOX(.42,.05,.32),m:M([0,-.1,-.01]),color:l},{geo:BOX(.4,.014,.02),m:M([0,-.07,-.18]),color:dk},
       ...[-1,1].map(e=>({geo:BOX(.03,.02,.02),m:M([e*.06,.01,-.185]),color:dk})),...[-1,1].map(e=>O([e*.17,-.05,-.12],[.05,.035,.04],0xe86a7a))],
     ear:[{geo:new THREE.SphereGeometry(.09,8,6).translate(0,.04,0),m:M([0,0,0]),color:f},{geo:new THREE.SphereGeometry(.065,8,6).translate(0,.06,-.05),m:M([0,0,0]),color:0xf4f0e0},{geo:BOX(.06,.03,.02),m:M([0,.065,-.112]),color:dk}],earR:null,tongue:'frog',
     chest:[O([0,-.13,-.09],[.15,.06,.11],l)],
     rest:[O([0,-.2,.2],[.27,.19,.3],f),O([0,-.17,.32],[.18,.12,.16],d),...[-1,1].map(e=>({geo:BOX(.06,.22,.06),m:M([e*.17,-.28,-.1],[0,0,e*.35]),color:f})),...[-1,1].map(e=>({geo:BOX(.13,.03,.11),m:M([e*.23,-.39,-.15]),color:l})),
       ...[-1,1].map(e=>O([e*.25,-.26,.3],[.1,.1,.2],f)),...[-1,1].map(e=>({geo:BOX(.08,.06,.26),m:M([e*.3,-.36,.22]),color:d})),...[-1,1].map(e=>({geo:BOX(.17,.03,.14),m:M([e*.31,-.4,.06]),color:l}))],
-    tail:SPECK,earY:.07,earX:.13,stiff:true,dy:-.38};
+    tail:SPECK,earY:.07,earX:.13,stiff:true,dy:-.22,collar:null};
   if(sp==='bird')return {head:[O([0,0,0],[.13,.13,.13],f),O([0,-.03,-.07],[.09,.08,.07],l),{geo:BOX(.07,.08,.08),m:M([0,-.03,-.15]),color:0xf0c040},{geo:BOX(.05,.035,.05),m:M([0,-.08,-.13]),color:0x3a3036},
       ...[-1,1].map(e=>({geo:BOX(.02,.055,.055),m:M([e*.122,.03,-.04]),color:0xfafaf0})),...[-1,1].map(e=>({geo:BOX(.024,.032,.032),m:M([e*.125,.03,-.045]),color:dk}))],
     ear:[{geo:BOX(.035,.15,.05).translate(0,.075,0),m:M([0,0,0],[-.45,0,0]),color:d},{geo:BOX(.03,.12,.045).translate(0,.06,.05),m:M([0,0,0],[-.8,0,0]),color:l}],earR:SPECK,tongue:false,
@@ -53,7 +53,7 @@ function petParts(sp,f,l,d){const dk=0x2c2833,pink=0xe86a7a;
     rest:[...[-1,1].map(e=>({geo:BOX(.05,.3,.22),m:M([e*.15,-.33,.1],[.25,0,0]),color:d})),...[-1,1].map(e=>({geo:BOX(.04,.13,.13),m:M([e*.14,-.52,.22],[.5,0,0]),color:d})),
       ...[-1,1].map(e=>({geo:BOX(.03,.12,.03),m:M([e*.05,-.6,.04]),color:0x8a8890})),...[-1,1].map(e=>({geo:BOX(.07,.02,.06),m:M([e*.05,-.655,.03]),color:0x8a8890})),
       {geo:BOX(.56,.045,.045),m:M([0,-.68,.03]),color:0x8a6a48},...[-1,1].map(e=>({geo:BOX(.045,.16,.045),m:M([e*.24,-.76,.03]),color:0x7a5a3c})),{geo:BOX(.6,.03,.14),m:M([0,-.84,.03]),color:0x6a4a30}],
-    tail:[{geo:BOX(.11,.03,.42).translate(0,0,.21),m:M([0,0,0]),color:d},{geo:BOX(.06,.025,.34).translate(0,0,.17),m:M([0,.02,.04]),color:l}],tailPos:[0,-.5,.2],tailRx:1.05,earY:.11,earX:0,stiff:true,k:.85};
+    tail:[{geo:BOX(.11,.03,.42).translate(0,0,.21),m:M([0,0,0]),color:d},{geo:BOX(.06,.025,.34).translate(0,0,.17),m:M([0,.02,.04]),color:l}],tailPos:[0,-.5,.2],tailRx:1.05,earY:.11,earX:0,stiff:true,k:.85,collar:null};
   if(sp==='axolotl')return {head:[{geo:BOX(.42,.2,.32),m:M([0,-.02,0]),color:f},{geo:BOX(.38,.05,.28),m:M([0,-.11,-.01]),color:l},{geo:BOX(.3,.014,.02),m:M([0,-.07,-.165]),color:dk},...[-1,1].map(e=>({geo:BOX(.04,.025,.02),m:M([e*.14,-.06,-.162]),color:dk})),
       ...[-1,1].map(e=>({geo:BOX(.045,.045,.02),m:M([e*.12,.04,-.162]),color:dk})),...[-1,1].map(e=>({geo:BOX(.015,.015,.021),m:M([e*.11,.05,-.165]),color:0xffffff}))],
     ear:[0,1,2].map(k=>({geo:BOX(.03,.2,.05).translate(0,.1,0),m:M([0,-.02+k*.035,.06-k*.06],[-.5-k*.35,0,0]),color:d})).concat([0,1,2].map(k=>({geo:BOX(.034,.06,.06),m:M([0,.16-k*.02,-.02-k*.1],[-.5-k*.35,0,0]),color:d}))),earR:null,tongue:false,
@@ -61,14 +61,14 @@ function petParts(sp,f,l,d){const dk=0x2c2833,pink=0xe86a7a;
     rest:[O([0,-.44,.08],[.13,.12,.21],f),...[-1,1].map(e=>({geo:BOX(.06,.14,.06),m:M([e*.15,-.48,-.06],[0,0,e*.4]),color:f})),
       {geo:new THREE.TorusGeometry(.31,.03,4,16).rotateX(Math.PI/2),m:M([0,-.14,.08]),color:0xd8eef4},{geo:new THREE.CylinderGeometry(.31,.3,.06,16),m:M([0,-.81,.08]),color:0x9ab8c8},
       {geo:new THREE.CylinderGeometry(.33,.33,.05,16),m:M([0,-.88,.08]),color:0x6a5a52}],
-    tail:[{geo:BOX(.07,.12,.34).translate(0,0,.17),m:M([0,0,0]),color:f},{geo:BOX(.025,.24,.32).translate(0,0,.17),m:M([0,0,.03]),color:l}],tailPos:[0,-.56,.2],tailRx:-.5,earY:.0,earX:.2,stiff:true,jar:true};
+    tail:[{geo:BOX(.07,.12,.34).translate(0,0,.17),m:M([0,0,0]),color:f},{geo:BOX(.025,.24,.32).translate(0,0,.17),m:M([0,0,.03]),color:l}],tailPos:[0,-.56,.2],tailRx:-.5,earY:.0,earX:.2,stiff:true,jar:true,collar:null};
   /* bunny */
   return {head:[O([0,0,0],[.15,.14,.16],f),O([0,-.05,-.1],[.1,.07,.07],l),{geo:BOX(.045,.035,.03),m:M([0,-.03,-.17]),color:pink},{geo:BOX(.05,.04,.012),m:M([0,-.105,-.15]),color:0xffffff},
       ...[-1,1].map(e=>({geo:BOX(.045,.06,.02),m:M([e*.09,.03,-.13],[0,-e*.5,0]),color:dk})),...[-1,1].map(e=>({geo:BOX(.016,.016,.021),m:M([e*.085,.045,-.136],[0,-e*.5,0]),color:0xffffff}))],
     ear:[{geo:BOX(.075,.38,.05).translate(0,.19,0),m:M([0,0,0]),color:f},{geo:BOX(.04,.3,.02).translate(0,.17,-.026),m:M([0,0,0]),color:d}],earR:null,tongue:false,
     chest:[O([0,-.25,.02],[.14,.14,.13],f),O([0,-.26,-.07],[.09,.1,.06],l)],
     rest:[O([0,-.56,.22],[.25,.24,.3],f),...[-1,1].map(e=>({geo:BOX(.09,.06,.3),m:M([e*.15,-.8,.18]),color:l})),...[-1,1].map(e=>({geo:BOX(.06,.16,.06),m:M([e*.07,-.7,-.07]),color:f})),...[-1,1].map(e=>({geo:BOX(.065,.04,.08),m:M([e*.07,-.8,-.09]),color:l}))],
-    tail:[O([0,0,0],[.09,.09,.09],l)],tailPos:[0,-.55,.52],tailRx:0,earY:.11,earX:.065,stiff:true};}
+    tail:[O([0,0,0],[.09,.09,.09],l)],tailPos:[0,-.55,.52],tailRx:0,earY:.11,earX:.065,stiff:true,collar:[.2,-.15,.02,.2]};}
 /* the axolotl's jar: see-through glass and water (keeps the sea marker in alpha, like the foam) */
 const petJar=(()=>{const m=new THREE.MeshBasicMaterial({color:0xbfe6f2,transparent:true,opacity:.3,depthWrite:false,blending:THREE.CustomBlending,blendSrc:THREE.SrcAlphaFactor,blendDst:THREE.OneMinusSrcAlphaFactor,blendSrcAlpha:THREE.ZeroFactor,blendDstAlpha:THREE.OneFactor});
   const j=new THREE.Mesh(new THREE.CylinderGeometry(.3,.3,.66,16).translate(0,-.47,.08),m);j.renderOrder=6;j.visible=false;dog.body.add(j);return j;})();
@@ -77,7 +77,8 @@ function applyPet(){const P=settings.pet,S=PET_SPECIES[P.sp],c=S.cols[P.col]||S.
   const set=(mesh,items)=>{mesh.geometry.dispose();mesh.geometry=merge(items);};
   set(dog.g.children[0],parts.head);set(dog.eL,parts.ear);set(dog.eR,parts.earR||parts.ear);
   const ex=parts.earX??.18,ey=parts.earY??.12;dog.eL.position.set(-ex,ey,.03);dog.eR.position.set(ex,ey,.03);
-  dog.chest.geometry.dispose();dog.chest.geometry=merge([...parts.chest,{geo:BOX(.33,.07,.33),m:M([0,-.14,.12]),color:0xd2493c},{geo:BOX(.07,.07,.03),m:M([0,-.22,-.05]),color:0xf1c84a}]);
+  const cl=parts.collar===undefined?[.33,-.14,.12,.33]:parts.collar;   // [width, height, depth offset, depth], or none
+  dog.chest.geometry.dispose();dog.chest.geometry=merge([...parts.chest,...(cl?[{geo:BOX(cl[0],.06,cl[3]),m:M([0,cl[1],cl[2]]),color:0xd2493c},{geo:BOX(.06,.06,.03),m:M([0,cl[1]-.07,cl[2]-cl[3]/2-.01]),color:0xf1c84a}]:[])]);
   const rest=dog.body.children.find(o=>o!==dog.chest&&o!==dog.tail);if(rest){rest.geometry.dispose();rest.geometry=merge(parts.rest);}
   set(dog.tail.children[0],parts.tail);dog.tail.position.set(...(parts.tailPos||[0,-.62,.8]));dog.tail.rotation.x=parts.tailRx??.7;
   dog.k=parts.k||1;dog.dy=parts.dy||0;petJar.visible=!!parts.jar;
