@@ -350,7 +350,8 @@ function portrait(id){if(PORT[id])return PORT[id];
   const c=document.createElement('canvas');c.width=c.height=N;const x=c.getContext('2d');
   const bg=sp.bg,bgL=shade(bg,.22),bgD=shade(bg,-.1),WP=wallpaper(id,bg,hs,mixH);
   for(let j=0;j<N;j++)for(let i=0;i<N;i++){const d=Math.hypot(i-CX,(j-19)*1.05);let col=WP(i,j)||bg;
-    {const r=Math.hypot(i-24,j-22)/32;col=shade(col,.1-.38*r*r);}
+    {const r=Math.hypot(i-24,j-22)/32,e=clamp((r-.45)/.65,0,1),k=e*e*(3-2*e);col=shade(col,.1-.38*r*r-.3*k);
+      if(k>0){const c=hx(col),l=(c[0]+c[1]+c[2])/3;col=toH(c.map(v=>l+(v-l)*(1+k*.9)));}}
     // a soft glow behind the head so the face still pops off the pattern
     if(d<15)col=mixH(col,bgL,.55);else if(d<19)col=mixH(col,bgL,(i+j)%2===0?.4:.18);
     const v=F[j*N+i];if(v){col=v;}else{let nb=null;for(const [a,b] of [[1,0],[-1,0],[0,1],[0,-1]]){const q=F[(j+b)*N+i+a];if(i+a>=0&&i+a<N&&j+b>=0&&j+b<N&&q){nb=q;break;}}if(nb)col=mixH(shade(nb,-.55),col,.25);}

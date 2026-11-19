@@ -2982,7 +2982,7 @@ function settingsCard(){
   const mv=[['OFF',0],['SOFT',.5],['ON',1]].map(([n,v])=>`<button data-mv="${v}" class="${(settings.music??.5)==v?'primary':''}">${n}</button>`).join('');
   const st=STATIONS.map(S=>`<button data-st="${S.id}" class="${settings.station===S.id?'primary':''}">${S.fq} ${S.name.toUpperCase()}</button>`).join('');
   const lt=Object.keys(TOD).map(k=>`<button data-lt="${k}" class="${settings.light===k?'primary':''}">${TOD[k].name.toUpperCase()}</button>`).join('');
-  showCard(`<h2>Settings</h2><div class="sub">ASSISTS · TURN THEM OFF ONE AT A TIME AS YOU IMPROVE</div>${rows}<h3>ENGINE VOLUME</h3><div class="btns">${ev}</div><h3>RADIO VOLUME</h3><div class="btns">${mv}</div><h3>RADIO STATION · OR TAP THE DIAL UP TOP WHILE FLYING</h3><div class="btns">${st}</div><h3>TIME OF DAY</h3><div class="btns">${lt}</div><h3>WEATHER · TRYING IT OUT</h3><div class="btns">${Object.entries(WX).map(([k,W])=>`<button data-wx="${k}" class="${settings.weather===k?'primary':''}">${W.name.toUpperCase()}</button>`).join('')}</div><h3>PIXELS</h3><div class="btns">${px}</div><div class="sub" style="margin-top:14px">BUILD 442638a</div>`,[['Back',back,true]]);
+  showCard(`<h2>Settings</h2><div class="sub">ASSISTS · TURN THEM OFF ONE AT A TIME AS YOU IMPROVE</div>${rows}<h3>ENGINE VOLUME</h3><div class="btns">${ev}</div><h3>RADIO VOLUME</h3><div class="btns">${mv}</div><h3>RADIO STATION · OR TAP THE DIAL UP TOP WHILE FLYING</h3><div class="btns">${st}</div><h3>TIME OF DAY</h3><div class="btns">${lt}</div><h3>WEATHER · TRYING IT OUT</h3><div class="btns">${Object.entries(WX).map(([k,W])=>`<button data-wx="${k}" class="${settings.weather===k?'primary':''}">${W.name.toUpperCase()}</button>`).join('')}</div><h3>PIXELS</h3><div class="btns">${px}</div><div class="sub" style="margin-top:14px">BUILD ed41f0e</div>`,[['Back',back,true]]);
   const cb=$('cardBody');
   cb.querySelectorAll('[data-k]').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.k;if(k==='tilt'){if(!settings.tilt){settings.tilt=true;saveS();enableTilt().then(()=>{updTiltUI();settingsCard();});}else{settings.tilt=false;saveS();disableTilt();updTiltUI();settingsCard();}return;}settings[k]=!settings[k];saveS();if(k==='sound')snd.setOn(settings.sound);if(k==='fps'){$('fps').hidden=!settings.fps;$('fps').textContent='FPS: measuring…';fpsN=fpsT=0;fpsLast=0;}if(k==='sound')music.setVol();settingsCard();}));
   cb.querySelectorAll('[data-px]').forEach(b=>b.addEventListener('click',()=>{settings.pixels=b.dataset.px;pixMode=settings.pixels;saveS();resize();settingsCard();}));
@@ -4326,7 +4326,8 @@ function portrait(id){if(PORT[id])return PORT[id];
   const c=document.createElement('canvas');c.width=c.height=N;const x=c.getContext('2d');
   const bg=sp.bg,bgL=shade(bg,.22),bgD=shade(bg,-.1),WP=wallpaper(id,bg,hs,mixH);
   for(let j=0;j<N;j++)for(let i=0;i<N;i++){const d=Math.hypot(i-CX,(j-19)*1.05);let col=WP(i,j)||bg;
-    {const r=Math.hypot(i-24,j-22)/32;col=shade(col,.1-.38*r*r);}
+    {const r=Math.hypot(i-24,j-22)/32,e=clamp((r-.45)/.65,0,1),k=e*e*(3-2*e);col=shade(col,.1-.38*r*r-.3*k);
+      if(k>0){const c=hx(col),l=(c[0]+c[1]+c[2])/3;col=toH(c.map(v=>l+(v-l)*(1+k*.9)));}}
     // a soft glow behind the head so the face still pops off the pattern
     if(d<15)col=mixH(col,bgL,.55);else if(d<19)col=mixH(col,bgL,(i+j)%2===0?.4:.18);
     const v=F[j*N+i];if(v){col=v;}else{let nb=null;for(const [a,b] of [[1,0],[-1,0],[0,1],[0,-1]]){const q=F[(j+b)*N+i+a];if(i+a>=0&&i+a<N&&j+b>=0&&j+b<N&&q){nb=q;break;}}if(nb)col=mixH(shade(nb,-.55),col,.25);}
