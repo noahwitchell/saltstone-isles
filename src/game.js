@@ -79,7 +79,7 @@ const CHARS={
   ivy:{name:'Ivy Calder',role:'THE HOUSE WITH THE LAMP · FARHOLD',home:'farhold',sp:{bg:'#f0e0b0',skin:'#e2a982',hair:'#f1ece4',style:'long',shirt:'#6a5a8c',scarf:'#d2493c'}},
   wren:{name:'Wren Okafor',role:'CLIMBER · TWIN SISTERS',home:'sisters',sp:{bg:'#c8e0f0',skin:'#6e4a33',hair:'#1c1616',style:'curly',shirt:'#e2703f',hat:'beanie',hatc:'#3f8fc0'}},
   tam:{name:'Tam Marlow',role:'GOATHERD · CLEFT ISLE',home:'cleft',sp:{bg:'#e8d0b0',skin:'#e2a982',hair:'#8a5a30',style:'short',beard:'#8a5a30',shirt:'#6b7a3a',hat:'cap',hatc:'#8a5a3a'}},
-  hattie:{name:'Hattie Bloom',role:'ORCHARD KEEPER · APPLECROSS',home:'apple',sp:{bg:'#f4d0d8',skin:'#f0c7a4',hair:'#c0582e',style:'bun',shirt:'#d2493c',freckles:true}},
+  hattie:{name:'Hattie Bloom',role:'ORCHARD KEEPER · APPLECROSS',home:'apple',sp:{bg:'#f4d0d8',skin:'#e8b48e',hair:'#d8a050',style:'bun',shirt:'#d2493c'}},
   desmond:{name:'Desmond Achebe',role:'SALT RAKER · THE SALTPANS',home:'salt',sp:{bg:'#f0ece0',skin:'#5a3a28',hair:'#e8e4dc',style:'short',beard:'#e8e4dc',shirt:'#3f6f8f',hat:'ranger',hatc:'#e8dcc0'}},
   lio:{name:'Lio Tanaka',role:'PAINTER · LOOKING-GLASS ISLE',home:'mirror',sp:{bg:'#c8e8e0',skin:'#e8c09a',hair:'#1c1616',style:'long',shirt:'#6a8ab8',glasses:true}},
   odile:{name:'Prof. Odile Marchetti',role:'RADIO ASTRONOMER · STARWATCH MESA',home:'mesa',sp:{bg:'#9cb0d0',skin:'#d9a07a',hair:'#3a3434',style:'bun',shirt:'#e8e4dc',glasses:true,scarf:'#e8a33a'}},
