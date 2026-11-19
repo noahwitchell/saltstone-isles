@@ -1229,5 +1229,11 @@ function loop(now){
 }
 addEventListener('resize',()=>{setRot();resize();setThrottleUI();placeRingIdle();checkRotate();});
 $('wind').addEventListener('click',e=>{e.stopPropagation();useWind();});pixMode=settings.pixels;resize();setTOD(settings.light);toTitle();placeRingIdle();checkRotate();refreshBag();applyPanels();
+/* the loading screen stays up until the pixel fonts are in and the world has drawn its first frames, so the title
+   never shows as plain text and placeholder buttons (gives up waiting after 12 s) */
+(function hideLoader(){const L=$('loader');if(!L)return;let done=false;const go=()=>{if(done)return;done=true;if(typeof scriptify==='function')try{scriptify(document);}catch(e){}L.style.opacity='0';setTimeout(()=>L.remove(),500);};
+  const fonts=document.fonts?Promise.all([document.fonts.load('16px "Pixelify Sans"'),document.fonts.load('20px VT323'),document.fonts.load('700 26px "Dancing Script"')]).catch(()=>{}):Promise.resolve();
+  const frames=new Promise(r=>{let n=0;const f=()=>{if(++n>=3)r();else requestAnimationFrame(f);};requestAnimationFrame(f);});
+  Promise.all([fonts,frames]).then(()=>setTimeout(go,120));setTimeout(go,12000);})();
 updScore();updErrandUI();updTodBtn();updRadioBtn();$('lookBtn').addEventListener('click',e=>{e.stopPropagation();toggleLook();});$('dropBtn').addEventListener('click',e=>{e.stopPropagation();doDrop();});updParcelUI();$('radioBtn').addEventListener('click',e=>{e.stopPropagation();turnDial();});const ld=$('load');if(ld)ld.hidden=true;$('fps').hidden=!settings.fps;$('fps').textContent='FPS: measuring…';
 requestAnimationFrame(loop);

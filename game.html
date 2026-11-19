@@ -188,6 +188,11 @@ h3{font-family:var(--mono);font-size:15px;letter-spacing:.08em;color:var(--ink2)
 </style>
 
 <canvas id="gl"></canvas>
+<div id="loader" style="position:fixed;inset:0;z-index:9999;background:#1f1a2b;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;color:#f5e8cf;font:600 15px/1.2 system-ui,sans-serif;letter-spacing:.12em;transition:opacity .45s">
+  <svg width="64" height="40" viewBox="0 0 32 20" style="image-rendering:pixelated;shape-rendering:crispEdges"><g fill="#f5e8cf"><rect x="4" y="9" width="22" height="3"/><rect x="0" y="7" width="32" height="2"/><rect x="24" y="5" width="2" height="4"/><rect x="2" y="12" width="2" height="2"/><rect x="26" y="12" width="2" height="2"/></g><rect x="14" y="5" width="4" height="4" fill="#9ad6e8"/><rect id="ldProp" x="29" y="4" width="1" height="12" fill="#e2703f"><animate attributeName="height" values="12;2;12" dur=".18s" repeatCount="indefinite"/><animate attributeName="y" values="4;9;4" dur=".18s" repeatCount="indefinite"/></rect></svg>
+  <div>LOADING THE ISLANDS</div><div style="width:140px;height:4px;background:#3a3344;overflow:hidden"><div style="width:40%;height:100%;background:#e2703f;animation:ldbar 1.1s ease-in-out infinite alternate"></div></div>
+  <style>@keyframes ldbar{from{transform:translateX(-10%)}to{transform:translateX(160%)}}</style>
+</div>
 <canvas id="hud"></canvas>
 
 <div id="flightUI" hidden>
@@ -3186,7 +3191,7 @@ function settingsCard(){
   const mv=[['OFF',0],['SOFT',.5],['ON',1]].map(([n,v])=>`<button data-mv="${v}" class="${(settings.music??.5)==v?'primary':''}">${n}</button>`).join('');
   const st=STATIONS.map(S=>`<button data-st="${S.id}" class="${settings.station===S.id?'primary':''}">${S.fq} ${S.name.toUpperCase()}</button>`).join('');
   const lt=Object.keys(TOD).map(k=>`<button data-lt="${k}" class="${settings.light===k?'primary':''}">${TOD[k].name.toUpperCase()}</button>`).join('');
-  showCard(`<h2>Settings</h2><div class="sub">ASSISTS · TURN THEM OFF ONE AT A TIME AS YOU IMPROVE</div>${rows}<h3>ENGINE VOLUME</h3><div class="btns">${ev}</div><h3>RADIO VOLUME</h3><div class="btns">${mv}</div><h3>RADIO STATION · OR TAP THE DIAL UP TOP WHILE FLYING</h3><div class="btns">${st}</div><h3>TIME OF DAY</h3><div class="btns">${lt}</div><h3>WEATHER · TRYING IT OUT</h3><div class="btns">${Object.entries(WX).map(([k,W])=>`<button data-wx="${k}" class="${settings.weather===k?'primary':''}">${W.name.toUpperCase()}</button>`).join('')}</div><h3>PIXELS</h3><div class="btns">${px}</div><div class="sub" style="margin-top:14px">BUILD 9a89df9</div>`,[['Back',back,true]]);
+  showCard(`<h2>Settings</h2><div class="sub">ASSISTS · TURN THEM OFF ONE AT A TIME AS YOU IMPROVE</div>${rows}<h3>ENGINE VOLUME</h3><div class="btns">${ev}</div><h3>RADIO VOLUME</h3><div class="btns">${mv}</div><h3>RADIO STATION · OR TAP THE DIAL UP TOP WHILE FLYING</h3><div class="btns">${st}</div><h3>TIME OF DAY</h3><div class="btns">${lt}</div><h3>WEATHER · TRYING IT OUT</h3><div class="btns">${Object.entries(WX).map(([k,W])=>`<button data-wx="${k}" class="${settings.weather===k?'primary':''}">${W.name.toUpperCase()}</button>`).join('')}</div><h3>PIXELS</h3><div class="btns">${px}</div><div class="sub" style="margin-top:14px">BUILD 566d8ca</div>`,[['Back',back,true]]);
   const cb=$('cardBody');
   cb.querySelectorAll('[data-k]').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.k;if(k==='tilt'){if(!settings.tilt){settings.tilt=true;saveS();enableTilt().then(()=>{updTiltUI();settingsCard();});}else{settings.tilt=false;saveS();disableTilt();updTiltUI();settingsCard();}return;}settings[k]=!settings[k];saveS();if(k==='sound')snd.setOn(settings.sound);if(k==='fps'){$('fps').hidden=!settings.fps;$('fps').textContent='FPS: measuring…';fpsN=fpsT=0;fpsLast=0;}if(k==='sound')music.setVol();settingsCard();}));
   cb.querySelectorAll('[data-px]').forEach(b=>b.addEventListener('click',()=>{settings.pixels=b.dataset.px;pixMode=settings.pixels;saveS();resize();settingsCard();}));
@@ -3598,7 +3603,7 @@ const streaks=(()=>{const SRC=[[-5.2,.8,.3,1],[5.2,.8,.3,1],[-5.2,.95,.3,1],[5.2
    new version. When the game comes back to the front (and every ten minutes), check the build number on the site; if
    it's changed, reload straight away from the title screen, or offer a one-tap update in flight (the flight is saved
    first, so "Pick up where you left off" puts you right back) */
-const BUILD_ID='9a89df9';let updOffered=false;
+const BUILD_ID='566d8ca';let updOffered=false;
 function checkUpdate(){if(!/^https?:/.test(location.protocol)||/claude/.test(location.hostname))return;
   fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.text():null).then(v=>{v=v&&v.trim();if(!v||v===BUILD_ID||v.length>12)return;
     if(mode==='title'){location.reload();return;}if(updOffered)return;updOffered=true;
@@ -4771,6 +4776,12 @@ function loop(now){
 }
 addEventListener('resize',()=>{setRot();resize();setThrottleUI();placeRingIdle();checkRotate();});
 $('wind').addEventListener('click',e=>{e.stopPropagation();useWind();});pixMode=settings.pixels;resize();setTOD(settings.light);toTitle();placeRingIdle();checkRotate();refreshBag();applyPanels();
+/* the loading screen stays up until the pixel fonts are in and the world has drawn its first frames, so the title
+   never shows as plain text and placeholder buttons (gives up waiting after 12 s) */
+(function hideLoader(){const L=$('loader');if(!L)return;let done=false;const go=()=>{if(done)return;done=true;if(typeof scriptify==='function')try{scriptify(document);}catch(e){}L.style.opacity='0';setTimeout(()=>L.remove(),500);};
+  const fonts=document.fonts?Promise.all([document.fonts.load('16px "Pixelify Sans"'),document.fonts.load('20px VT323'),document.fonts.load('700 26px "Dancing Script"')]).catch(()=>{}):Promise.resolve();
+  const frames=new Promise(r=>{let n=0;const f=()=>{if(++n>=3)r();else requestAnimationFrame(f);};requestAnimationFrame(f);});
+  Promise.all([fonts,frames]).then(()=>setTimeout(go,120));setTimeout(go,12000);})();
 updScore();updErrandUI();updTodBtn();updRadioBtn();$('lookBtn').addEventListener('click',e=>{e.stopPropagation();toggleLook();});$('dropBtn').addEventListener('click',e=>{e.stopPropagation();doDrop();});updParcelUI();$('radioBtn').addEventListener('click',e=>{e.stopPropagation();turnDial();});const ld=$('load');if(ld)ld.hidden=true;$('fps').hidden=!settings.fps;$('fps').textContent='FPS: measuring…';
 requestAnimationFrame(loop);
 
