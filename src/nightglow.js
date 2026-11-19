@@ -54,7 +54,7 @@ const NIGHT_GLOW=(function nightGlow(){
       if(groundH(x,z)<-8&&groundH(x+45,z)<-8&&groundH(x-45,z)<-8&&groundH(x,z+45)<-8&&far(x,z,450))p={x,z};}
     if(p){put('ghostship',p,0,'The Grey Lady','A ship made of nothing but a pale glow, riding at anchor off Whalebone. She was lost in 1883. She still keeps her watch.');
       const yaw=r()*TAU,c=Math.cos(yaw),sn=Math.sin(yaw),W=(u,y,v)=>[p.x+u*c-v*sn,y,p.z+u*sn+v*c],C=0xbfe8ff;
-      const seg=(A,B,n,sz=1)=>{for(let i=0;i<=n;i++){const t=i/n;addP(...W(A[0]+(B[0]-A[0])*t,A[1]+(B[1]-A[1])*t,A[2]+(B[2]-A[2])*t),C,sz,5,yaw);}};
+      const seg=(A,B,n,sz=2)=>{for(let i=0;i<=n;i++){const t=i/n;addP(...W(A[0]+(B[0]-A[0])*t,A[1]+(B[1]-A[1])*t,A[2]+(B[2]-A[2])*t),C,sz,0,yaw+i*.4);}};
       for(const v of [-5,5]){seg([-22,4,v*.3],[-14,5,v],8);seg([-14,5,v],[16,5,v],22);seg([16,5,v],[22,7,v*.4],6);seg([-14,1,v*.8],[16,1,v*.8],18);}
       seg([-22,4,0],[-14,1,0],5);seg([22,7,0],[16,1,0],6);
       for(const [u,h] of [[-6,30],[8,26]]){seg([u,5,0],[u,5+h,0],h,2);seg([u,5+h*.85,-7],[u,5+h*.85,7],10);seg([u,5+h*.45,-9],[u,5+h*.45,9],12);
