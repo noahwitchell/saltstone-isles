@@ -39,7 +39,7 @@ button:focus-visible{outline:2px solid #fff;outline-offset:2px}
 .sp{flex:1;display:flex;justify-content:center;min-width:0}
 #task{pointer-events:auto;font-family:var(--mono);font-size:15px;line-height:1;padding:5px 9px;background:var(--glass);border:2px solid var(--line);color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;display:flex;gap:6px;align-items:center}
 #task img{width:14px;height:14px;image-rendering:pixelated;flex:none}
-#task b{color:#8a5a18}#task .dim{opacity:.7}
+#task b{color:#ffd36b}#task .dim{opacity:.7}
 #todBtn,#radioBtn{pointer-events:auto;padding:3px 5px;line-height:0}#todBtn img,#radioBtn img{width:32px;height:32px;image-rendering:pixelated;display:block}
 #view,#pause,#center{pointer-events:auto;font-family:var(--mono);font-size:15px;padding:8px 10px}
 #stallBan{z-index:5;position:fixed;left:50%;top:calc(var(--st) + 44px);transform:translateX(-50%);font-family:var(--mono);font-size:20px;background:var(--bad);color:#fff;padding:5px 12px;letter-spacing:.1em;pointer-events:none}
@@ -725,7 +725,10 @@ const waterMat=new THREE.ShaderMaterial({
     // haze by distance, plus sky reflection (Fresnel-style) that grows as the view gets flatter, so the far sea melts into the sky
     // over many pixels instead of meeting it at a hard line
     float f=smoothstep(fogNear,fogFar,vD);float gz=max(uCamY,1.)/max(vD,1.);
-    f=max(f,pow(1.-clamp(gz,0.,1.),7.)*.9);gl_FragColor=vec4(mix(c,fogColor,f),1.);}`});
+    f=max(f,pow(1.-clamp(gz,0.,1.),7.)*.9);
+    // alpha 0 tells the post pass not to outline the sea: at low altitude every row of distant water is a big depth step,
+    // which the edge finder used to read as an outline, painting a dark band along the horizon
+    gl_FragColor=vec4(mix(c,fogColor,f),0.);}`});
 const water=new THREE.Mesh(new THREE.PlaneGeometry(64000,40000).rotateX(-Math.PI/2),waterMat);scene.add(water);
 
 /* ---------------- strips ---------------- */
@@ -1678,7 +1681,7 @@ const FORMS=[];
   if(place(50,'h_hoop','The Hoop')){const cy=74,R=21,th=6.5;ring(0,0,cy,R,R,0,th);column(0,0,-12,cy-R-2,10,5);foam(0,0,10);
     for(let k=0;k<3;k++)rock(0,(fr()-.5)*10,cy+R+th*.6,th,th*.7);cap(0,0,cy+R+th*1.3,7);gate('h_hoop','Through the Hoop',0,0,cy-R+th,cy+R-th,R-th-2,'A ring of rock on a stalk, like a hoop for a circus dog. Biscuit approves.');shoal(40);}
   /* 17. Ferrow Needles: three pairs of thin spires, tight and stepped */
-  if(place(150,'h_needles','Ferrow Needles')){[0,1,2].forEach(k=>{const a=-110+k*110,b0=[-28,30,-24][k];for(const e of [-1,1]){const p=P(a,b0+e*15);spireAt(it,p.x,p.z,-12,58+fr()*20,6.5,3.5,60+k*2+(e>0?1:0));foam(a,b0+e*15,6.5);}
+  if(place(150,'h_needles','Ferrow Needles')){[0,1,2].forEach(k=>{const a=-110+k*110,b0=[-28,30,-24][k];for(const e of [-1,1]){const p=P(a,b0+e*15);spireAt(it,p.x,p.z,-12,58+fr()*20,7,4.6,60+k*2+(e>0?1:0));foam(a,b0+e*15,6.5);}
       gate('h_needle'+(k+1),`Ferrow Needles, ${['first','second','third'][k]} pair`,a,b0,-1,50,9,'Three pairs of needle-thin spires close to home. Tighter than the Slalom.');});shoal(130);}
   /* 18. The Ribcage: seven stone ribs over a winding channel; follow the bend all the way through */
   if(place(170,'h_ribs','The Ribcage')){const rib=k=>({a:-150+k*50,b:Math.sin(k*.75)*28});for(let k=0;k<7;k++){const {a,b}=rib(k),R=25,rise=8,th=6.5;
@@ -3017,7 +3020,7 @@ function settingsCard(){
   const mv=[['OFF',0],['SOFT',.5],['ON',1]].map(([n,v])=>`<button data-mv="${v}" class="${(settings.music??.5)==v?'primary':''}">${n}</button>`).join('');
   const st=STATIONS.map(S=>`<button data-st="${S.id}" class="${settings.station===S.id?'primary':''}">${S.fq} ${S.name.toUpperCase()}</button>`).join('');
   const lt=Object.keys(TOD).map(k=>`<button data-lt="${k}" class="${settings.light===k?'primary':''}">${TOD[k].name.toUpperCase()}</button>`).join('');
-  showCard(`<h2>Settings</h2><div class="sub">ASSISTS · TURN THEM OFF ONE AT A TIME AS YOU IMPROVE</div>${rows}<h3>ENGINE VOLUME</h3><div class="btns">${ev}</div><h3>RADIO VOLUME</h3><div class="btns">${mv}</div><h3>RADIO STATION · OR TAP THE DIAL UP TOP WHILE FLYING</h3><div class="btns">${st}</div><h3>TIME OF DAY</h3><div class="btns">${lt}</div><h3>WEATHER · TRYING IT OUT</h3><div class="btns">${Object.entries(WX).map(([k,W])=>`<button data-wx="${k}" class="${settings.weather===k?'primary':''}">${W.name.toUpperCase()}</button>`).join('')}</div><h3>PIXELS</h3><div class="btns">${px}</div><div class="sub" style="margin-top:14px">BUILD 6f6a125</div>`,[['Back',back,true]]);
+  showCard(`<h2>Settings</h2><div class="sub">ASSISTS · TURN THEM OFF ONE AT A TIME AS YOU IMPROVE</div>${rows}<h3>ENGINE VOLUME</h3><div class="btns">${ev}</div><h3>RADIO VOLUME</h3><div class="btns">${mv}</div><h3>RADIO STATION · OR TAP THE DIAL UP TOP WHILE FLYING</h3><div class="btns">${st}</div><h3>TIME OF DAY</h3><div class="btns">${lt}</div><h3>WEATHER · TRYING IT OUT</h3><div class="btns">${Object.entries(WX).map(([k,W])=>`<button data-wx="${k}" class="${settings.weather===k?'primary':''}">${W.name.toUpperCase()}</button>`).join('')}</div><h3>PIXELS</h3><div class="btns">${px}</div><div class="sub" style="margin-top:14px">BUILD 22d6d5f</div>`,[['Back',back,true]]);
   const cb=$('cardBody');
   cb.querySelectorAll('[data-k]').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.k;if(k==='tilt'){if(!settings.tilt){settings.tilt=true;saveS();enableTilt().then(()=>{updTiltUI();settingsCard();});}else{settings.tilt=false;saveS();disableTilt();updTiltUI();settingsCard();}return;}settings[k]=!settings[k];saveS();if(k==='sound')snd.setOn(settings.sound);if(k==='fps'){$('fps').hidden=!settings.fps;$('fps').textContent='FPS: measuring…';fpsN=fpsT=0;fpsLast=0;}if(k==='sound')music.setVol();settingsCard();}));
   cb.querySelectorAll('[data-px]').forEach(b=>b.addEventListener('click',()=>{settings.pixels=b.dataset.px;pixMode=settings.pixels;saveS();resize();settingsCard();}));

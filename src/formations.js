@@ -108,7 +108,7 @@ const FORMS=[];
   if(place(50,'h_hoop','The Hoop')){const cy=74,R=21,th=6.5;ring(0,0,cy,R,R,0,th);column(0,0,-12,cy-R-2,10,5);foam(0,0,10);
     for(let k=0;k<3;k++)rock(0,(fr()-.5)*10,cy+R+th*.6,th,th*.7);cap(0,0,cy+R+th*1.3,7);gate('h_hoop','Through the Hoop',0,0,cy-R+th,cy+R-th,R-th-2,'A ring of rock on a stalk, like a hoop for a circus dog. Biscuit approves.');shoal(40);}
   /* 17. Ferrow Needles: three pairs of thin spires, tight and stepped */
-  if(place(150,'h_needles','Ferrow Needles')){[0,1,2].forEach(k=>{const a=-110+k*110,b0=[-28,30,-24][k];for(const e of [-1,1]){const p=P(a,b0+e*15);spireAt(it,p.x,p.z,-12,58+fr()*20,6.5,3.5,60+k*2+(e>0?1:0));foam(a,b0+e*15,6.5);}
+  if(place(150,'h_needles','Ferrow Needles')){[0,1,2].forEach(k=>{const a=-110+k*110,b0=[-28,30,-24][k];for(const e of [-1,1]){const p=P(a,b0+e*15);spireAt(it,p.x,p.z,-12,58+fr()*20,7,4.6,60+k*2+(e>0?1:0));foam(a,b0+e*15,6.5);}
       gate('h_needle'+(k+1),`Ferrow Needles, ${['first','second','third'][k]} pair`,a,b0,-1,50,9,'Three pairs of needle-thin spires close to home. Tighter than the Slalom.');});shoal(130);}
   /* 18. The Ribcage: seven stone ribs over a winding channel; follow the bend all the way through */
   if(place(170,'h_ribs','The Ribcage')){const rib=k=>({a:-150+k*50,b:Math.sin(k*.75)*28});for(let k=0;k<7;k++){const {a,b}=rib(k),R=25,rise=8,th=6.5;

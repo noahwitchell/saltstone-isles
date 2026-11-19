@@ -312,7 +312,10 @@ const waterMat=new THREE.ShaderMaterial({
     // haze by distance, plus sky reflection (Fresnel-style) that grows as the view gets flatter, so the far sea melts into the sky
     // over many pixels instead of meeting it at a hard line
     float f=smoothstep(fogNear,fogFar,vD);float gz=max(uCamY,1.)/max(vD,1.);
-    f=max(f,pow(1.-clamp(gz,0.,1.),7.)*.9);gl_FragColor=vec4(mix(c,fogColor,f),1.);}`});
+    f=max(f,pow(1.-clamp(gz,0.,1.),7.)*.9);
+    // alpha 0 tells the post pass not to outline the sea: at low altitude every row of distant water is a big depth step,
+    // which the edge finder used to read as an outline, painting a dark band along the horizon
+    gl_FragColor=vec4(mix(c,fogColor,f),0.);}`});
 const water=new THREE.Mesh(new THREE.PlaneGeometry(64000,40000).rotateX(-Math.PI/2),waterMat);scene.add(water);
 
 /* ---------------- strips ---------------- */
