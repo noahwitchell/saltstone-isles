@@ -15,7 +15,7 @@ let rs=12345; const rnd=()=>{rs=(Math.imul(rs,1664525)+1013904223)>>>0;return rs
 /* ---------------- terrain ---------------- */
 /* the world is a wide rectangle so the chart fills a phone held sideways: 46 km east-west, 22 km north-south */
 const SIZEX=46000,SIZEZ=22000,CELL=40,CELLSX=SIZEX/CELL,CELLSZ=SIZEZ/CELL,HALFX=SIZEX/2,HALFZ=SIZEZ/2,NVX=CELLSX+1,NVZ=CELLSZ+1;
-/* the Saltwhistle chain: Ferrow (home) with Gull Point and Tallpine across narrow channels, then three outer islands */
+/* the Saltstone chain: Ferrow (home) with Gull Point and Tallpine across narrow channels, then three outer islands */
 const ISLES={
   ferrow:{name:'Ferrow',x:-1050,z:560},
   gull:{name:'Gull Point',x:-2550,z:-260},
@@ -153,6 +153,8 @@ const TOD={
     deep:0x1d3560,mid:0x2a5580,shal:0x3f8a98,glint:0xffc8a8,con:1.1,sat:1.1,vig:.3,stars:.35,lights:1,disc:.9993,beam:.3},
   night:{name:'Night',sunAz:130,sunEl:34,sun:0x8ea4ff,sunI:.5,sky:0x34407a,gnd:0x16182a,hemiI:.6,zen:0x060918,high:0x121840,hor:0x283060,haze:0x3a4680,sunc:0xf4f0dc,fogN:450,fogF:4300,
     deep:0x0a1430,mid:0x122448,shal:0x1d3c58,glint:0xdfe6ff,con:1.1,sat:.85,vig:.35,stars:1,lights:1,disc:.99975,beam:.42},
+  storm:{name:'Stormy',sunAz:200,sunEl:40,sun:0xe4e8ee,sunI:.95,sky:0xa8b4c4,gnd:0x5a6250,hemiI:.62,zen:0x4a5a72,high:0x6c7c90,hor:0xa0aab6,haze:0xb4bcc4,sunc:0xeef0f2,fogN:800,fogF:5600,
+    deep:0x1f4462,mid:0x2f6282,shal:0x4f9090,glint:0xd8e0e8,con:1.06,sat:.95,vig:.3,stars:0,lights:.75,disc:.9993,beam:.3},
 };
 const hemi=new THREE.HemisphereLight(0xffffff,0x888888,.6); scene.add(hemi);
 const sunL=new THREE.DirectionalLight(0xffffff,1); scene.add(sunL); scene.add(sunL.target);

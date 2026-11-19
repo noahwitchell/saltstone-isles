@@ -1,4 +1,4 @@
-/* ---------------- the far archipelago: fourteen more islands round the Saltwhistle chain ----------------
+/* ---------------- the far archipelago: fourteen more islands round the Saltstone chain ----------------
    Each island has a centre, a rough radius (for lookups) and its own height function. Pinnacles and arches are
    meshes (see isleprops.js); the heightfield only gives the ground they stand on. */
 const ell2=(x,z,I,rx,rz)=>{const c=Math.cos(I.rot||0),s=Math.sin(I.rot||0),dx=x-I.x,dz=z-I.z;return [(dx*c+dz*s)/rx,(-dx*s+dz*c)/rz];};

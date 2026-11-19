@@ -169,7 +169,7 @@ const dogPic=(()=>{const c=document.createElement('canvas');c.width=c.height=32;
 let dogPopT=0;
 function dogPopTick(dt){if(dog.bark>1.5&&dogPopT<=0){dogPopT=2.2;$('dogpop').hidden=false;}if(dogPopT>0){dogPopT-=dt;if(dogPopT<=0)$('dogpop').hidden=true;}}
 
-/* time of day: a little button in the top bar that steps sunrise → noon → golden → sunset → blue hour → night → sunrise */
+/* time of day: a little button in the top bar that steps sunrise → noon → golden → sunset → blue hour → night → stormy → sunrise */
 const TOD_ICON=(()=>{const out={},I='#241c2e';
   const draw=(k,fn)=>{const c=document.createElement('canvas');c.width=c.height=16;const x=c.getContext('2d'),P=(col,a,b,w=1,h=1)=>{x.fillStyle=col;x.fillRect(a,b,w,h);};
     const disc=(cx,cy,r,col)=>{for(let j=-r;j<=r;j++)for(let i=-r;i<=r;i++)if(i*i+j*j<=r*r+r*.6)P(col,cx+i,cy+j);};fn(P,disc);out[k]=c.toDataURL();};
@@ -179,6 +179,7 @@ const TOD_ICON=(()=>{const out={},I='#241c2e';
   draw('sunset',(P,d)=>{for(let y=0;y<16;y++)P(y<5?'#7d68b4':y<9?'#e2703f':'#ff9a5a',0,y,16,1);d(8,11,4,'#ffb04a');P('#283a74',0,11,16,5);P('#ffa060',4,12,8,1);P('#ffa060',6,14,4,1);});
   draw('dusk',(P,d)=>{for(let y=0;y<16;y++)P(y<7?'#3a3a78':y<11?'#6b6aa8':'#c88aa8',0,y,16,1);P('#1d3560',0,12,16,4);P('#ffffff',3,3);P('#ffffff',11,2);P('#ffc8a8',4,12,8,1);});
   draw('night',(P,d)=>{P('#151a38',0,0,16,16);d(8,7,5,'#f4ecd0');d(10,5,4,'#151a38');for(const [a,b] of [[2,2],[13,3],[3,12],[12,12],[14,8]])P('#ffffff',a,b);});
+  draw('storm',(P,d)=>{P('#5a6678',0,0,16,16);d(5,6,3,'#2e3442');d(10,5,4,'#2e3442');P('#2e3442',2,7,12,3);d(5,5,2,'#454c5c');d(10,4,3,'#454c5c');P('#ffe07a',8,10,2,2);P('#ffe07a',7,12,2,1);P('#ffe07a',8,13,1,2);for(const [a,b] of [[3,11],[4,14],[12,11],[11,14],[5,12],[13,13]])P('#b8dcf4',a,b,1,2);});
   return out;})();
 function updTodBtn(){const b=$('todBtn');if(!b)return;b.innerHTML=`<img src="${TOD_ICON[tod]||TOD_ICON.noon}" alt="${(TOD[tod]||{}).name||''}">`;b.title=(TOD[tod]||{}).name||'';}
 $('todBtn').addEventListener('click',e=>{e.stopPropagation();const ks=Object.keys(TOD),k=ks[(ks.indexOf(tod)+1)%ks.length];settings.light=k;saveS();setTOD(k);updTodBtn();toast(TOD[k].name,1.2);});

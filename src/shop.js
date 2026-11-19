@@ -67,14 +67,44 @@ function stepGuard(dt){if(!SH.guard||ac.ground||mode!=='fly')return;const sp=ac.
 const _gR=new THREE.Vector3(),_gF=new THREE.Vector3(),_gA=new THREE.Vector3(),_gQ=new THREE.Quaternion();
 /* the thin-air nudge: a hint the first time you reach the ceiling on a flight */
 let ceilWarn=false;anims.push(()=>{if(mode!=='fly')return;if(ac.pos.y>CEIL+60&&!ceilWarn){ceilWarn=true;toast(SH.ceiling<3?'The air\'s too thin up here for the engine.\nGus\'s supercharger would take you higher.':'Thin air. This is as high as she goes.',2.6);}if(ac.pos.y<CEIL-300)ceilWarn=false;});
+/* little 16px pixel pictures of each part and plane, so the shop reads like a parts counter */
+const PART_IMG=(()=>{const out={},I='#241c2e';
+  const draw=(k,fn)=>{const c=document.createElement('canvas');c.width=c.height=16;const x=c.getContext('2d'),P=(col,a,b,w=1,h=1)=>{x.fillStyle=col;x.fillRect(a,b,w,h);};
+    const disc=(cx,cy,r,col)=>{for(let j=-r;j<=r;j++)for(let i=-r;i<=r;i++)if(i*i+j*j<=r*r+r*.6)P(col,cx+i,cy+j);};fn(P,disc);out[k]=c.toDataURL();};
+  // engine: a finned cylinder head with a spark plug
+  draw('engine',(P,d)=>{P(I,3,4,10,10);P('#8a9098',4,5,8,8);for(let y=6;y<12;y+=2)P('#5a6068',4,y,8,1);P(I,6,1,4,3);P('#e8e4d8',7,2,2,1);P('#d2493c',7,0,2,1);P('#c8ccd2',4,5,8,1);P(I,1,8,2,3);P(I,13,8,2,3);});
+  // streamlining: a wheel in a teardrop spat
+  draw('speed',(P,d)=>{d(8,8,6,I);d(8,8,5,'#d2493c');P('#f08a6a',4,5,5,1);P('#f08a6a',3,6,2,2);P(I,5,12,6,3);d(8,13,2,'#3a3440');P('#8a9098',8,13);P('#ffffff',1,3,3,1);P('#ffffff',0,5,2,1);P('#ffffff',1,10,2,1);});
+  // supercharger: a blower housing with an impeller
+  draw('ceiling',(P,d)=>{d(8,9,6,I);d(8,9,5,'#8a9098');d(8,9,3,'#5a6068');P('#c8ccd2',8,6,1,3);P('#c8ccd2',9,9,3,1);P('#c8ccd2',5,9,3,1);P('#c8ccd2',8,10,1,3);d(8,9,1,I);P(I,12,1,3,6);P('#8a9098',13,2,1,4);P('#7fb8e8',13,0,1,1);});
+  // long wings: a wing seen from above, with an aileron
+  draw('wings',(P,d)=>{P(I,0,6,16,5);P('#f3e7cf',1,7,14,3);P('#d2493c',1,7,2,3);P('#d2493c',13,7,2,3);P('#c8b898',4,9,8,1);P(I,6,4,4,9);P('#d2493c',7,5,2,7);});
+  // cargo pod: a parcel with string, slung under a belly
+  draw('pod',(P,d)=>{P(I,1,1,14,3);P('#f3e7cf',2,2,12,1);P(I,5,4,1,2);P(I,10,4,1,2);P(I,3,6,10,9);P('#c8904a',4,7,8,7);P('#e8b868',4,7,8,1);P('#8a5a28',7,7,2,7);P('#8a5a28',4,10,8,1);});
+  // terrain guard: a shield with a mountain and an up arrow
+  draw('guard',(P,d)=>{P(I,2,1,12,9);P(I,3,10,10,2);P(I,5,12,6,2);P(I,7,14,2,1);P('#3f8f4a',3,2,10,8);P('#3f8f4a',4,10,8,2);P('#3f8f4a',6,12,4,2);P('#2a6a34',4,9,8,1);P('#2a6a34',6,8,4,1);P('#2a6a34',7,7,2,1);P('#ffffff',7,3,2,4);P('#ffffff',6,4,4,1);P('#ffffff',5,5,1,1);P('#ffffff',10,5,1,1);});
+  // tailwind tank: a tank with swirling wind
+  draw('wind',(P,d)=>{P(I,4,2,8,13);P('#7fb8e8',5,3,6,11);P('#b8dcf4',5,3,1,11);P(I,6,0,4,2);P('#ffffff',6,6,4,1);P('#ffffff',9,7,1,1);P('#ffffff',7,9,4,1);P('#ffffff',6,10,1,1);P('#ffffff',6,12,3,1);});
+  // updraft tank: a tank with an up arrow
+  draw('up',(P,d)=>{P(I,4,2,8,13);P('#f1c84a',5,3,6,11);P('#fff2b0',5,3,1,11);P(I,6,0,4,2);P('#ffffff',7,6,2,7);P('#ffffff',6,7,4,1);P('#ffffff',5,8,1,1);P('#ffffff',10,8,1,1);});
+  // quick refill: a stopwatch
+  draw('quick',(P,d)=>{d(8,9,6,I);d(8,9,5,'#f3e7cf');P(I,7,0,2,2);P(I,6,0,4,1);P(I,13,3,2,2);P(I,8,5,1,5);P(I,8,9,3,1);P('#d2493c',3,6,1,1);P('#d2493c',4,13,1,1);P('#d2493c',12,13,1,1);P('#d2493c',13,6,1,1);});
+  // planes, side on
+  const side=(k,body,trim,fn)=>draw(k,(P,d)=>{fn(P,d,body,trim);});
+  side('cub','#f3e7cf','#d2493c',(P,d,b,t)=>{P(I,1,7,13,4);P(b,2,8,11,2);P(t,2,9,11,1);P(I,3,5,7,2);P(t,3,5,7,1);P('#7fb8e8',9,7,2,1);P(I,0,5,2,4);P(t,0,5,1,3);P(I,14,6,1,6);P('#8a9098',15,7,1,4);P(I,4,11,1,3);P(I,10,11,1,3);P(I,3,13,3,2);P(I,9,13,3,2);});
+  side('bi','#dcecf6','#2f6fb0',(P,d,b,t)=>{P(I,2,2,10,2);P(t,2,2,10,1);P(I,2,10,10,2);P(t,2,11,10,1);P(I,4,4,1,6);P(I,9,4,1,6);P(I,1,6,13,4);P(b,2,7,11,2);P('#7fb8e8',8,6,2,1);P(I,0,4,2,4);P(t,0,4,1,3);P(I,14,5,1,6);P('#8a9098',15,6,1,4);P(I,5,12,1,2);P(I,4,13,3,2);});
+  side('float','#e8e4c8','#2f6a3a',(P,d,b,t)=>{P(I,1,5,13,4);P(b,2,6,11,2);P(t,2,7,11,1);P(I,3,3,8,2);P(t,3,3,8,1);P('#7fb8e8',9,5,2,1);P(I,0,2,2,5);P(t,0,2,1,4);P(I,14,4,1,6);P('#8a9098',15,5,1,4);P(I,5,9,1,3);P(I,10,9,1,3);P(I,2,12,12,3);P('#f3e7cf',3,12,10,1);P('#4a90b8',0,15,16,1);});
+  side('racer','#ffe2b8','#e2703f',(P,d,b,t)=>{P(I,0,6,15,3);P(b,1,7,13,1);P(t,1,8,12,1);P(I,7,5,4,1);P('#7fb8e8',8,5,2,1);P(I,0,3,2,4);P(t,0,3,1,3);P(I,4,9,7,2);P(t,4,9,7,1);P(I,15,5,1,5);P(I,6,11,1,2);P(I,5,12,3,2);});
+  return out;})();
+const partImg=k=>PART_IMG[k]?`<img src="${PART_IMG[k]}" alt="" style="width:44px;height:44px;image-rendering:pixelated;flex:none;background:#fff8ec;border:2px solid #241c2e;border-radius:4px;padding:2px">`:'';
 function shopCard(s,onBack){const meet=!log.met.gus;if(meet){log.met.gus=1;saveL();}
-  const row=(name,desc,btn)=>`<div class="tog"><div><b>${name}</b><span>${desc}</span></div>${btn}</div>`;
+  const row=(name,desc,btn,img)=>`<div class="tog">${img?partImg(img):''}<div style="flex:1"><b>${name}</b><span>${desc}</span></div>${btn}</div>`;
   const buy=(attr,cost,label)=>`<button ${attr} ${log.coins<cost?'disabled style="opacity:.45"':''}>${label||'BUY'} · ${coinTag(cost)}</button>`;
-  const ups=UPG.map(u=>{const lv=SH[u.id];return row(`${u.name} <span style="display:inline;font-family:var(--mono);font-size:13px;color:var(--ink2)">${'■'.repeat(lv)+'□'.repeat(u.max-lv)}</span>`,u.desc+(u.note?' '+u.note():''),lv>=u.max?'<button disabled style="opacity:.55">MAXED</button>':buy(`data-up="${u.id}"`,u.cost[lv]));}).join('');
+  const ups=UPG.map(u=>{const lv=SH[u.id];return row(`${u.name} <span style="display:inline;font-family:var(--mono);font-size:13px;color:var(--ink2)">${'■'.repeat(lv)+'□'.repeat(u.max-lv)}</span>`,u.desc+(u.note?' '+u.note():''),lv>=u.max?'<button disabled style="opacity:.55">MAXED</button>':buy(`data-up="${u.id}"`,u.cost[lv]),u.id);}).join('');
   const pip=n=>'■'.repeat(n)+'□'.repeat(5-n);
   const planes=PLANES.map(p=>{const own=SH.plane.owned.includes(p.id),sel=SH.plane.sel===p.id;
     const stats=`<span style="display:block;font-family:var(--mono);font-size:13px;color:var(--ink2);line-height:1.3">SPEED ${pip(p.pips[0])} &nbsp;CLIMB ${pip(p.pips[1])}<br>AGILITY ${pip(p.pips[2])} &nbsp;LANDING ${pip(p.pips[3])}</span>`;
-    return row(p.name+(sel?' <span style="display:inline;font-size:13px;color:#3f8f4a">FLYING</span>':''),p.desc+stats,sel?'<button disabled style="opacity:.55">IN USE</button>':(own?`<button data-plane="${p.id}">FLY IT</button>`:buy(`data-plane="${p.id}"`,p.cost)));}).join('');
+    return row(p.name+(sel?' <span style="display:inline;font-size:13px;color:#3f8f4a">FLYING</span>':''),p.desc+stats,sel?'<button disabled style="opacity:.55">IN USE</button>':(own?`<button data-plane="${p.id}">FLY IT</button>`:buy(`data-plane="${p.id}"`,p.cost)),p.id);}).join('');
   const sw=(list,kind)=>list.map(([id,name,a,b,cost])=>{const own=SH[kind].owned.includes(id),sel=SH[kind].sel===id,bg=kind==='paint'?`linear-gradient(135deg,#${a.toString(16).padStart(6,'0')} 55%,#${b.toString(16).padStart(6,'0')} 55%)`:`rgb(${a.map(v=>Math.round(v*255)).join(',')})`,price=kind==='paint'?cost:b;
     return `<button data-${kind}="${id}" style="background:${bg};min-width:96px;padding:6px 8px;font-size:13px;${sel?'outline:3px solid #241c2e;outline-offset:1px;':''}${!own&&log.coins<price?'opacity:.5;':''}"><span style="background:#fff8ecdd;padding:1px 4px">${name}${own?'':' · '+price}</span></button>`;}).join('');
   showCard(`<div class="who"><img src="${portrait('gus')}" alt=""><div><b>Gus's garage</b><span>GUS AMARI · MECHANIC · HARBOR FIELD</span></div></div>

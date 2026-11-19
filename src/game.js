@@ -20,7 +20,7 @@ function setTOD(k){tod=k;const T=TOD[k];
   const w=waterMat.uniforms;w.fogColor.value.setHex(T.hor);w.fogNear.value=T.fogN;w.fogFar.value=T.fogF;w.cDeep.value.setHex(T.deep);w.cMid.value.setHex(T.mid);w.cShal.value.setHex(T.shal);w.cGlint.value.setHex(T.glint);
   const pu=postMat.uniforms;pu.con.value=T.con;pu.sat.value=T.sat;pu.vig.value=T.vig;
   lightPts.visible=T.lights>0;lightPts.material.color.setScalar(T.lights);navPts.visible=T.lights>0;
-  NIGHT_GLOW.set(T.lights>=1?1:0);bakeTerrainShadow(sunDir,{noon:0,golden:0,sunset:0,dusk:.6,night:.3}[k]||0);fogK=-1;if(typeof applyWeather==='function')applyWeather();}
+  NIGHT_GLOW.set(T.lights>=1?1:0);bakeTerrainShadow(sunDir,{noon:0,golden:0,sunset:0,dusk:.6,night:.3,storm:.6}[k]||0);fogK=-1;if(typeof applyWeather==='function')applyWeather();}
 
 /* ---------- save data ---------- */
 const sightOn=v=>!v.night||TOD[tod].lights>=1;
@@ -174,7 +174,7 @@ const DAYS=[
    out:{lu:[{to:'bea',item:'A paper lantern',line:"A lantern from Lu? I used to bring her matches. She remembered."}]},
    outro:"Twin Sisters and Lantern Key, back on the route. Bea pinned the new chart over my desk. She drew Biscuit in the corner."},
   {intro:"South today. Applecross has orchards to the water, and someone on Looking-Glass Isle has ordered a great deal of blue paint.",
-   items:[{to:'hattie',item:'Grafting knife',line:"Sharp as anything. I'll graft the old Saltwhistle Pippin onto the young trees. Bea's mother planted the first one."},
+   items:[{to:'hattie',item:'Grafting knife',line:"Sharp as anything. I'll graft the old Saltstone Pippin onto the young trees. Bea's mother planted the first one."},
           {to:'lio',item:'Tubes of blue paint',line:"Cerulean, cobalt, ultramarine. The lake needs all three. On a good day it needs more."}],
    out:{hattie:[{to:'mabel',item:'Basket of apples',line:"Apples from Hattie? The post office will smell like autumn for a week."}],lio:[{to:'tomas',item:'Painting of the lighthouse',line:"Lio painted my light from the air? From your plane? Well. It's never looked so brave."}]},
    outro:"Hattie's apples are on the counter. Take one. Gus has had four."},
@@ -550,6 +550,7 @@ function finishLanding(){
     :homeDone?[['Hand in the day',endDay,true]]
     :[['Take off from here',()=>spawnField(s),true],['Practice this landing',()=>spawnApproach(s,td.dirSign)],['Keep taxiing',()=>{hideModal();mode='fly';}]];
   btns.splice(1,0,...errandBtns(s));if(s.id==='harbor')btns.splice(1,0,["Gus's garage",()=>shopCard(s)]);
+  if(s.id==='harbor'&&!mail.active&&DAYS[mail.day-1])btns.splice(1,0,[`Start day ${mail.day} with Mabel`,()=>offerDay(()=>spawnField(s))]);
   showCard(`<h2>${stopped?'Landed at':'Rolled off'} ${s.name}</h2><div class="sub">${isTrip?'TRIP FROM '+stripById(fromId).name.toUpperCase()+' · ':''}${stars(total)}</div>
     <div class="rows"><span class="k">TOUCHDOWN</span><span>${Math.round(fpm)} ft/min at ${Math.round(td.kt)} kt · ${softTxt}</span><span class="s">${stars(soft)}</span>
     <span class="k">CENTERLINE</span><span>${off<.2?'Right down the middle':off<.5?'A little off center':'Way off center'}</span><span class="s">${stars(cen)}</span>
@@ -587,12 +588,17 @@ function offerDay(after){
 }
 function meetBea(){if(mode!=='fly'||log.met.bea)return;log.met.bea=1;saveL();mode='card';
   showCard(`<div class="who"><img src="${portrait('bea')}" alt=""><div><b>Bea Hollis</b><span>RETIRED MAIL PILOT · HARBOR FIELD</span></div></div><p class="say">“${MEET.bea}”</p><p>Bea's logbook is in the pause menu whenever you want it.</p>`,[['Thanks, Bea',()=>{hideModal();mode='fly';},true],['Open the logbook',()=>bea(-1)]]);}
-function endDay(){const day=DAYS[mail.day-1];mail.active=false;mail.bag=[];clearDrops();addCoins(40);mail.day++;stamp(2);if(mail.day>6)goal('week',true);if(mail.day>12)goal('week2',true);if(mail.day>18)goal('week3',true);saveL();refreshBag();
-  showCard(`<div class="who"><img src="${portrait('mabel')}" alt=""><div><b>Mabel Ostrander</b><span>END OF DAY · +2 STAMPS</span></div></div><p class="say">“${day?day.outro:'Good flying.'}”</p><div class="got">${log.stamps} STAMPS ON YOUR ROUTE CARD · +40 COINS</div>`,dayDoneBtns());}
+function endDay(early){const day=DAYS[mail.day-1],left=mail.bag.length,full=!(early&&left);mail.active=false;mail.bag=[];clearDrops();if(full){addCoins(40);stamp(2);}mail.day++;if(mail.day>6)goal('week',true);if(mail.day>12)goal('week2',true);if(mail.day>18)goal('week3',true);saveL();refreshBag();
+  const say=full?(day?day.outro:'Good flying.'):`That's all right, love. I'll see the last ${left===1?'one':left} goes out with the boat. Tomorrow's another day.`;
+  showCard(`<div class="who"><img src="${portrait('mabel')}" alt=""><div><b>Mabel Ostrander</b><span>${early?'ON THE RADIO · ':''}END OF DAY${full?' · +2 STAMPS':''}</span></div></div><p class="say">“${say}”</p><div class="got">${log.stamps} STAMPS ON YOUR ROUTE CARD${full?' · +40 COINS':''}</div>`,dayDoneBtns(early));}
+/* end the day from the pause menu, wherever you are (undelivered mail goes back to Mabel, no end-of-day bonus) */
+function endDayEarly(){const n=mail.bag.length;
+  if(!n){endDay(true);return;}
+  showCard(`<h2>End the day here?</h2><p>${n} ${n===1?'letter is':'letters are'} still in the bag. Mabel will send ${n===1?'it':'them'} on the boat, but there's no end-of-day bonus.</p>`,[['End the day',()=>endDay(true),true],['Keep flying',back]]);}
 /* what next after handing in: the next day, a stop at Gus's garage (spend the day's coins), or free flight */
-function dayDoneBtns(){const harbor=stripById('harbor');
-  return [[mail.day<=DAYS.length?'Start the next day':'Keep flying',()=>{if(mail.day<=DAYS.length)offerDay(()=>spawnField(STRIPS[0]));else{hideModal();mode='fly';}},true],
-    ["Gus's garage",()=>shopCard(harbor,()=>showCard(`<h2>${harbor.name}</h2><p>All fixed up. What next?</p>`,dayDoneBtns()))],
+function dayDoneBtns(inAir){const harbor=stripById('harbor'),go=()=>{hideModal();mode='fly';};
+  return [[mail.day<=DAYS.length?'Start the next day':'Keep flying',()=>{if(mail.day<=DAYS.length)offerDay(inAir?go:()=>spawnField(STRIPS[0]));else go();},true],
+    ["Gus's garage",()=>shopCard(harbor,()=>showCard(`<h2>${inAir?"Gus's garage":harbor.name}</h2><p>All fixed up. What next?</p>`,dayDoneBtns(inAir)))],
     ['Free flight',()=>{hideModal();mode='fly';pickDest('harbor');}]];}
 function goal(id,quiet){if(log.goals[id])return false;log.goals[id]=Date.now();saveL();if(!quiet){const g=GOALS.find(x=>x.id===id);toast('Logbook: '+g.name,2.5);}return true;}
 
@@ -760,7 +766,7 @@ const snd={ctx:null,
 
 /* ---------- the radio: five generative stations (all WebAudio), one dial on the flight screen ---------- */
 const STATIONS=[
-  {id:'lofi',fq:'88.1',name:'Saltwhistle Lo-fi',desc:'Dusty keys, brushed drums, vinyl hiss.',bpm:72,sw:.16,lp:2400,minor:false},
+  {id:'lofi',fq:'88.1',name:'Saltstone Lo-fi',desc:'Dusty keys, brushed drums, vinyl hiss.',bpm:72,sw:.16,lp:2400,minor:false},
   {id:'tide',fq:'91.4',name:'Slow Tide',desc:'Long soft pads and bells, no drums. For drifting.',bpm:56,sw:0,lp:1900,minor:false},
   {id:'jazz',fq:'94.7',name:'Harbor Jazz',desc:'Walking bass, ride cymbal and a trio that has been at it all night.',bpm:104,sw:.26,lp:3200,minor:false},
   {id:'bounce',fq:'99.2',name:'Island Bounce',desc:'Steel pan, off-beat chords and a shaker. Sunny and quick.',bpm:112,sw:.08,lp:3600,minor:false},
@@ -1013,9 +1019,9 @@ function showCard(html,buttons,opt){html=petSay(html);$('cardBody').innerHTML='<
 function hideModal(){$('modal').hidden=true;}
 function back(){hideModal();if(mode==='title')$('title').hidden=false;else if(mode==='paused'||mode==='card')openMenu();}
 function openMenu(){if(mode==='fly')mode='paused';showCard(`<h2>Paused</h2><div class="sub">${dest?'HEADING FOR '+dest.name.toUpperCase():''}${mail.active?' · '+mail.bag.length+' IN THE BAG':''} · ${log.stamps} STAMPS</div>`,[
-  ['Resume',()=>{hideModal();mode='fly';},true],['Title screen',()=>{hideModal();toTitle();}],['Mail bag',()=>mail.active?mailCard():showCard('<h2>Mail bag</h2><p>No mail in the bag today. Start a day at Harbor Field from the title screen and Mabel will load it.</p>',[['Back',back,true]])],["Bea's chart",()=>bigMap()],["Bea's logbook",()=>bea(-1)],['Your logbook',()=>logbook()],['Practice a landing',()=>picker('practice')],['Start at a field',()=>picker('start')],['Hangar',()=>hangarCard()],['Settings',()=>settingsCard()]],{grid:true,colors:MENU_COL});$('cardBody').classList.add('wide');}
+  ['Resume',()=>{hideModal();mode='fly';},true],['Title screen',()=>{hideModal();toTitle();}],...(mail.active?[['End the day',endDayEarly]]:DAYS[mail.day-1]?[[`Start day ${mail.day}`,()=>offerDay(()=>{hideModal();mode='fly';})]]:[]),['Mail bag',()=>mail.active?mailCard():showCard('<h2>Mail bag</h2><p>No mail in the bag today. Pick Start day in this menu, or land at Harbor Field, and Mabel will load it.</p>',[['Back',back,true]])],["Bea's chart",()=>bigMap()],["Bea's logbook",()=>bea(-1)],['Your logbook',()=>logbook()],['Practice a landing',()=>picker('practice')],['Start at a field',()=>picker('start')],['Hangar',()=>hangarCard()],['Settings',()=>settingsCard()]],{grid:true,colors:MENU_COL});$('cardBody').classList.add('wide');}
 /* each pause-menu button gets its own color so they're easy to tell apart at a glance */
-const MENU_COL={'Mail bag':'#f2c25a',"Bea's chart":'#7cc4d4',"Bea's logbook":'#a6d38a','Practice a landing':'#c4aee6','Start at a field':'#f0a77c','Your logbook':'#9fc4ef','Settings':'#cfc6b4','Hangar':'#f2a8d4'};
+const MENU_COL=new Proxy({'End the day':'#e88a7a','Mail bag':'#f2c25a',"Bea's chart":'#7cc4d4',"Bea's logbook":'#a6d38a','Practice a landing':'#c4aee6','Start at a field':'#f0a77c','Your logbook':'#9fc4ef','Settings':'#cfc6b4','Hangar':'#f2a8d4'},{get:(o,k)=>o[k]||(/^Start day/.test(k)?'#9cd8a4':undefined)});
 function picker(kind){
   const items=STRIPS.filter(charted).map(s=>{const F=log.fields[s.id];return `<button class="item" data-id="${s.id}"><span><b>${s.name}</b><span class="d">${DESC[s.id]}</span></span><span class="r">${F&&F.best?stars(F.best):'NOT YET'}</span></button>`;}).join('');
   showCard(`<h2>${kind==='practice'?'Practice a landing':'Start at a field'}</h2><div class="sub">${kind==='practice'?'START 1.5 KM OUT, LINED UP, ON THE GLIDE PATH':'START ON THE RUNWAY, ENGINE AT IDLE'} · FIELDS ON YOUR CHART</div><div class="list">${items}</div>`,[['Back',back]]);
@@ -1037,14 +1043,13 @@ function settingsCard(){
   const mv=[['OFF',0],['SOFT',.5],['ON',1]].map(([n,v])=>`<button data-mv="${v}" class="${(settings.music??.5)==v?'primary':''}">${n}</button>`).join('');
   const st=STATIONS.map(S=>`<button data-st="${S.id}" class="${settings.station===S.id?'primary':''}">${S.fq} ${S.name.toUpperCase()}</button>`).join('');
   const lt=Object.keys(TOD).map(k=>`<button data-lt="${k}" class="${settings.light===k?'primary':''}">${TOD[k].name.toUpperCase()}</button>`).join('');
-  showCard(`<h2>Settings</h2><div class="sub">ASSISTS · TURN THEM OFF ONE AT A TIME AS YOU IMPROVE</div>${rows}<h3>ENGINE VOLUME</h3><div class="btns">${ev}</div><h3>RADIO VOLUME</h3><div class="btns">${mv}</div><h3>RADIO STATION · OR TAP THE DIAL UP TOP WHILE FLYING</h3><div class="btns">${st}</div><h3>TIME OF DAY</h3><div class="btns">${lt}</div><h3>WEATHER · TRYING IT OUT</h3><div class="btns">${Object.entries(WX).map(([k,W])=>`<button data-wx="${k}" class="${settings.weather===k?'primary':''}">${W.name.toUpperCase()}</button>`).join('')}</div><h3>PIXELS</h3><div class="btns">${px}</div><div class="sub" style="margin-top:14px">BUILD __BUILD__</div>`,[['Back',back,true]]);
+  showCard(`<h2>Settings</h2><div class="sub">ASSISTS · TURN THEM OFF ONE AT A TIME AS YOU IMPROVE</div>${rows}<h3>ENGINE VOLUME</h3><div class="btns">${ev}</div><h3>RADIO VOLUME</h3><div class="btns">${mv}</div><h3>RADIO STATION · OR TAP THE DIAL UP TOP WHILE FLYING</h3><div class="btns">${st}</div><h3>SKY · OR TAP THE SUN BUTTON UP TOP</h3><div class="btns">${lt}</div><h3>PIXELS</h3><div class="btns">${px}</div><div class="sub" style="margin-top:14px">BUILD __BUILD__</div>`,[['Back',back,true]]);
   const cb=$('cardBody');
   cb.querySelectorAll('[data-k]').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.k;if(k==='tilt'){if(!settings.tilt){settings.tilt=true;saveS();enableTilt().then(()=>{updTiltUI();settingsCard();});}else{settings.tilt=false;saveS();disableTilt();updTiltUI();settingsCard();}return;}settings[k]=!settings[k];saveS();if(k==='sound')snd.setOn(settings.sound);if(k==='fps'){$('fps').hidden=!settings.fps;$('fps').textContent='FPS: measuring…';fpsN=fpsT=0;fpsLast=0;}if(k==='sound')music.setVol();settingsCard();}));
   cb.querySelectorAll('[data-px]').forEach(b=>b.addEventListener('click',()=>{settings.pixels=b.dataset.px;pixMode=settings.pixels;saveS();resize();settingsCard();}));
   cb.querySelectorAll('[data-mv]').forEach(b=>b.addEventListener('click',()=>{settings.music=+b.dataset.mv;saveS();snd.init();music.start();music.setVol();updRadioBtn();settingsCard();}));
   cb.querySelectorAll('[data-st]').forEach(b=>b.addEventListener('click',()=>{setStation(b.dataset.st);settingsCard();}));
   cb.querySelectorAll('[data-ev]').forEach(b=>b.addEventListener('click',()=>{settings.engVol=+b.dataset.ev;saveS();settingsCard();}));
-  cb.querySelectorAll('[data-wx]').forEach(b=>b.addEventListener('click',()=>{settings.weather=b.dataset.wx;saveS();setTOD(tod);settingsCard();}));
   cb.querySelectorAll('[data-lt]').forEach(b=>b.addEventListener('click',()=>{settings.light=b.dataset.lt;saveS();setTOD(settings.light);updTodBtn();settingsCard();}));}
 function showHowTo(){mode='card';
   showCard(`<h2>How to fly</h2><div class="sub">TWO THUMBS</div>

@@ -24,7 +24,7 @@ page='''<!doctype html>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Saltwhistle">
+<meta name="apple-mobile-web-app-title" content="Saltstone">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" href="icon-192.png">
@@ -36,7 +36,7 @@ page='''<!doctype html>
 </body></html>
 '''
 open('docs/index.html','w').write(page)
-json.dump({"name":"Saltwhistle Skies","short_name":"Saltwhistle","start_url":".","scope":".","display":"fullscreen","orientation":"landscape",
+json.dump({"name":"Saltstone Isles","short_name":"Saltstone","start_url":".","scope":".","display":"fullscreen","orientation":"landscape",
   "background_color":"#1f1a2b","theme_color":"#1f1a2b",
   "icons":[{"src":"icon-192.png","sizes":"192x192","type":"image/png"},{"src":"icon-512.png","sizes":"512x512","type":"image/png","purpose":"any maskable"}]},
   open('docs/manifest.webmanifest','w'),indent=1)
