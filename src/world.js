@@ -798,13 +798,13 @@ const trees=[];
 /* ---------------- clouds ---------------- */
 const cloudGroup=new THREE.Group();scene.add(cloudGroup);const CLOUDS=[],CLOUD_CELLS=[];
 (function clouds(){const it=[];
-  for(let c=0;c<360;c++){const cx=(rnd()-.5)*44000,cz=(rnd()-.5)*19000,cy=620+rnd()*380;const n=5+(rnd()*5|0);const cl=CLOUDS.length;CLOUDS.push({x:cx,y:cy+10,z:cz,r:190});
+  for(let c=0;c<210;c++){const cx=(rnd()-.5)*44000,cz=(rnd()-.5)*19000,cy=620+rnd()*380;const n=5+(rnd()*5|0);const cl=CLOUDS.length;CLOUDS.push({x:cx,y:cy+10,z:cz,r:190});
     for(let k=0;k<n;k++){const s=40+rnd()*60;const y=cy+(rnd()-.3)*20;
       it.push({geo:new THREE.IcosahedronGeometry(1,1),m:M([cx+(rnd()-.5)*220,y,cz+(rnd()-.5)*120],[0,rnd()*3,0],[s,s*.55,s*.9]),color:y>cy?0xfff8f0:0xeae2f2,cl});}}
   // low cumulus: flat bases, stacked tiers of puffs that tower in the middle, and small satellite puffs round the edges
   let low=0;for(let tries=0;low<390&&tries<6000;tries++){const cx=(rnd()-.5)*44000,cz=(rnd()-.5)*19000;
     if(STRIPS.some(s=>Math.hypot(s.x-cx,s.z-cz)<1100))continue;let gh=0;for(let k=0;k<5;k++)gh=Math.max(gh,groundH(cx+(k-2)*90,cz+((k*7)%5-2)*60));
-    const base=Math.max(230+rnd()*170,gh+150),R=70+rnd()*80,ax=rnd()*TAU,ca=Math.cos(ax),sa=Math.sin(ax),el=.55+rnd()*.35;low++;const cl=CLOUDS.length;CLOUDS.push({x:cx,y:base+R*.55,z:cz,r:R*1.3});
+    const base=Math.max(230+rnd()*170,gh+150),R=(70+rnd()*80)*1.25,ax=rnd()*TAU,ca=Math.cos(ax),sa=Math.sin(ax),el=.55+rnd()*.35;low++;const cl=CLOUDS.length;CLOUDS.push({x:cx,y:base+R*.55,z:cz,r:R*1.3});
     const P=(u,v,y,s,sy,col)=>it.push({geo:new THREE.IcosahedronGeometry(1,1),m:M([cx+u*ca-v*sa,y,cz+u*sa+v*ca],[rnd()*.4,rnd()*3,rnd()*.4],[s*(.9+rnd()*.25),s*sy,s*(.9+rnd()*.25)]),color:col,cl});
     const nb=7+(rnd()*5|0);for(let k=0;k<nb;k++){const a=k/nb*TAU+rnd()*.5,d=R*(.35+rnd()*.6);P(Math.cos(a)*d,Math.sin(a)*d*el,base+6,R*(.32+rnd()*.18),.38,0xdcd4e6);}
     const nm=5+(rnd()*4|0);for(let k=0;k<nm;k++){const a=rnd()*TAU,d=R*rnd()*.5;const s=R*(.38+rnd()*.2);P(Math.cos(a)*d,Math.sin(a)*d*el,base+s*.55+rnd()*10,s,.78,0xf2ecf4);}

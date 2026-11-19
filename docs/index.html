@@ -1624,7 +1624,7 @@ const FORMS=[];
     for(let k=0;k<n;k++){const ya=lerp(y0,y1,k/n),yb=lerp(y0,y1,(k+1)/n),ra=lerp(r0,r1,k/n),rb=lerp(r0,r1,(k+1)/n);
       it.push({geo:new THREE.CylinderGeometry(rb,ra*1.05,yb-ya+.8,7),m:M([px,(ya+yb)/2,pz],[0,fr()*3,0]),color:col()});px+=(fr()-.5)*r1*.18;pz+=(fr()-.5)*r1*.18;}
     solidCyl(p.x,p.z,y0,y1,Math.max(r0,r1)*.95,Math.min(r0,r1)*.95);foam(a,b,r0);}
-  function foam(a,b,r){const p=P(a,b);foamIt.push({geo:new THREE.CircleGeometry(r*1.5+2,12).rotateX(-Math.PI/2),m:M([p.x,.22,p.z]),color:0xffffff});}
+  function foam(a,b,r){const p=P(a,b);foamIt.push({geo:new THREE.CircleGeometry(r*1.5+2,12).rotateX(-Math.PI/2),m:M([p.x,.3,p.z]),color:0xffffff});}
   function cap(a,b,y,s){const p=P(a,b);grass.push({geo:new THREE.DodecahedronGeometry(1,0),m:M([p.x,y,p.z],[0,fr()*3,0],[s,s*.32,s]),color:GR[(fr()*3)|0]});
     for(let k=0;k<4;k++){const q=P(a+(fr()-.5)*s,b+(fr()-.5)*s);it.push({geo:BOX(1.1,1.4,1.1),m:M([q.x,y+s*.3+.6,q.z],[0,fr()*3,0]),color:k%2?0xf4f0e6:0x2c2833});}}
   /* a ring (or part of one) of rocks round the opening, centred b0/cy, half-sizes rw (across) and rh (up), turned by roll */
@@ -1796,7 +1796,8 @@ const FORMS=[];
   for(const [k,id,name,desc,extra] of MORE)KIND[k](id,name,desc,extra);
 
   addCells(it,toon(),2500,shadowy);if(grass.length)addCells(grass,toon(),2500,shadowy);
-  if(foamIt.length){const fmM=new THREE.MeshBasicMaterial({color:0xf6f1e4,transparent:true,opacity:.55,depthWrite:false});addCells(foamIt,fmM,2500,m=>{m.renderOrder=2;return m;});
+  if(foamIt.length){const fmM=new THREE.MeshBasicMaterial({color:0xf6f1e4,transparent:true,opacity:.55,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-4,polygonOffsetUnits:-8,
+      blending:THREE.CustomBlending,blendSrc:THREE.SrcAlphaFactor,blendDst:THREE.OneMinusSrcAlphaFactor,blendSrcAlpha:THREE.ZeroFactor,blendDstAlpha:THREE.OneFactor});addCells(foamIt,fmM,2500,m=>{m.renderOrder=2;return m;});
     anims.push(t=>{fmM.opacity=.42+Math.sin(t*1.7)*.13;});}
 })();
 
@@ -1963,13 +1964,13 @@ const trees=[];
 /* ---------------- clouds ---------------- */
 const cloudGroup=new THREE.Group();scene.add(cloudGroup);const CLOUDS=[],CLOUD_CELLS=[];
 (function clouds(){const it=[];
-  for(let c=0;c<360;c++){const cx=(rnd()-.5)*44000,cz=(rnd()-.5)*19000,cy=620+rnd()*380;const n=5+(rnd()*5|0);const cl=CLOUDS.length;CLOUDS.push({x:cx,y:cy+10,z:cz,r:190});
+  for(let c=0;c<210;c++){const cx=(rnd()-.5)*44000,cz=(rnd()-.5)*19000,cy=620+rnd()*380;const n=5+(rnd()*5|0);const cl=CLOUDS.length;CLOUDS.push({x:cx,y:cy+10,z:cz,r:190});
     for(let k=0;k<n;k++){const s=40+rnd()*60;const y=cy+(rnd()-.3)*20;
       it.push({geo:new THREE.IcosahedronGeometry(1,1),m:M([cx+(rnd()-.5)*220,y,cz+(rnd()-.5)*120],[0,rnd()*3,0],[s,s*.55,s*.9]),color:y>cy?0xfff8f0:0xeae2f2,cl});}}
   // low cumulus: flat bases, stacked tiers of puffs that tower in the middle, and small satellite puffs round the edges
   let low=0;for(let tries=0;low<390&&tries<6000;tries++){const cx=(rnd()-.5)*44000,cz=(rnd()-.5)*19000;
     if(STRIPS.some(s=>Math.hypot(s.x-cx,s.z-cz)<1100))continue;let gh=0;for(let k=0;k<5;k++)gh=Math.max(gh,groundH(cx+(k-2)*90,cz+((k*7)%5-2)*60));
-    const base=Math.max(230+rnd()*170,gh+150),R=70+rnd()*80,ax=rnd()*TAU,ca=Math.cos(ax),sa=Math.sin(ax),el=.55+rnd()*.35;low++;const cl=CLOUDS.length;CLOUDS.push({x:cx,y:base+R*.55,z:cz,r:R*1.3});
+    const base=Math.max(230+rnd()*170,gh+150),R=(70+rnd()*80)*1.25,ax=rnd()*TAU,ca=Math.cos(ax),sa=Math.sin(ax),el=.55+rnd()*.35;low++;const cl=CLOUDS.length;CLOUDS.push({x:cx,y:base+R*.55,z:cz,r:R*1.3});
     const P=(u,v,y,s,sy,col)=>it.push({geo:new THREE.IcosahedronGeometry(1,1),m:M([cx+u*ca-v*sa,y,cz+u*sa+v*ca],[rnd()*.4,rnd()*3,rnd()*.4],[s*(.9+rnd()*.25),s*sy,s*(.9+rnd()*.25)]),color:col,cl});
     const nb=7+(rnd()*5|0);for(let k=0;k<nb;k++){const a=k/nb*TAU+rnd()*.5,d=R*(.35+rnd()*.6);P(Math.cos(a)*d,Math.sin(a)*d*el,base+6,R*(.32+rnd()*.18),.38,0xdcd4e6);}
     const nm=5+(rnd()*4|0);for(let k=0;k<nm;k++){const a=rnd()*TAU,d=R*rnd()*.5;const s=R*(.38+rnd()*.2);P(Math.cos(a)*d,Math.sin(a)*d*el,base+s*.55+rnd()*10,s,.78,0xf2ecf4);}
@@ -2914,7 +2915,7 @@ const snd={ctx:null,
     const c=this.ctx,t0=c.currentTime+.02,cv=new Float32Array(1024);for(let i=0;i<1024;i++){const x=i/511.5-1;cv[i]=Math.tanh(x*2.6);}
     for(let k=0;k<2;k++){const t=t0+(k?.29:0),D=k?.62:.18,ws=c.createWaveShaper(),pk=c.createBiquadFilter(),lp=c.createBiquadFilter(),g=c.createGain();ws.curve=cv;
       pk.type='peaking';pk.frequency.value=1150;pk.Q.value=1.1;pk.gain.value=7;lp.type='lowpass';lp.frequency.value=3600;ws.connect(pk);pk.connect(lp);
-      g.gain.value=0;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.2,t+.03);g.gain.setValueAtTime(.19,t+D-.06);g.gain.linearRampToValueAtTime(0,t+D);lp.connect(g);g.connect(this.master);
+      g.gain.value=0;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.1,t+.03);g.gain.setValueAtTime(.095,t+D-.06);g.gain.linearRampToValueAtTime(0,t+D);lp.connect(g);g.connect(this.master);
       const pre=c.createGain();pre.gain.value=.55;pre.connect(ws);
       for(const f of [277,349]){const o=c.createOscillator();o.type='sawtooth';o.frequency.setValueAtTime(f*.94,t);o.frequency.exponentialRampToValueAtTime(f,t+.06);o.frequency.setValueAtTime(f,t+D-.05);o.frequency.linearRampToValueAtTime(f*.97,t+D);o.connect(pre);o.start(t);o.stop(t+D+.02);}
       const nb=c.createBuffer(1,Math.floor(c.sampleRate*.12),c.sampleRate),nd=nb.getChannelData(0);for(let i=0;i<nd.length;i++)nd[i]=(Math.random()*2-1)*(1-i/nd.length);
@@ -3200,7 +3201,7 @@ function settingsCard(){
   const mv=[['OFF',0],['SOFT',.5],['ON',1]].map(([n,v])=>`<button data-mv="${v}" class="${(settings.music??.5)==v?'primary':''}">${n}</button>`).join('');
   const st=STATIONS.map(S=>`<button data-st="${S.id}" class="${settings.station===S.id?'primary':''}">${S.fq} ${S.name.toUpperCase()}</button>`).join('');
   const lt=Object.keys(TOD).map(k=>`<button data-lt="${k}" class="${settings.light===k?'primary':''}">${TOD[k].name.toUpperCase()}</button>`).join('');
-  showCard(`<h2>Settings</h2><div class="sub">ASSISTS · TURN THEM OFF ONE AT A TIME AS YOU IMPROVE</div>${rows}<h3>ENGINE VOLUME</h3><div class="btns">${ev}</div><h3>RADIO VOLUME</h3><div class="btns">${mv}</div><h3>RADIO STATION · OR TAP THE DIAL UP TOP WHILE FLYING</h3><div class="btns">${st}</div><h3>TIME OF DAY</h3><div class="btns">${lt}</div><h3>WEATHER · TRYING IT OUT</h3><div class="btns">${Object.entries(WX).map(([k,W])=>`<button data-wx="${k}" class="${settings.weather===k?'primary':''}">${W.name.toUpperCase()}</button>`).join('')}</div><h3>PIXELS</h3><div class="btns">${px}</div><div class="sub" style="margin-top:14px">BUILD 3b1f338</div>`,[['Back',back,true]]);
+  showCard(`<h2>Settings</h2><div class="sub">ASSISTS · TURN THEM OFF ONE AT A TIME AS YOU IMPROVE</div>${rows}<h3>ENGINE VOLUME</h3><div class="btns">${ev}</div><h3>RADIO VOLUME</h3><div class="btns">${mv}</div><h3>RADIO STATION · OR TAP THE DIAL UP TOP WHILE FLYING</h3><div class="btns">${st}</div><h3>TIME OF DAY</h3><div class="btns">${lt}</div><h3>WEATHER · TRYING IT OUT</h3><div class="btns">${Object.entries(WX).map(([k,W])=>`<button data-wx="${k}" class="${settings.weather===k?'primary':''}">${W.name.toUpperCase()}</button>`).join('')}</div><h3>PIXELS</h3><div class="btns">${px}</div><div class="sub" style="margin-top:14px">BUILD 11e2244</div>`,[['Back',back,true]]);
   const cb=$('cardBody');
   cb.querySelectorAll('[data-k]').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.k;if(k==='tilt'){if(!settings.tilt){settings.tilt=true;saveS();enableTilt().then(()=>{updTiltUI();settingsCard();});}else{settings.tilt=false;saveS();disableTilt();updTiltUI();settingsCard();}return;}settings[k]=!settings[k];saveS();if(k==='sound')snd.setOn(settings.sound);if(k==='fps'){$('fps').hidden=!settings.fps;$('fps').textContent='FPS: measuring…';fpsN=fpsT=0;fpsLast=0;}if(k==='sound')music.setVol();settingsCard();}));
   cb.querySelectorAll('[data-px]').forEach(b=>b.addEventListener('click',()=>{settings.pixels=b.dataset.px;pixMode=settings.pixels;saveS();resize();settingsCard();}));

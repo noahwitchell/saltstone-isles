@@ -26,7 +26,7 @@ const FORMS=[];
     for(let k=0;k<n;k++){const ya=lerp(y0,y1,k/n),yb=lerp(y0,y1,(k+1)/n),ra=lerp(r0,r1,k/n),rb=lerp(r0,r1,(k+1)/n);
       it.push({geo:new THREE.CylinderGeometry(rb,ra*1.05,yb-ya+.8,7),m:M([px,(ya+yb)/2,pz],[0,fr()*3,0]),color:col()});px+=(fr()-.5)*r1*.18;pz+=(fr()-.5)*r1*.18;}
     solidCyl(p.x,p.z,y0,y1,Math.max(r0,r1)*.95,Math.min(r0,r1)*.95);foam(a,b,r0);}
-  function foam(a,b,r){const p=P(a,b);foamIt.push({geo:new THREE.CircleGeometry(r*1.5+2,12).rotateX(-Math.PI/2),m:M([p.x,.22,p.z]),color:0xffffff});}
+  function foam(a,b,r){const p=P(a,b);foamIt.push({geo:new THREE.CircleGeometry(r*1.5+2,12).rotateX(-Math.PI/2),m:M([p.x,.3,p.z]),color:0xffffff});}
   function cap(a,b,y,s){const p=P(a,b);grass.push({geo:new THREE.DodecahedronGeometry(1,0),m:M([p.x,y,p.z],[0,fr()*3,0],[s,s*.32,s]),color:GR[(fr()*3)|0]});
     for(let k=0;k<4;k++){const q=P(a+(fr()-.5)*s,b+(fr()-.5)*s);it.push({geo:BOX(1.1,1.4,1.1),m:M([q.x,y+s*.3+.6,q.z],[0,fr()*3,0]),color:k%2?0xf4f0e6:0x2c2833});}}
   /* a ring (or part of one) of rocks round the opening, centred b0/cy, half-sizes rw (across) and rh (up), turned by roll */
@@ -198,6 +198,7 @@ const FORMS=[];
   for(const [k,id,name,desc,extra] of MORE)KIND[k](id,name,desc,extra);
 
   addCells(it,toon(),2500,shadowy);if(grass.length)addCells(grass,toon(),2500,shadowy);
-  if(foamIt.length){const fmM=new THREE.MeshBasicMaterial({color:0xf6f1e4,transparent:true,opacity:.55,depthWrite:false});addCells(foamIt,fmM,2500,m=>{m.renderOrder=2;return m;});
+  if(foamIt.length){const fmM=new THREE.MeshBasicMaterial({color:0xf6f1e4,transparent:true,opacity:.55,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-4,polygonOffsetUnits:-8,
+      blending:THREE.CustomBlending,blendSrc:THREE.SrcAlphaFactor,blendDst:THREE.OneMinusSrcAlphaFactor,blendSrcAlpha:THREE.ZeroFactor,blendDstAlpha:THREE.OneFactor});addCells(foamIt,fmM,2500,m=>{m.renderOrder=2;return m;});
     anims.push(t=>{fmM.opacity=.42+Math.sin(t*1.7)*.13;});}
 })();

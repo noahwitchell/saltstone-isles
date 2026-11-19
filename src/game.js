@@ -747,7 +747,7 @@ const snd={ctx:null,
     const c=this.ctx,t0=c.currentTime+.02,cv=new Float32Array(1024);for(let i=0;i<1024;i++){const x=i/511.5-1;cv[i]=Math.tanh(x*2.6);}
     for(let k=0;k<2;k++){const t=t0+(k?.29:0),D=k?.62:.18,ws=c.createWaveShaper(),pk=c.createBiquadFilter(),lp=c.createBiquadFilter(),g=c.createGain();ws.curve=cv;
       pk.type='peaking';pk.frequency.value=1150;pk.Q.value=1.1;pk.gain.value=7;lp.type='lowpass';lp.frequency.value=3600;ws.connect(pk);pk.connect(lp);
-      g.gain.value=0;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.2,t+.03);g.gain.setValueAtTime(.19,t+D-.06);g.gain.linearRampToValueAtTime(0,t+D);lp.connect(g);g.connect(this.master);
+      g.gain.value=0;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.1,t+.03);g.gain.setValueAtTime(.095,t+D-.06);g.gain.linearRampToValueAtTime(0,t+D);lp.connect(g);g.connect(this.master);
       const pre=c.createGain();pre.gain.value=.55;pre.connect(ws);
       for(const f of [277,349]){const o=c.createOscillator();o.type='sawtooth';o.frequency.setValueAtTime(f*.94,t);o.frequency.exponentialRampToValueAtTime(f,t+.06);o.frequency.setValueAtTime(f,t+D-.05);o.frequency.linearRampToValueAtTime(f*.97,t+D);o.connect(pre);o.start(t);o.stop(t+D+.02);}
       const nb=c.createBuffer(1,Math.floor(c.sampleRate*.12),c.sampleRate),nd=nb.getChannelData(0);for(let i=0;i<nd.length;i++)nd[i]=(Math.random()*2-1)*(1-i/nd.length);
