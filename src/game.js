@@ -1,6 +1,14 @@
 'use strict';
 /* =================== GAME v2 =================== */
 const $=id=>document.getElementById(id);
+/* paper: a small generated scrap-of-paper texture (fibers, flecks, a few soft stains) used behind every card, menu and toast */
+(function paperTexture(){const N=96,c=document.createElement('canvas');c.width=c.height=N;const x=c.getContext('2d');let sd=7;const r=()=>{sd=(Math.imul(sd,1664525)+1013904223)>>>0;return sd/4294967296;};
+  for(let k=0;k<14;k++){const cx=r()*N,cy=r()*N,rr=8+r()*22,g=x.createRadialGradient(cx,cy,0,cx,cy,rr);g.addColorStop(0,`rgba(${r()<.5?'150,110,60':'255,250,235'},${.05+r()*.06})`);g.addColorStop(1,'rgba(0,0,0,0)');
+    for(const ox of [-N,0,N])for(const oy of [-N,0,N]){x.save();x.translate(ox,oy);x.fillStyle=g;x.fillRect(cx-rr,cy-rr,rr*2,rr*2);x.restore();}}
+  for(let k=0;k<220;k++){const px=Math.floor(r()*N),py=Math.floor(r()*N),len=1+Math.floor(r()*4),dark=r()<.6;x.fillStyle=dark?`rgba(120,90,50,${.06+r()*.08})`:`rgba(255,252,240,${.18+r()*.2})`;
+    if(r()<.5)x.fillRect(px,py,len,1);else x.fillRect(px,py,1,len);}
+  for(let k=0;k<60;k++){x.fillStyle=`rgba(90,60,30,${.1+r()*.15})`;x.fillRect(Math.floor(r()*N),Math.floor(r()*N),1,1);}
+  document.documentElement.style.setProperty('--paperTex',`url(${c.toDataURL()})`);})();
 let tod='golden';
 function setTOD(k){tod=k;const T=TOD[k];
   const az=T.sunAz*DEG,el=T.sunEl*DEG;sunDir.set(Math.sin(az)*Math.cos(el),Math.sin(el),-Math.cos(az)*Math.cos(el));
@@ -483,7 +491,7 @@ function crash(why,v){
     const extra=`<div class="rows"><span class="k">SPEED</span><span>${bad(Math.round(cn.kt)+' kt',cn.kt>=45&&cn.kt<=62)}</span><span class="s">AIM 50–55</span><span class="k">DESCENT</span><span>${bad(Math.round(cn.fpm)+' ft/min',cn.fpm<500)}</span><span class="s">UNDER 300</span><span class="k">BANK</span><span>${bad(Math.round(cn.bank)+'°',cn.bank<10)}</span><span class="s">UNDER 10°</span><span class="k">NOSE</span><span>${bad((cn.pitch>=0?'up ':'down ')+Math.abs(Math.round(cn.pitch))+'°',cn.pitch>=0&&cn.pitch<12)}</span><span class="s">UP 2–8°</span></div>`;
     showCard(`<div class="who"><img src="${portrait('gus')}" alt=""><div><b>${t}</b><span>GUS PATCHES IT UP · THE MAIL IS STILL IN THE BAG</span></div></div><p>${b}</p>${extra}`,[
       ...(()=>{const landed=STRIPS.filter(s=>(log.fields[s.id]||{}).landings||s.id==='harbor'),near=landed.reduce((a,s)=>Math.hypot(s.x-ac.pos.x,s.z-ac.pos.z)<Math.hypot(a.x-ac.pos.x,a.z-ac.pos.z)?s:a,landed[0]);
-        const b=[['Take off from '+near.name,()=>spawnField(near),true]];if(dest&&why!=='rock'&&why!=='tree')b.push(['Try that approach again',()=>spawnApproach(dest)]);return [b];})()[0]]);},900);
+        const b=[['Take off from '+near.name,()=>spawnField(near),true]];if(dest)b.push(['Try that approach again',()=>spawnApproach(dest)]);return [b];})()[0]]);},900);
 }
 function resetAc(){if(typeof refillParcels==='function'){refillParcels();lookDown=false;}if(typeof resetSwitches==='function')resetSwitches();ac.boostT=0;ac.bst=0;ac.gusts=[];ac.ups=[];ac.ust=0;ac.w.set(0,0,0);ac.td=null;ac.brake=0;ac.brakeHeld=false;ac.trimHold=0;ac.ice=0;smokeBurst.forEach(m=>m.visible=false);snapCam=true;}
 function intoWindDir(s){return (s.fx*WIND.x+s.fz*WIND.z)<0?1:-1;}
