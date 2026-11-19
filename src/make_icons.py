@@ -54,7 +54,7 @@ cloud(.88*S,.672*S,.34*S,.065*S,4)
 d.rectangle([0,S*HOR-2,S,S*HOR+6],fill=hx('#ffd8a0'))
 # ---- the plane, on its own layer ----
 pl=Image.new('RGBA',(S,S),(0,0,0,0));p=ImageDraw.Draw(pl)
-L=.56*S;cx,cy=.47*S,.42*S;ang=math.radians(16)
+L=.74*S;cx,cy=.48*S,.4*S;ang=math.radians(16)
 def T(pts):return [(cx+(x*math.cos(ang)-y*math.sin(ang))*L,cy-(x*math.sin(ang)+y*math.cos(ang))*L) for x,y in pts]
 CREAM,CREAM2,RED,GLASS,DARK=hx('#f6ecd6'),hx('#d6c3a0'),hx('#d2493c'),hx('#46608a'),hx('#3a3440')
 p.polygon(T([(-.47,.24),(-.40,.24),(-.29,.07),(-.46,.04)]),fill=RED)
@@ -79,7 +79,7 @@ for y in range(G):
 for y in range(G):
   for x in range(G):
     if mask[y][x]:r,g_,b,a=px[x,y];k=255/a;out[x,y]=(min(255,int(r*k)),min(255,int(g_*k)),min(255,int(b*k)))
-for name,size in [('docs/icon-v2-192.png',192),('docs/icon-v2-512.png',512),('docs/apple-touch-icon-v2.png',192)]:
+for name,size in [('docs/icon-v3-192.png',192),('docs/icon-v3-512.png',512),('docs/apple-touch-icon-v3.png',192)]:
   small.resize((size,size),Image.NEAREST).save(name)
 os.makedirs('screenshots',exist_ok=True)
 small.resize((640,640),Image.NEAREST).save('screenshots/Icon_v2_preview.png')
