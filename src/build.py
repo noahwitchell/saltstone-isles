@@ -5,7 +5,8 @@ world=open('src/world.js').read().replace('/*@ISLES@*/',open('src/isles.js').rea
 game=open('src/game.js').read().replace('/*@PLAY@*/',open('src/play.js').read()+'\n'+open('src/drops.js').read()+'\n'+open('src/switches.js').read()+'\n'+open('src/decor.js').read()+'\n'+open('src/pets.js').read()+'\n'+open('src/shop.js').read()+'\n'+open('src/portraits.js').read()+'\n'+open('src/weather.js').read())
 out0=head+'\n<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>\n<script>\n'+world+'\n</script>\n<script>\n'+game+'\n</script>\n'
 import hashlib
-out=out0.replace('__BUILD__',hashlib.sha1(out0.encode()).hexdigest()[:7])
+BUILD=hashlib.sha1(out0.encode()).hexdigest()[:7]
+out=out0.replace('__BUILD__',BUILD)
 open('game.html','w').write(out)
 open('_test.html','w').write('<!doctype html><meta charset="utf-8">\n'+out)
 print('built',len(out))
@@ -48,4 +49,5 @@ self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;
  if(e.request.mode==='navigate'||e.request.url.endsWith('index.html')){e.respondWith(fetch(e.request).then(r=>{const cp=r.clone();caches.open(CACHE).then(c=>c.put(e.request,cp));return r;}).catch(()=>caches.match(e.request).then(h=>h||caches.match('index.html'))));return;}
  e.respondWith(caches.match(e.request).then(hit=>{const net=fetch(e.request).then(r=>{if(r&&(r.ok||r.type==='opaque')){const cp=r.clone();caches.open(CACHE).then(c=>c.put(e.request,cp));}return r;}).catch(()=>hit);return hit||net;}));});
 ''' % ver)
-print('web app built',ver)
+open('docs/version.txt','w').write(BUILD)
+print('web app built',ver,'build',BUILD)

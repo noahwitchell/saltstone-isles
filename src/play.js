@@ -233,3 +233,15 @@ const streaks=(()=>{const SRC=[[-5.2,.8,.3,1],[5.2,.8,.3,1],[-5.2,.95,.3,1],[5.2
   let rl=-1;anims.push(t=>{const rdt=rl<0?0:clamp(t-rl,0,.1);rl=t;rush.visible=k>.01&&camMode==='cockpit';if(!rush.visible)return;const v=(ac.ias+(ac.bst||0)*22)*1.1*rdt;for(let i=0;i<NR;i++){const r=rs[i];r.z+=v*(1+r.l*.1);if(r.z>4){r.z=-70-Math.random()*30;}
       RP.set([r.x,r.y,r.z,r.x,r.y,r.z-r.l*(.6+k)],i*6);}rg.attributes.position.needsUpdate=true;});
   return {L};})();
+
+/* ---------- updates: an installed copy on the phone can sit in memory for days without reloading, so it never sees a
+   new version. When the game comes back to the front (and every ten minutes), check the build number on the site; if
+   it's changed, reload straight away from the title screen, or offer a one-tap update in flight (the flight is saved
+   first, so "Pick up where you left off" puts you right back) */
+const BUILD_ID='__BUILD__';let updOffered=false;
+function checkUpdate(){if(!/^https?:/.test(location.protocol)||/claude/.test(location.hostname))return;
+  fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.text():null).then(v=>{v=v&&v.trim();if(!v||v===BUILD_ID||v.length>12)return;
+    if(mode==='title'){location.reload();return;}if(updOffered)return;updOffered=true;
+    const b=document.createElement('button');b.id='updBtn';b.textContent='Update ready · tap to load it';b.style.cssText='position:fixed;left:50%;top:calc(var(--st,0px) + 46px);transform:translateX(-50%);z-index:40;font-size:15px;padding:6px 12px';
+    b.addEventListener('click',()=>{if(typeof saveResume==='function')saveResume();location.reload();});document.body.appendChild(b);}).catch(()=>{});}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUpdate();});addEventListener('pageshow',checkUpdate);setInterval(checkUpdate,10*60*1000);setTimeout(checkUpdate,4000);

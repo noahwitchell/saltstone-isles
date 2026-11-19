@@ -3201,7 +3201,7 @@ function settingsCard(){
   const mv=[['OFF',0],['SOFT',.5],['ON',1]].map(([n,v])=>`<button data-mv="${v}" class="${(settings.music??.5)==v?'primary':''}">${n}</button>`).join('');
   const st=STATIONS.map(S=>`<button data-st="${S.id}" class="${settings.station===S.id?'primary':''}">${S.fq} ${S.name.toUpperCase()}</button>`).join('');
   const lt=Object.keys(TOD).map(k=>`<button data-lt="${k}" class="${settings.light===k?'primary':''}">${TOD[k].name.toUpperCase()}</button>`).join('');
-  showCard(`<h2>Settings</h2><div class="sub">ASSISTS · TURN THEM OFF ONE AT A TIME AS YOU IMPROVE</div>${rows}<h3>ENGINE VOLUME</h3><div class="btns">${ev}</div><h3>RADIO VOLUME</h3><div class="btns">${mv}</div><h3>RADIO STATION · OR TAP THE DIAL UP TOP WHILE FLYING</h3><div class="btns">${st}</div><h3>TIME OF DAY</h3><div class="btns">${lt}</div><h3>WEATHER · TRYING IT OUT</h3><div class="btns">${Object.entries(WX).map(([k,W])=>`<button data-wx="${k}" class="${settings.weather===k?'primary':''}">${W.name.toUpperCase()}</button>`).join('')}</div><h3>PIXELS</h3><div class="btns">${px}</div><div class="sub" style="margin-top:14px">BUILD 11e2244</div>`,[['Back',back,true]]);
+  showCard(`<h2>Settings</h2><div class="sub">ASSISTS · TURN THEM OFF ONE AT A TIME AS YOU IMPROVE</div>${rows}<h3>ENGINE VOLUME</h3><div class="btns">${ev}</div><h3>RADIO VOLUME</h3><div class="btns">${mv}</div><h3>RADIO STATION · OR TAP THE DIAL UP TOP WHILE FLYING</h3><div class="btns">${st}</div><h3>TIME OF DAY</h3><div class="btns">${lt}</div><h3>WEATHER · TRYING IT OUT</h3><div class="btns">${Object.entries(WX).map(([k,W])=>`<button data-wx="${k}" class="${settings.weather===k?'primary':''}">${W.name.toUpperCase()}</button>`).join('')}</div><h3>PIXELS</h3><div class="btns">${px}</div><div class="sub" style="margin-top:14px">BUILD 9a89df9</div>`,[['Back',back,true]]);
   const cb=$('cardBody');
   cb.querySelectorAll('[data-k]').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.k;if(k==='tilt'){if(!settings.tilt){settings.tilt=true;saveS();enableTilt().then(()=>{updTiltUI();settingsCard();});}else{settings.tilt=false;saveS();disableTilt();updTiltUI();settingsCard();}return;}settings[k]=!settings[k];saveS();if(k==='sound')snd.setOn(settings.sound);if(k==='fps'){$('fps').hidden=!settings.fps;$('fps').textContent='FPS: measuring…';fpsN=fpsT=0;fpsLast=0;}if(k==='sound')music.setVol();settingsCard();}));
   cb.querySelectorAll('[data-px]').forEach(b=>b.addEventListener('click',()=>{settings.pixels=b.dataset.px;pixMode=settings.pixels;saveS();resize();settingsCard();}));
@@ -3608,6 +3608,18 @@ const streaks=(()=>{const SRC=[[-5.2,.8,.3,1],[5.2,.8,.3,1],[-5.2,.95,.3,1],[5.2
   let rl=-1;anims.push(t=>{const rdt=rl<0?0:clamp(t-rl,0,.1);rl=t;rush.visible=k>.01&&camMode==='cockpit';if(!rush.visible)return;const v=(ac.ias+(ac.bst||0)*22)*1.1*rdt;for(let i=0;i<NR;i++){const r=rs[i];r.z+=v*(1+r.l*.1);if(r.z>4){r.z=-70-Math.random()*30;}
       RP.set([r.x,r.y,r.z,r.x,r.y,r.z-r.l*(.6+k)],i*6);}rg.attributes.position.needsUpdate=true;});
   return {L};})();
+
+/* ---------- updates: an installed copy on the phone can sit in memory for days without reloading, so it never sees a
+   new version. When the game comes back to the front (and every ten minutes), check the build number on the site; if
+   it's changed, reload straight away from the title screen, or offer a one-tap update in flight (the flight is saved
+   first, so "Pick up where you left off" puts you right back) */
+const BUILD_ID='9a89df9';let updOffered=false;
+function checkUpdate(){if(!/^https?:/.test(location.protocol)||/claude/.test(location.hostname))return;
+  fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.text():null).then(v=>{v=v&&v.trim();if(!v||v===BUILD_ID||v.length>12)return;
+    if(mode==='title'){location.reload();return;}if(updOffered)return;updOffered=true;
+    const b=document.createElement('button');b.id='updBtn';b.textContent='Update ready · tap to load it';b.style.cssText='position:fixed;left:50%;top:calc(var(--st,0px) + 46px);transform:translateX(-50%);z-index:40;font-size:15px;padding:6px 12px';
+    b.addEventListener('click',()=>{if(typeof saveResume==='function')saveResume();location.reload();});document.body.appendChild(b);}).catch(()=>{});}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUpdate();});addEventListener('pageshow',checkUpdate);setInterval(checkUpdate,10*60*1000);setTimeout(checkUpdate,4000);
 
 /* ---------- air drops: parcels on little parachutes, onto bullseyes at remote camps ----------
    Drops are part of the day's mail. When you load the bag, Mabel hands over one to three air-drop parcels for folk
