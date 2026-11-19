@@ -49,7 +49,10 @@ button:focus-visible{outline:2px solid #fff;outline-offset:2px}
 #vsi{font-size:15px;margin-left:6px;opacity:.9}
 #dest{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;font-size:11px;padding:8px 10px;color:var(--paper);background:var(--glass);border:2px solid var(--line);box-shadow:none}
 #dest .arr{display:inline-block;width:12px;text-align:center;color:#6fe0e0;margin-right:4px}
-.sp{flex:1}
+.sp{flex:1;display:flex;justify-content:center;min-width:0}
+#task{pointer-events:auto;font-family:var(--mono);font-size:15px;line-height:1;padding:5px 9px;background:var(--glass);border:2px solid var(--line);color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;display:flex;gap:6px;align-items:center}
+#task img{width:14px;height:14px;image-rendering:pixelated;flex:none}
+#task b{color:#8a5a18}#task .dim{opacity:.7}
 #todBtn,#radioBtn{pointer-events:auto;padding:3px 5px;line-height:0}#todBtn img,#radioBtn img{width:32px;height:32px;image-rendering:pixelated;display:block}
 #view,#pause,#center{pointer-events:auto;font-family:var(--mono);font-size:15px;padding:8px 10px}
 #stallBan{z-index:5;position:fixed;left:50%;top:calc(var(--st) + 44px);transform:translateX(-50%);font-family:var(--mono);font-size:20px;background:var(--bad);color:#fff;padding:5px 12px;letter-spacing:.1em;pointer-events:none}
@@ -206,7 +209,7 @@ h3{font-family:var(--mono);font-size:15px;letter-spacing:.08em;color:var(--ink2)
   <div id="top">
     <div class="pill" id="spd">0<small>KT</small></div>
     <button id="dest" aria-label="Change destination"><span class="arr" id="arr">▲</span><span id="destTxt">—</span></button>
-    <div class="sp"></div>
+    <div class="sp"><button id="task" hidden aria-label="What to do next. Tap for the mail bag."></button></div>
     <div class="pill" id="alt">0<small>FT</small><span id="vsi"></span></div>
     <button id="center" aria-label="Recenter tilt" hidden>CENTER</button>
     <button id="radioBtn" aria-label="Radio station"></button>
@@ -792,36 +795,68 @@ const SURF={paved:0x5e5a66,grass:0x6c9c45,dirt:0xd6b07c,sand:0xd9c48e,cinder:0x5
 })();
 
 /* ---------------- plane model ---------------- */
-function buildPlane(pal){
-  const body=[],wing=[];
-  const cream=pal.body,red=pal.trim,dark=0x2c2833,glass=0x34465c,tire=0x29252b;
-  body.push({geo:BOX(1.0,.95,1.0),m:M([0,-.05,-2.2]),color:cream});
-  body.push({geo:new THREE.ConeGeometry(.3,.5,8).rotateX(-Math.PI/2),m:M([0,-.05,-2.95]),color:red});
-  body.push({geo:BOX(1.15,1.25,2.3),m:M([0,.05,-.6]),color:cream});
-  body.push({geo:BOX(1.0,.55,.08),m:M([0,.42,-1.72],[-.45,0,0]),color:glass});
-  for(const sx of [-1,1]) body.push({geo:BOX(.04,.5,1.4),m:M([sx*.585,.4,-.55]),color:glass});
-  const tail=BOX(1.0,1.0,3.6);{const p=tail.attributes.position;for(let i=0;i<p.count;i++){if(p.getZ(i)>0){p.setX(i,p.getX(i)*.28);p.setY(i,p.getY(i)*.38+.3);}}tail.computeVertexNormals();}
-  body.push({geo:tail,m:M([0,.08,2.3]),color:cream});
-  body.push({geo:BOX(1.18,.15,3.4),m:M([0,-.14,-1.1]),color:red});
-  body.push({geo:BOX(3.4,.09,.85),m:M([0,.42,4.05]),color:cream});
-  for(const sx of [-1,1]) body.push({geo:BOX(.5,.1,.86),m:M([sx*1.5,.42,4.05]),color:red});
-  const fin=BOX(.09,1.3,1.0);{const p=fin.attributes.position;for(let i=0;i<p.count;i++){if(p.getY(i)>0)p.setZ(i,p.getZ(i)*.6+.35);}fin.computeVertexNormals();}
-  body.push({geo:fin,m:M([0,1.0,4.05]),color:red});
-  for(const sx of [-1,1]){
-    beam(body,new V3(sx*.5,-.55,.15),new V3(sx*1.12,-1.0,.15),.09,dark);
-    body.push({geo:new THREE.CylinderGeometry(.33,.33,.2,10).rotateZ(Math.PI/2),m:M([sx*1.15,-1.02,.15]),color:tire});
+/* the plane. pal = {body, trim} colors; o = {model, wingK (span stretch), spats, pod}.
+   Models: cub (the Puddle Jumper: high wing, struts), bi (the Bluebird: biplane, round cowling, open cockpit),
+   racer (the Gannet: low tapered wing, long nose, bubble canopy), float (the Pelican: big high wing on built-in floats) */
+function buildPlane(pal,o={}){
+  const body=[],wing=[],model=o.model||'cub',wk=o.wingK||1;
+  const cream=pal.body,red=pal.trim,dark=0x2c2833,glass=0x34465c,tire=0x29252b,metal=0x9a96a2;
+  const wheels=(z0,spread,h)=>{for(const sx of [-1,1]){beam(body,new V3(sx*.5,-.55,z0),new V3(sx*spread,-h,z0),.09,dark);
+      if(o.spats)body.push({geo:new THREE.SphereGeometry(.42,8,6).scale(.7,1,1.6),m:M([sx*spread,-h-.05,z0]),color:red});
+      else body.push({geo:new THREE.CylinderGeometry(.33,.33,.2,10).rotateZ(Math.PI/2),m:M([sx*spread,-h-.02,z0]),color:tire});}};
+  const tailGeo=(len,wx,wy)=>{const t=BOX(1.0,1.0,len);const p=t.attributes.position;for(let i=0;i<p.count;i++){if(p.getZ(i)>0){p.setX(i,p.getX(i)*wx);p.setY(i,p.getY(i)*wy+.3);}}t.computeVertexNormals();return t;};
+  const finGeo=(h,d)=>{const f=BOX(.09,h,d);const p=f.attributes.position;for(let i=0;i<p.count;i++){if(p.getY(i)>0)p.setZ(i,p.getZ(i)*.6+.35);}f.computeVertexNormals();return f;};
+  let propZ=-2.82,propY=-.05;
+  if(model==='bi'){
+    body.push({geo:new THREE.CylinderGeometry(.62,.58,.7,12).rotateX(Math.PI/2),m:M([0,0,-2.1]),color:red});
+    body.push({geo:new THREE.ConeGeometry(.24,.4,8).rotateX(-Math.PI/2),m:M([0,0,-2.65]),color:metal});
+    body.push({geo:BOX(1.05,1.05,2.2),m:M([0,0,-.7]),color:cream});
+    body.push({geo:BOX(.9,.22,.06),m:M([0,.62,-1.2],[-.5,0,0]),color:glass});
+    body.push({geo:BOX(1.0,.12,.9),m:M([0,.52,-.4]),color:dark});
+    body.push({geo:tailGeo(3.2,.3,.4),m:M([0,.05,2.0]),color:cream});
+    body.push({geo:BOX(3.0,.09,.8),m:M([0,.38,3.55]),color:cream});
+    body.push({geo:finGeo(1.2,.9),m:M([0,.95,3.55]),color:red});
+    for(const [y,span] of [[1.35,8.6],[-.42,8.0]]){wing.push({geo:BOX(span*wk,.14,1.35),m:M([0,y,-.95]),color:cream});
+      for(const sx of [-1,1])wing.push({geo:BOX(.5,.15,1.36),m:M([sx*(span*wk/2-.25),y,-.95]),color:red});}
+    for(const sx of [-1,1]){for(const zz of [-1.45,-.45]){beam(body,new V3(sx*3.0*wk,-.35,zz),new V3(sx*3.0*wk,1.3,zz),.06,dark);beam(body,new V3(sx*.45,.5,zz),new V3(sx*.9,1.3,zz),.05,dark);}}
+    wheels(-1.2,.95,1.0);propZ=-2.5;propY=0;
+  }else if(model==='racer'){
+    body.push({geo:BOX(.9,.85,1.6),m:M([0,-.1,-2.5]),color:cream});
+    body.push({geo:new THREE.ConeGeometry(.36,.8,10).rotateX(-Math.PI/2),m:M([0,-.1,-3.7]),color:red});
+    body.push({geo:BOX(1.0,1.0,2.4),m:M([0,-.05,-.6]),color:cream});
+    body.push({geo:new THREE.SphereGeometry(.5,10,6,0,TAU,0,Math.PI/2).scale(.95,1.0,2.2),m:M([0,.42,-.7]),color:glass});
+    body.push({geo:tailGeo(3.8,.24,.32),m:M([0,0,2.4]),color:cream});
+    body.push({geo:BOX(1.02,.12,4.6),m:M([0,-.36,-1.0]),color:red});
+    body.push({geo:BOX(3.0,.08,.7),m:M([0,.3,4.2]),color:cream});
+    body.push({geo:finGeo(1.25,.9),m:M([0,.9,4.15]),color:red});
+    const wg=BOX(9.4*wk,.15,1.6);{const p=wg.attributes.position;for(let i=0;i<p.count;i++){const t=Math.abs(p.getX(i))/(4.7*wk);p.setZ(i,p.getZ(i)*(1-.45*t)+.2*t);}wg.computeVertexNormals();}
+    wing.push({geo:wg,m:M([0,-.38,-.5]),color:cream});for(const sx of [-1,1])wing.push({geo:BOX(.45,.16,.9),m:M([sx*(4.7*wk-.2),-.38,-.3]),color:red});
+    wheels(-.9,1.4,1.05);propZ=-4.15;propY=-.1;
+  }else{
+    const big=model==='float'?1.12:1;
+    body.push({geo:BOX(1.0*big,.95*big,1.0),m:M([0,-.05,-2.2]),color:cream});
+    body.push({geo:new THREE.ConeGeometry(.3,.5,8).rotateX(-Math.PI/2),m:M([0,-.05,-2.95]),color:red});
+    body.push({geo:BOX(1.15*big,1.25*big,2.3*big),m:M([0,.05,-.6]),color:cream});
+    body.push({geo:BOX(1.0,.55,.08),m:M([0,.42,-1.72],[-.45,0,0]),color:glass});
+    for(const sx of [-1,1]) body.push({geo:BOX(.04,.5,1.4),m:M([sx*.585*big,.4,-.55]),color:glass});
+    body.push({geo:tailGeo(3.6*big,.28,.38),m:M([0,.08,2.3*big]),color:cream});
+    body.push({geo:BOX(1.18*big,.15,3.4),m:M([0,-.14,-1.1]),color:red});
+    body.push({geo:BOX(3.4*big,.09,.85),m:M([0,.42,4.05*big]),color:cream});
+    for(const sx of [-1,1]) body.push({geo:BOX(.5,.1,.86),m:M([sx*1.5*big,.42,4.05*big]),color:red});
+    body.push({geo:finGeo(1.3*big,1.0),m:M([0,1.0,4.05*big]),color:red});
+    const span=(model==='float'?12.4:10.5)*wk,wy=.78+(big-1)*.6;
+    wing.push({geo:BOX(span,.16,1.55*big),m:M([0,wy,-.55]),color:cream});
+    for(const sx of [-1,1]){wing.push({geo:BOX(.6,.17,1.56*big),m:M([sx*(span/2-.3),wy,-.55]),color:red});
+      for(const zz of [-.95,-.2]) beam(body,new V3(sx*.56,-.3,zz),new V3(sx*2.7*wk,wy-.08,zz-.05),.07,dark);}
+    if(model==='float'){for(const sx of [-1,1]){body.push({geo:BOX(.62,.5,5.6),m:M([sx*1.45,-1.85,-.5]),color:red});body.push({geo:new THREE.ConeGeometry(.31,.9,6).rotateX(-Math.PI/2).scale(1,.8,1),m:M([sx*1.45,-1.8,-3.7]),color:red});
+        body.push({geo:BOX(.64,.08,5.62),m:M([sx*1.45,-1.58,-.5]),color:cream});for(const zz of [-1.6,.6])beam(body,new V3(sx*.5,-.5,zz),new V3(sx*1.45,-1.6,zz),.08,dark);}}
+    else{wheels(.15,1.12,1.0);beam(body,new V3(0,-.5,-2.15),new V3(0,-1.05,-2.15),.08,dark);body.push({geo:new THREE.CylinderGeometry(.28,.28,.18,10).rotateZ(Math.PI/2),m:M([0,-1.07,-2.15]),color:tire});}
   }
-  beam(body,new V3(0,-.5,-2.15),new V3(0,-1.05,-2.15),.08,dark);
-  body.push({geo:new THREE.CylinderGeometry(.28,.28,.18,10).rotateZ(Math.PI/2),m:M([0,-1.07,-2.15]),color:tire});
-  wing.push({geo:BOX(10.5,.16,1.55),m:M([0,.78,-.55]),color:cream});
-  for(const sx of [-1,1]){
-    wing.push({geo:BOX(.6,.17,1.56),m:M([sx*4.95,.78,-.55]),color:red});
-    for(const zz of [-.95,-.2]) beam(body,new V3(sx*.56,-.3,zz),new V3(sx*2.7,.7,zz-.05),.07,dark);
-  }
+  if(o.pod)body.push({geo:BOX(.8,.55,2.4),m:M([0,model==='racer'?-.75:-.85,-.4]),color:red},{geo:new THREE.ConeGeometry(.38,.6,8).rotateX(-Math.PI/2).scale(1,.7,1),m:M([0,model==='racer'?-.75:-.85,-1.9]),color:red});
   const g=new THREE.Group();
   const bodyM=new THREE.Mesh(merge(body),litify(toon({},false))),wingM=new THREE.Mesh(merge(wing),litify(toon({},false)));
-  const blades=new THREE.Mesh(merge([{geo:BOX(.16,2.0,.05),m:M([0,0,0]),color:0x3a3438}]),toon({},false));blades.position.set(0,-.05,-2.82);
-  const disc=new THREE.Mesh(new THREE.CircleGeometry(1.0,18),new THREE.MeshBasicMaterial({color:0xe9e0d0,transparent:true,opacity:.18,depthWrite:false}));disc.position.set(0,-.05,-2.84);
+  const blades=new THREE.Mesh(merge([{geo:BOX(.16,2.0,.05),m:M([0,0,0]),color:0x3a3438}]),toon({},false));blades.position.set(0,propY,propZ);
+  const disc=new THREE.Mesh(new THREE.CircleGeometry(1.0,18),new THREE.MeshBasicMaterial({color:0xe9e0d0,transparent:true,opacity:.18,depthWrite:false}));disc.position.set(0,propY,propZ-.02);
   bodyM.castShadow=wingM.castShadow=true;g.add(bodyM,wingM,blades,disc); g.userData={bodyM,wingM,blades,disc}; return g;
 }
 const plane=buildPlane({body:0xf3e7cf,trim:0xd2493c}); scene.add(plane);
@@ -2198,7 +2233,15 @@ const MEET={
 const mail=log.mail;
 const bagFor=stripId=>mail.bag.filter(it=>CHARS[it.to].home===stripId);
 function mailDest(){if(!mail.active)return null;const it=mail.bag[0];if(it)return stripById(CHARS[it.to].home);return STRIPS[0];}
-function refreshBag(){const b=$('bag');updJob();if(!mail.active){b.hidden=true;return;}
+/* the task pill: one short line up top saying what's left to do, always on screen. Tap it for the mail bag */
+const TASK_IMG=(()=>{const c=document.createElement('canvas');c.width=c.height=8;const x=c.getContext('2d'),P=(col,a,b,w=1,h=1)=>{x.fillStyle=col;x.fillRect(a,b,w,h);};
+  P('#5a4030',0,1,8,6);P('#f6efe0',1,2,6,4);P('#c9b89a',1,2,1,1);P('#c9b89a',6,2,1,1);P('#c9b89a',2,3,1,1);P('#c9b89a',5,3,1,1);P('#c9b89a',3,4,2,1);P('#d2493c',5,4,1,1);return c.toDataURL();})();
+function updTask(){const t=$('task');if(!t)return;const parts=[];
+  if(mail.active){const n=mail.bag.length,nx=mailDest();parts.push(n?`<b>${n}</b> ${n>1?'letters':'letter'} <span class="dim">next</span> ${nx?nx.name:''}`:`Bag empty <span class="dim">head home to</span> Harbor Field`);
+    const dl=(mail.drops||[]).filter(d=>!d.done).length;if(dl)parts.push(`<b>${dl}</b> ${dl>1?'drops':'drop'}`);}
+  if(typeof activeErrands==='function'){const er=activeErrands();if(er.length)parts.push(er.map(errLine).join(', '));}
+  t.hidden=!parts.length;if(parts.length)t.innerHTML=`<img src="${TASK_IMG}" alt="">`+parts.join(' <span class="dim">/</span> ');}
+function refreshBag(){const b=$('bag');updJob();updTask();if(!mail.active){b.hidden=true;return;}
   const n=mail.bag.length,nx=mailDest();b.hidden=false;b.textContent=n?`✉ ${n} → ${nx.name.toUpperCase()}`:'✉ BAG EMPTY → HOME';}
 /* the little "today's jobs" panel: mail, air drops, errands. Tap it for the mail bag */
 function updJob(){const jd=$('jDay');if(!jd)return;jd.textContent=mail.active?'DAY '+mail.day:'FREE FLIGHT';
@@ -2329,7 +2372,8 @@ function CLof(a,f){const as=AC.stall+f.dSt,c0=AC.CL0+f.dCL,mx=c0+AC.CLa*as;
   if(a>as)return Math.max(mx*.5,mx-(a-as)*4)*(a>1.2?Math.max(0,(1.57-a)/.37):1);
   const an=-.2;if(a<an){const mn=c0+AC.CLa*an;return Math.min(mn*.5,mn+(an-a)*4);}
   return c0+AC.CLa*a;}
-const thrust=u=>AC.Tmax*ac.throttle*ac.pf*Math.max(0,1-u/AC.Vp);
+let CEIL=1500;   // the air thins above this (m); Gus's supercharger raises it
+const thrust=u=>AC.Tmax*ac.throttle*ac.pf*Math.max(0,1-u/AC.Vp)*clamp(1-(ac.pos.y-CEIL)/450,0,1);
 function engine(dt){
   const ft=(ac.pos.y-AC.gearH)*FT;
   if(!ac.ground&&!ac.carb&&ac.throttle<.4)ac.ice=Math.min(1,ac.ice+dt/32);
@@ -2654,6 +2698,8 @@ function setView(v){camMode=v;$('view').textContent=VNAME[v];snapCam=true;camera
 $('view').addEventListener('click',()=>setView(VIEWS[(VIEWS.indexOf(camMode)+1)%VIEWS.length]));
 $('pause').addEventListener('click',()=>{if(mode==='fly')openMenu();});
 $('job').addEventListener('click',()=>{if(mode!=='fly')return;if(mail.active)mailCard();else{mode='paused';bigMap();}});
+$('task').addEventListener('click',e=>{e.stopPropagation();if(mode!=='fly')return;if(mail.active)mailCard();else{mode='paused';bigMap();}});
+setInterval(()=>{if(typeof updTask==='function')updTask();},1000);
 $('center').addEventListener('click',()=>{recenterTilt();toast('Tilt centered. Hold the phone like this to fly level.',2);});
 $('dest').addEventListener('click',()=>{const i=STRIPS.indexOf(dest);dest=STRIPS[(i+1)%STRIPS.length];toast('Heading for '+dest.name,1.6);});
 $('mapc').addEventListener('click',()=>{if(mode==='fly'){mode='paused';bigMap();}});
@@ -2699,8 +2745,12 @@ const snd={ctx:null,
     g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+dur);s.connect(f);f.connect(g);g.connect(this.master);s.start(t,Math.random());s.stop(t+dur+.05);},
   beep(f){if(!this.ctx)return;const c=this.ctx,o=c.createOscillator(),g=c.createGain(),t=c.currentTime;o.type='triangle';o.frequency.value=f;g.gain.setValueAtTime(.08,t);g.gain.exponentialRampToValueAtTime(.001,t+.18);o.connect(g);g.connect(this.master);o.start(t);o.stop(t+.2);},
   thump(v=1){this.burst(.6*v,260,.25);},crash(){this.burst(.5,900,1.2);},click(){this.burst(.25,3000,.03);},toot(){if(!this.ctx)return;const c=this.ctx;for(let k=0;k<2;k++){const t=c.currentTime+.02+k*.75,g=c.createGain(),lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=700;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.3,t+.08);g.gain.setValueAtTime(.3,t+.5);g.gain.linearRampToValueAtTime(0,t+.65);lp.connect(g);g.connect(this.master);
-    for(const f of [k?98:110,k?147:165]){const o=c.createOscillator();o.type='sawtooth';o.frequency.value=f;o.connect(lp);o.start(t);o.stop(t+.7);}}},honk(){if(!this.ctx)return;const c=this.ctx,t0=c.currentTime+.02;for(let k=0;k<2;k++){const t=t0+k*.27,g=c.createGain(),lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=2200;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.22,t+.015);g.gain.setValueAtTime(.22,t+.17);g.gain.linearRampToValueAtTime(0,t+.21);lp.connect(g);g.connect(this.master);
-    for(const f of [415,523]){const o=c.createOscillator();o.type='square';o.frequency.setValueAtTime(f*(k?1:1.02),t);o.frequency.linearRampToValueAtTime(f*.97,t+.2);o.connect(lp);o.start(t);o.stop(t+.25);}}},squelch(){this.burst(.3,5200,.07);setTimeout(()=>this.burst(.12,2600,.05),70);},hiss(v=1){this.burst(.45*v,3600,.9);setTimeout(()=>this.burst(.3*v,900,.15),650);},flick(){this.burst(.4,7000,.012);setTimeout(()=>this.burst(.22,2200,.025),22);},clunk(){this.burst(.35,1400,.05);setTimeout(()=>this.burst(.25,600,.08),40);},
+    for(const f of [k?98:110,k?147:165]){const o=c.createOscillator();o.type='sawtooth';o.frequency.value=f;o.connect(lp);o.start(t);o.stop(t+.7);}}},honk(){if(!this.ctx)return;/* a foghorn: one long low blat. Two reedy sawtooths a fifth apart over a sub, through a low-pass, with a slight sag in pitch */
+    const c=this.ctx,t=c.currentTime+.02,D=1.15,g=c.createGain(),lp=c.createBiquadFilter(),lp2=c.createBiquadFilter();lp.type='lowpass';lp.frequency.setValueAtTime(380,t);lp.frequency.linearRampToValueAtTime(900,t+.12);lp.frequency.linearRampToValueAtTime(620,t+D);lp.Q.value=2.2;
+    lp2.type='lowpass';lp2.frequency.value=1600;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.34,t+.09);g.gain.setValueAtTime(.32,t+D-.25);g.gain.linearRampToValueAtTime(0,t+D);
+    lp.connect(lp2);lp2.connect(g);g.connect(this.master);const vib=c.createOscillator(),vg=c.createGain();vib.frequency.value=5.5;vg.gain.value=.9;vib.connect(vg);
+    for(const [f,ty,a] of [[92,'sawtooth',.55],[138,'sawtooth',.32],[46,'sine',.8],[93.2,'square',.18]]){const o=c.createOscillator(),og=c.createGain();o.type=ty;o.frequency.setValueAtTime(f*1.02,t);o.frequency.linearRampToValueAtTime(f,t+.15);o.frequency.linearRampToValueAtTime(f*.96,t+D);
+      vg.connect(o.frequency);og.gain.value=a;o.connect(og);og.connect(lp);o.start(t);o.stop(t+D+.05);}vib.start(t);vib.stop(t+D+.05);},squelch(){this.burst(.3,5200,.07);setTimeout(()=>this.burst(.12,2600,.05),70);},hiss(v=1){this.burst(.45*v,3600,.9);setTimeout(()=>this.burst(.3*v,900,.15),650);},flick(){this.burst(.4,7000,.012);setTimeout(()=>this.burst(.22,2200,.025),22);},clunk(){this.burst(.35,1400,.05);setTimeout(()=>this.burst(.25,600,.08),40);},
   setOn(v){if(this.master)this.master.gain.value=v?.5:0;if(this.ctx&&this.ctx.state==='suspended')this.ctx.resume();}};
 
 /* ---------- the radio: five generative stations (all WebAudio), one dial on the flight screen ---------- */
@@ -2982,7 +3032,7 @@ function settingsCard(){
   const mv=[['OFF',0],['SOFT',.5],['ON',1]].map(([n,v])=>`<button data-mv="${v}" class="${(settings.music??.5)==v?'primary':''}">${n}</button>`).join('');
   const st=STATIONS.map(S=>`<button data-st="${S.id}" class="${settings.station===S.id?'primary':''}">${S.fq} ${S.name.toUpperCase()}</button>`).join('');
   const lt=Object.keys(TOD).map(k=>`<button data-lt="${k}" class="${settings.light===k?'primary':''}">${TOD[k].name.toUpperCase()}</button>`).join('');
-  showCard(`<h2>Settings</h2><div class="sub">ASSISTS · TURN THEM OFF ONE AT A TIME AS YOU IMPROVE</div>${rows}<h3>ENGINE VOLUME</h3><div class="btns">${ev}</div><h3>RADIO VOLUME</h3><div class="btns">${mv}</div><h3>RADIO STATION · OR TAP THE DIAL UP TOP WHILE FLYING</h3><div class="btns">${st}</div><h3>TIME OF DAY</h3><div class="btns">${lt}</div><h3>WEATHER · TRYING IT OUT</h3><div class="btns">${Object.entries(WX).map(([k,W])=>`<button data-wx="${k}" class="${settings.weather===k?'primary':''}">${W.name.toUpperCase()}</button>`).join('')}</div><h3>PIXELS</h3><div class="btns">${px}</div><div class="sub" style="margin-top:14px">BUILD 9b455ea</div>`,[['Back',back,true]]);
+  showCard(`<h2>Settings</h2><div class="sub">ASSISTS · TURN THEM OFF ONE AT A TIME AS YOU IMPROVE</div>${rows}<h3>ENGINE VOLUME</h3><div class="btns">${ev}</div><h3>RADIO VOLUME</h3><div class="btns">${mv}</div><h3>RADIO STATION · OR TAP THE DIAL UP TOP WHILE FLYING</h3><div class="btns">${st}</div><h3>TIME OF DAY</h3><div class="btns">${lt}</div><h3>WEATHER · TRYING IT OUT</h3><div class="btns">${Object.entries(WX).map(([k,W])=>`<button data-wx="${k}" class="${settings.weather===k?'primary':''}">${W.name.toUpperCase()}</button>`).join('')}</div><h3>PIXELS</h3><div class="btns">${px}</div><div class="sub" style="margin-top:14px">BUILD 6f6a125</div>`,[['Back',back,true]]);
   const cb=$('cardBody');
   cb.querySelectorAll('[data-k]').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.k;if(k==='tilt'){if(!settings.tilt){settings.tilt=true;saveS();enableTilt().then(()=>{updTiltUI();settingsCard();});}else{settings.tilt=false;saveS();disableTilt();updTiltUI();settingsCard();}return;}settings[k]=!settings[k];saveS();if(k==='sound')snd.setOn(settings.sound);if(k==='fps'){$('fps').hidden=!settings.fps;$('fps').textContent='FPS: measuring…';fpsN=fpsT=0;fpsLast=0;}if(k==='sound')music.setVol();settingsCard();}));
   cb.querySelectorAll('[data-px]').forEach(b=>b.addEventListener('click',()=>{settings.pixels=b.dataset.px;pixMode=settings.pixels;saveS();resize();settingsCard();}));
@@ -3397,7 +3447,7 @@ const streaks=(()=>{const SRC=[[-5.2,.8,.3,1],[5.2,.8,.3,1],[-5.2,.95,.3,1],[5.2
    LOOK DOWN points the camera at where a parcel let go now would come down (crosshair = landing spot).
    The moment a parcel leaves the door you're told whether it's on its way to the rings or going wide; the chute opens
    low, so it's down within a few seconds. A delivered camp cheers, hops, then packs itself away. */
-const PARCEL_SPARE=2;let parcelsLeft=0,lookDown=false;const airParcels=[];
+let PARCEL_SPARE=2;let parcelsLeft=0,lookDown=false;const airParcels=[];
 if(!log.dropStats)log.dropStats={n:0,bull:0,best:1e9};if(!mail.drops)mail.drops=[];
 const DROP_WHO=[['Shepherd\'s hut','Old Tam the shepherd','Sack of sheep feed','Feed for the flock! The ewes thank you, in their way.'],
   ['Birdwatchers\' camp','The birdwatchers','Biscuits and batteries','Biscuits and spare batteries. Bless you. Don\'t scare the terns.'],
@@ -3656,7 +3706,7 @@ function spotUniforms(){const U=postMat.uniforms;U.uSpotOn.value=spotK;if(spotK<
   U.uInvProj.value.copy(camera.projectionMatrixInverse);U.uCamW.value.copy(camera.matrixWorld);}
 
 /* ---- inflatable floats ---- */
-ac.floats=0;let floatsOn=false;
+ac.floats=0;let floatsOn=false,PLANE_FLOATS=false;
 const floatG=new THREE.Group();floatG.visible=false;plane.add(floatG);
 {const parts=[];for(const sd of [-1,1]){const x=sd*1.45;
   parts.push({geo:new THREE.CylinderGeometry(.46,.46,4.4,10).rotateX(Math.PI/2),m:M([x,0,-.3]),color:0xf0a03a},
@@ -3669,19 +3719,19 @@ const floatLift=()=>FLOAT_H*ac.floats;
 function setFloats(on){if(on===floatsOn)return;
   if(!on&&ac.ground&&groundH(ac.pos.x,ac.pos.z)<.3){toast('Not while you\'re floating on them!',2);updFunUI();return;}
   floatsOn=on;if(on){snd.hiss();tip('floats','Floats out! You can land on calm water now: same as a runway, gentle and wings level. They add a little drag, so you\'re a touch slower.');}else snd.squelch();updFunUI();}
-function updFloats(dt){const tgt=floatsOn?1:0;if(floatsOn)ac.floats=Math.min(1,ac.floats+dt/.7);else ac.floats=Math.max(0,ac.floats-dt/1.8);
+function updFloats(dt){if(PLANE_FLOATS){floatsOn=true;ac.floats=1;floatG.visible=false;return;}const tgt=floatsOn?1:0;if(floatsOn)ac.floats=Math.min(1,ac.floats+dt/.7);else ac.floats=Math.max(0,ac.floats-dt/1.8);
   floatG.visible=ac.floats>.01;if(floatG.visible){const u=ac.floats,v=u-1,s=floatsOn?1+2.7*v*v*v+1.7*v*v:u;floatG.scale.set(Math.max(.05,s),Math.max(.05,s),.3+.7*Math.min(1,u*1.5));}}
 
 /* ---- the panel ---- */
 function updFunUI(){$('swSearch').classList.toggle('on',searchOn);$('swSmoke').classList.toggle('on',smokeOn);$('swFloat').classList.toggle('on',floatsOn);updMicUI();}
 $('swSearch').addEventListener('click',()=>{searchOn=!searchOn;snd.flick();updFunUI();if(searchOn)tip('search','Searchlight on. It lights up a circle of ground ahead of you, as bright as midday. Turn to sweep it around; fly lower to bring it closer. Best after dark.');});
 $('swSmoke').addEventListener('click',()=>{smokeOn=!smokeOn;snd.flick();if(smokeOn)snd.hiss(.5);updFunUI();if(smokeOn)tip('smoke','Smoke on! It hangs in the air for a while, so you can draw loops and letters in the sky.');});
-$('swFloat').addEventListener('click',()=>{setFloats(!floatsOn);});
+$('swFloat').addEventListener('click',()=>{if(PLANE_FLOATS){toast('The Pelican\'s floats are built in.',1.4);return;}setFloats(!floatsOn);});
 $('micBtn').addEventListener('pointerdown',e=>{e.preventDefault();keyMic();});
 /* ---- the horn: a little double honk. Folk in town, at drop camps, and the errand goats and sheep nearby jump and
    turn to look up at you; Biscuit joins in ---- */
 let honkT=-1;const honkers=[];
-function honk(){if(mode!=='fly'||(honkT>=0&&honkT<.6))return;snd.honk();honkT=0;honkers.length=0;const P=ac.pos,b=$('hornBtn');b.classList.add('honk');setTimeout(()=>b.classList.remove('honk'),550);
+function honk(){if(mode!=='fly'||(honkT>=0&&honkT<1.1))return;snd.honk();honkT=0;honkers.length=0;const P=ac.pos,b=$('hornBtn');b.classList.add('honk');setTimeout(()=>b.classList.remove('honk'),550);
   const near=(x,y,z)=>Math.hypot(x-P.x,z-P.z)<420&&P.y-y<320;
   for(const o of (window.FOLK||[])){o.updateMatrixWorld();const w=o.getWorldPosition(_so);if(near(w.x,w.y,w.z))honkers.push({o,mv:true,ph:Math.random()*.35});}
   for(const set of ['goats','sheep'])for(const f of (FINDS[set]||[]))if(f.obj&&near(f.x,f.y,f.z))honkers.push({o:f.obj,mv:false,y0:f.obj.position.y,ph:Math.random()*.35});
@@ -3724,7 +3774,7 @@ setInterval(()=>{const c=snd.ctx;if(c&&c.onstatechange==null)c.onstatechange=()=
 
 /* ---- updraft: like the tailwind but straight up. Three charges; tap again while one is lifting you to stack them.
    Holding BRAKE in the air calls it off, same as the tailwind ---- */
-const UP_T=3,UP_V=26,UP_STACK=[0,1,1.6,2.1,2.5,2.85];let UP_N=3,UP_CD=6;let upCharges=UP_N,upCD=0,upUiT=0;
+const UP_T=3,UP_V=26,UP_STACK=[0,1,1.6,2.1,2.5,2.85,3.15,3.4];let UP_N=5,UP_CD=6;let upCharges=UP_N,upCD=0,upUiT=0;
 function useUpdraft(){if(mode!=='fly')return;if(ac.ground){toast('Updrafts work once you\'re flying.',1.6);return;}
   if(upCharges<=0){toast(`The next updraft is gathering. ${Math.ceil(upCD)} s.`,1.3);return;}
   if(!ac.ups)ac.ups=[];ac.ups.push(UP_T);upCharges--;upCD=UP_CD;const n=ac.ups.length;snd.beep(660+n*120);setTimeout(()=>snd.beep(990+n*160),80);
@@ -3929,47 +3979,94 @@ applyPet();
 
 /* ---------- coins and Gus's garage ----------
    Delivering mail, air drops, errands, new landmarks and good landings pay a few coins. Spend them at Gus's garage
-   (land at Harbor Field) on bigger tailwind and updraft tanks, quicker refills, an engine tune-up, paint and smoke. */
+   (land at Harbor Field) on new planes, parts that change how the plane flies (and how it looks), paint and smoke. */
 if(log.coins==null)log.coins=0;
 if(!log.shop)log.shop={};const SH=log.shop;
-for(const [k,v] of [['wind',0],['up',0],['quick',0],['engine',0]])if(SH[k]==null)SH[k]=v;
+for(const k of ['wind','up','quick','engine','speed','ceiling','wings','pod','guard'])if(SH[k]==null)SH[k]=0;
+if(!SH.plane)SH.plane={owned:['cub'],sel:'cub'};
+const AC0=Object.assign({},AC);
 if(!SH.paint)SH.paint={owned:['classic'],sel:'classic'};if(!SH.smoke)SH.smoke={owned:['white'],sel:'white'};
 const COIN_IMG=(()=>{const c=document.createElement('canvas');c.width=c.height=8;const x=c.getContext('2d'),P=(col,a,b,w=1,h=1)=>{x.fillStyle=col;x.fillRect(a,b,w,h);};
   P('#8a5a18',2,0,4,8);P('#8a5a18',0,2,8,4);P('#8a5a18',1,1,6,6);P('#f1c84a',2,1,4,6);P('#f1c84a',1,2,6,4);P('#fff2b0',2,2,2,2);P('#c8902e',4,5,2,1);return c.toDataURL();})();
 function coinTag(n){return `<img src="${COIN_IMG}" alt="coins" style="width:12px;height:12px;image-rendering:pixelated;vertical-align:-1px;margin-right:2px">${n.toLocaleString()}`;}
 function addCoins(n){if(!n)return;log.coins+=n;saveL();updScore();const e=$('score');if(e){e.classList.remove('pop');void e.offsetWidth;e.classList.add('pop');}}
 const UPG=[
+  {id:'engine',name:'Engine tune-up',desc:'More power: faster climbs and a little more speed.',max:3,cost:[100,180,280]},
+  {id:'speed',name:'Streamlining',desc:'Smoother skin, a finer-pitch prop and wheel spats: a higher top speed.',max:3,cost:[90,170,260]},
+  {id:'ceiling',name:'Supercharger',desc:'Keeps the engine breathing in thin air, so you can climb higher.',max:3,cost:[80,160,240],note:()=>`Ceiling now ${Math.round(CEIL*3.28084/100)*100} ft.`},
+  {id:'wings',name:'Long wings',desc:'Longer wings: more lift, slower landings, a better climb. You\'ll see them.',max:2,cost:[120,220]},
+  {id:'pod',name:'Cargo pod',desc:'A belly pod: one more parcel on every air-drop run.',max:2,cost:[70,150]},
+  {id:'guard',name:'Terrain guard',desc:'Watches the ground ahead and pulls you clear before a crash. Level 2 also steers you round rock spires and arches.',max:2,cost:[120,220]},
   {id:'wind',name:'Bigger tailwind tank',desc:'One more tailwind charge.',max:2,cost:[60,140]},
   {id:'up',name:'Bigger updraft tank',desc:'One more updraft charge.',max:2,cost:[50,120]},
   {id:'quick',name:'Quick refill',desc:'Tailwinds and updrafts come back faster.',max:2,cost:[80,160]},
-  {id:'engine',name:'Engine tune-up',desc:'More power: faster climbs and a higher top speed.',max:3,cost:[100,180,280]},
 ];
+/* planes: stats multiply the Puddle Jumper's. pips = speed, climb, agility, gentle landings (1-5) */
+const PLANES=[
+  {id:'cub',name:'Puddle Jumper',cost:0,desc:'The old faithful. Steady, forgiving, good at everything.',T:1,cd:1,S:1,vp:0,roll:1,pitch:1,mass:1,parcels:0,pips:[3,3,3,4]},
+  {id:'bi',name:'Bluebird',cost:250,desc:'A biplane. Slow and floaty, and it rolls and loops like nothing else.',T:.95,cd:1.3,S:1.3,vp:-6,roll:1.6,pitch:1.35,mass:.95,parcels:0,pips:[2,3,5,5]},
+  {id:'float',name:'Pelican',cost:350,desc:'A big floatplane. Lands on any calm water and carries two extra parcels for air drops.',T:1.18,cd:1.2,S:1.3,vp:-2,roll:.85,pitch:.9,mass:1.12,parcels:2,floats:true,pips:[2,3,2,4]},
+  {id:'racer',name:'Gannet',cost:450,desc:'A low-wing racer. Fast and slippery. It lands hot, so mind your speed.',T:1.3,cd:.68,S:.85,vp:20,roll:1.35,pitch:1.05,mass:1,parcels:0,pips:[5,4,4,2]},
+];
+
 const PAINTS=[['classic','Classic',0xf3e7cf,0xd2493c,0],['sky','Sky blue',0xdcecf6,0x2f6fb0,40],['forest','Forest',0xe8e4c8,0x2f6a3a,40],['sunset','Sunset',0xffe2b8,0xe2703f,40],
   ['bumble','Bumblebee',0xf6d24a,0x2c2833,60],['midnight','Midnight',0x2e3550,0xf1c84a,60],['seafoam','Seafoam',0xd4f0e4,0x3f8f8a,40],['rose','Rose',0xf8dce0,0xc2456a,40]];
 const SMOKES=[['white','White',[.96,.95,.94],0],['pink','Pink',[1,.72,.82],30],['sky','Sky blue',[.62,.82,1],30],['gold','Gold',[1,.86,.45],30],['mint','Mint',[.66,.95,.8],30],['lilac','Lilac',[.82,.72,1],30]];
 const PARK0={body:0xf3e7cf,trim:0xd2493c};
 function applyUpgrades(){
-  WIND_N=5+SH.wind;UP_N=3+SH.up;WIND_CD=[5,3.8,2.8][SH.quick];UP_CD=[6,4.6,3.4][SH.quick];windCharges=Math.min(windCharges,WIND_N);if(windWait>WIND_CD)windWait=WIND_CD;upCharges=Math.min(upCharges,UP_N);
-  AC.Tmax=3000*(1+.09*SH.engine);
-  const P=PAINTS.find(p=>p[0]===SH.paint.sel)||PAINTS[0],np=buildPlane({body:P[2],trim:P[3]}),U=plane.userData;
-  U.bodyM.geometry.dispose();U.bodyM.geometry=np.userData.bodyM.geometry;U.wingM.geometry.dispose();U.wingM.geometry=np.userData.wingM.geometry;
+  const PL=PLANES.find(p=>p.id===SH.plane.sel)||PLANES[0];
+  WIND_N=5+SH.wind;UP_N=5+SH.up;WIND_CD=[5,3.8,2.8][SH.quick];UP_CD=[6,4.6,3.4][SH.quick];windCharges=Math.min(windCharges,WIND_N);if(windWait>WIND_CD)windWait=WIND_CD;upCharges=Math.min(upCharges,UP_N);
+  AC.Tmax=AC0.Tmax*PL.T*(1+.09*SH.engine);AC.CD0=AC0.CD0*PL.cd*(1-.08*SH.speed);AC.Vp=AC0.Vp+PL.vp+5*SH.speed;
+  AC.S=AC0.S*PL.S*(1+.08*SH.wings);AC.span=AC0.span*(1+.12*SH.wings);AC.Kr=AC0.Kr*PL.roll;AC.Ke=AC0.Ke*PL.pitch;AC.mass=AC0.mass*PL.mass;
+  CEIL=[1500,2300,3200,4500][SH.ceiling];PARCEL_SPARE=2+(PL.parcels||0)+SH.pod;PLANE_FLOATS=!!PL.floats;if(!PLANE_FLOATS&&typeof floatsOn!=='undefined'&&floatsOn&&ac.ground)setFloats(false);
+  const P=PAINTS.find(p=>p[0]===SH.paint.sel)||PAINTS[0],np=buildPlane({body:P[2],trim:P[3]},{model:PL.id,wingK:1+.12*SH.wings,spats:SH.speed>=1&&PL.id!=='float',pod:SH.pod>0}),U=plane.userData,N_=np.userData;
+  U.bodyM.geometry.dispose();U.bodyM.geometry=N_.bodyM.geometry;U.wingM.geometry.dispose();U.wingM.geometry=N_.wingM.geometry;U.blades.position.copy(N_.blades.position);U.disc.position.copy(N_.disc.position);
   const S=SMOKES.find(s=>s[0]===SH.smoke.sel)||SMOKES[0];smokeMat.uniforms.uSmokeC.value.setRGB(...S[2]);
-  if(typeof updWindUI==='function')updWindUI();if(typeof updUpUI==='function')updUpUI();}
+  if(typeof updWindUI==='function')updWindUI();if(typeof updUpUI==='function')updUpUI();if(typeof updFunUI==='function')updFunUI();}
+/* terrain guard: looks ahead along your path; if the ground, the sea (without floats), a tree line or (level 2) a rock
+   spire is coming, it levels the wings and pulls the nose up. It keeps out of the way when you're lined up to land. */
+let guardT=0;
+function stepGuard(dt){if(!SH.guard||ac.ground||mode!=='fly')return;const sp=ac.vel.length();if(sp<12)return;
+  const agl=ac.pos.y-AC.gearH-surfH(ac.pos.x,ac.pos.z);
+  const st=stripAt(ac.pos.x,ac.pos.z,40);if((st||(ac.floats>.9&&groundH(ac.pos.x,ac.pos.z)<.3))&&ac.flaps>=1&&agl<60)return;
+  if(dest&&ac.flaps>=1&&Math.hypot(dest.x-ac.pos.x,dest.z-ac.pos.z)<2200&&glide(dest).active)return;
+  const T=SH.guard>=2?3.6:2.6;let hit=0,rock=false;
+  for(let t=.4;t<=T;t+=.4){const x=ac.pos.x+ac.vel.x*t,y=ac.pos.y+ac.vel.y*t,z=ac.pos.z+ac.vel.z*t;
+    if(y-surfH(x,z)<9){hit=t;break;}if(SH.guard>=2&&propHit(x,y,z,6)){hit=t;rock=true;break;}}
+  if(!hit){guardT=Math.max(0,guardT-dt);return;}
+  const k=Math.min(1,(T-hit+.4)/T)*(SH.guard>=2?1.5:1.1);
+  const right=_gR.set(1,0,0).applyQuaternion(ac.q),fwd=_gF.set(0,0,-1).applyQuaternion(ac.q);
+  // level the wings, then nose up (or, round a rock, bank away from it)
+  let roll=-right.y*2.2;
+  if(rock){const side=propHit(ac.pos.x+right.x*25+ac.vel.x,ac.pos.y,ac.pos.z+right.z*25+ac.vel.z,6)?-1:1;roll=side*.7-right.y*1.2;}
+  _gQ.setFromAxisAngle(_gA.set(0,0,1),roll*k*dt);ac.q.multiply(_gQ);
+  if(!rock||fwd.y<.15){_gQ.setFromAxisAngle(_gA.set(1,0,0),.9*k*dt);ac.q.multiply(_gQ);}
+  ac.q.normalize();ac.vel.y+=6*k*dt;
+  if(guardT<=0){toast('TERRAIN GUARD: PULL UP',1.2);snd.beep(880);setTimeout(()=>snd.beep(880),140);}guardT=2;}
+const _gR=new THREE.Vector3(),_gF=new THREE.Vector3(),_gA=new THREE.Vector3(),_gQ=new THREE.Quaternion();
+/* the thin-air nudge: a hint the first time you reach the ceiling on a flight */
+let ceilWarn=false;anims.push(()=>{if(mode!=='fly')return;if(ac.pos.y>CEIL+60&&!ceilWarn){ceilWarn=true;toast(SH.ceiling<3?'The air\'s too thin up here for the engine.\nGus\'s supercharger would take you higher.':'Thin air. This is as high as she goes.',2.6);}if(ac.pos.y<CEIL-300)ceilWarn=false;});
 function shopCard(s){const meet=!log.met.gus;if(meet){log.met.gus=1;saveL();}
   const row=(name,desc,btn)=>`<div class="tog"><div><b>${name}</b><span>${desc}</span></div>${btn}</div>`;
   const buy=(attr,cost,label)=>`<button ${attr} ${log.coins<cost?'disabled style="opacity:.45"':''}>${label||'BUY'} · ${coinTag(cost)}</button>`;
-  const ups=UPG.map(u=>{const lv=SH[u.id];return row(`${u.name} <span style="display:inline;font-family:var(--mono);font-size:13px;color:var(--ink2)">${'■'.repeat(lv)+'□'.repeat(u.max-lv)}</span>`,u.desc,lv>=u.max?'<button disabled style="opacity:.55">MAXED</button>':buy(`data-up="${u.id}"`,u.cost[lv]));}).join('');
+  const ups=UPG.map(u=>{const lv=SH[u.id];return row(`${u.name} <span style="display:inline;font-family:var(--mono);font-size:13px;color:var(--ink2)">${'■'.repeat(lv)+'□'.repeat(u.max-lv)}</span>`,u.desc+(u.note?' '+u.note():''),lv>=u.max?'<button disabled style="opacity:.55">MAXED</button>':buy(`data-up="${u.id}"`,u.cost[lv]));}).join('');
+  const pip=n=>'■'.repeat(n)+'□'.repeat(5-n);
+  const planes=PLANES.map(p=>{const own=SH.plane.owned.includes(p.id),sel=SH.plane.sel===p.id;
+    const stats=`<span style="display:block;font-family:var(--mono);font-size:13px;color:var(--ink2);line-height:1.3">SPEED ${pip(p.pips[0])} &nbsp;CLIMB ${pip(p.pips[1])}<br>AGILITY ${pip(p.pips[2])} &nbsp;LANDING ${pip(p.pips[3])}</span>`;
+    return row(p.name+(sel?' <span style="display:inline;font-size:13px;color:#3f8f4a">FLYING</span>':''),p.desc+stats,sel?'<button disabled style="opacity:.55">IN USE</button>':(own?`<button data-plane="${p.id}">FLY IT</button>`:buy(`data-plane="${p.id}"`,p.cost)));}).join('');
   const sw=(list,kind)=>list.map(([id,name,a,b,cost])=>{const own=SH[kind].owned.includes(id),sel=SH[kind].sel===id,bg=kind==='paint'?`linear-gradient(135deg,#${a.toString(16).padStart(6,'0')} 55%,#${b.toString(16).padStart(6,'0')} 55%)`:`rgb(${a.map(v=>Math.round(v*255)).join(',')})`,price=kind==='paint'?cost:b;
     return `<button data-${kind}="${id}" style="background:${bg};min-width:96px;padding:6px 8px;font-size:13px;${sel?'outline:3px solid #241c2e;outline-offset:1px;':''}${!own&&log.coins<price?'opacity:.5;':''}"><span style="background:#fff8ecdd;padding:1px 4px">${name}${own?'':' · '+price}</span></button>`;}).join('');
   showCard(`<div class="who"><img src="${portrait('gus')}" alt=""><div><b>Gus's garage</b><span>GUS AMARI · MECHANIC · HARBOR FIELD</span></div></div>
     ${meet?`<p class="say">“${MEET.gus}”</p>`:''}<p class="say">“${['What are we fixing today?','Bring the plane round the back and I\'ll have a look.','Coins in the jar, upgrades on the plane. Simple.'][(log.flights||0)%3]}”</p>
     <div class="sub" style="font-size:16px">YOU HAVE ${coinTag(log.coins)} COINS</div>
-    <h3>UPGRADES</h3>${ups}<h3>PAINT</h3><div class="btns">${sw(PAINTS,'paint')}</div><h3>SMOKE COLOR</h3><div class="btns">${sw(SMOKES,'smoke')}</div>
+    <h3>PLANES</h3>${planes}<h3>PARTS AND UPGRADES</h3>${ups}<h3>PAINT</h3><div class="btns">${sw(PAINTS,'paint')}</div><h3>SMOKE COLOR</h3><div class="btns">${sw(SMOKES,'smoke')}</div>
     <p style="font-size:13px;color:var(--ink2)">Coins come from delivering mail, air drops, errands, new landmarks and good landings.</p>`,
     [['Back',()=>{if(s)showCard(`<h2>${s.name}</h2><p>All fixed up.</p>`,[['Take off',()=>spawnField(s),true],['Look around first',()=>{hideModal();mode='fly';}]]);else back();},true]]);
   const B=$('cardBody'),pay=c=>{if(log.coins<c){toast('Not enough coins yet.',1.4);return false;}log.coins-=c;saveL();updScore();snd.beep(1320);setTimeout(()=>snd.beep(1760),90);return true;};
   B.querySelectorAll('[data-up]').forEach(b=>b.addEventListener('click',()=>{const u=UPG.find(q=>q.id===b.dataset.up),lv=SH[u.id];if(lv>=u.max||!pay(u.cost[lv]))return;SH[u.id]++;saveL();applyUpgrades();
     if(u.id==='wind')windCharges=WIND_N;if(u.id==='up')upCharges=UP_N;toast(`${u.name}: fitted.`,1.6);shopCard(s);}));
+  B.querySelectorAll('[data-plane]').forEach(b=>b.addEventListener('click',()=>{const p=PLANES.find(q=>q.id===b.dataset.plane);if(!SH.plane.owned.includes(p.id)){if(!pay(p.cost))return;SH.plane.owned.push(p.id);toast(`The ${p.name} is yours!`,1.8);}
+    SH.plane.sel=p.id;saveL();applyUpgrades();snd.click();shopCard(s);}));
   for(const [kind,list] of [['paint',PAINTS],['smoke',SMOKES]])B.querySelectorAll(`[data-${kind}]`).forEach(b=>b.addEventListener('click',()=>{const it=list.find(q=>q[0]===b.dataset[kind]),own=SH[kind].owned.includes(it[0]),price=kind==='paint'?it[4]:it[3];
     if(!own){if(!pay(price))return;SH[kind].owned.push(it[0]);}SH[kind].sel=it[0];saveL();applyUpgrades();snd.click();shopCard(s);}));}
 applyUpgrades();window.__shopReady=true;updScore();
@@ -4493,7 +4590,7 @@ function loop(now){
   skyMat.uniforms.uTime.value=t;waterMat.uniforms.uTime.value=t;for(const a of anims)a(t);
   cloudGroup.position.set((t*2.2)%4000,0,-(t*.8)%4000);
   {const pu=postMat.uniforms;pu.mist.value=lerp(pu.mist.value,cloudMist(camera.position),1-Math.exp(-dt*5));pu.mistC.value.copy(scene.fog.color).lerp(_mistW,.3);}
-  if(mode==='fly'){readInput(dt);acc+=dt;const H_=1/120;let n=0;while(acc>=H_&&n<10){if(ac.ground)stepGround(H_);else{stepAir(H_);stepBoost(H_);stepUp(H_);stepBumps(H_);if(typeof stepWeather==='function')stepWeather(H_);}simT+=H_;acc-=H_;n++;if(mode!=='fly')break;}if(n>=10)acc=0;
+  if(mode==='fly'){readInput(dt);acc+=dt;const H_=1/120;let n=0;while(acc>=H_&&n<10){if(ac.ground)stepGround(H_);else{stepAir(H_);stepBoost(H_);stepUp(H_);stepBumps(H_);if(typeof stepWeather==='function')stepWeather(H_);if(typeof stepGuard==='function')stepGuard(H_);}simT+=H_;acc-=H_;n++;if(mode!=='fly')break;}if(n>=10)acc=0;
     if(!Number.isFinite(ac.pos.x+ac.pos.y+ac.pos.z+ac.vel.x+ac.vel.y+ac.vel.z+ac.q.x+ac.q.w)){console.warn('sim NaN, respawning');spawnField(stripById(ac.lastField)||STRIPS[0]);}
     if(mode==='fly'){gameChecks(dt);playChecks(dt);}runTips(dt);}
   else acc=0;

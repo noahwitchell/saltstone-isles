@@ -36,7 +36,10 @@ button:focus-visible{outline:2px solid #fff;outline-offset:2px}
 #vsi{font-size:15px;margin-left:6px;opacity:.9}
 #dest{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;font-size:11px;padding:8px 10px;color:var(--paper);background:var(--glass);border:2px solid var(--line);box-shadow:none}
 #dest .arr{display:inline-block;width:12px;text-align:center;color:#6fe0e0;margin-right:4px}
-.sp{flex:1}
+.sp{flex:1;display:flex;justify-content:center;min-width:0}
+#task{pointer-events:auto;font-family:var(--mono);font-size:15px;line-height:1;padding:5px 9px;background:var(--glass);border:2px solid var(--line);color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;display:flex;gap:6px;align-items:center}
+#task img{width:14px;height:14px;image-rendering:pixelated;flex:none}
+#task b{color:#8a5a18}#task .dim{opacity:.7}
 #todBtn,#radioBtn{pointer-events:auto;padding:3px 5px;line-height:0}#todBtn img,#radioBtn img{width:32px;height:32px;image-rendering:pixelated;display:block}
 #view,#pause,#center{pointer-events:auto;font-family:var(--mono);font-size:15px;padding:8px 10px}
 #stallBan{z-index:5;position:fixed;left:50%;top:calc(var(--st) + 44px);transform:translateX(-50%);font-family:var(--mono);font-size:20px;background:var(--bad);color:#fff;padding:5px 12px;letter-spacing:.1em;pointer-events:none}
@@ -191,7 +194,7 @@ h3{font-family:var(--mono);font-size:15px;letter-spacing:.08em;color:var(--ink2)
   <div id="top">
     <div class="pill" id="spd">0<small>KT</small></div>
     <button id="dest" aria-label="Change destination"><span class="arr" id="arr">▲</span><span id="destTxt">—</span></button>
-    <div class="sp"></div>
+    <div class="sp"><button id="task" hidden aria-label="What to do next. Tap for the mail bag."></button></div>
     <div class="pill" id="alt">0<small>FT</small><span id="vsi"></span></div>
     <button id="center" aria-label="Recenter tilt" hidden>CENTER</button>
     <button id="radioBtn" aria-label="Radio station"></button>

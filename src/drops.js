@@ -5,7 +5,7 @@
    LOOK DOWN points the camera at where a parcel let go now would come down (crosshair = landing spot).
    The moment a parcel leaves the door you're told whether it's on its way to the rings or going wide; the chute opens
    low, so it's down within a few seconds. A delivered camp cheers, hops, then packs itself away. */
-const PARCEL_SPARE=2;let parcelsLeft=0,lookDown=false;const airParcels=[];
+let PARCEL_SPARE=2;let parcelsLeft=0,lookDown=false;const airParcels=[];
 if(!log.dropStats)log.dropStats={n:0,bull:0,best:1e9};if(!mail.drops)mail.drops=[];
 const DROP_WHO=[['Shepherd\'s hut','Old Tam the shepherd','Sack of sheep feed','Feed for the flock! The ewes thank you, in their way.'],
   ['Birdwatchers\' camp','The birdwatchers','Biscuits and batteries','Biscuits and spare batteries. Bless you. Don\'t scare the terns.'],

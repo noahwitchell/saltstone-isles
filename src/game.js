@@ -220,7 +220,15 @@ const MEET={
 const mail=log.mail;
 const bagFor=stripId=>mail.bag.filter(it=>CHARS[it.to].home===stripId);
 function mailDest(){if(!mail.active)return null;const it=mail.bag[0];if(it)return stripById(CHARS[it.to].home);return STRIPS[0];}
-function refreshBag(){const b=$('bag');updJob();if(!mail.active){b.hidden=true;return;}
+/* the task pill: one short line up top saying what's left to do, always on screen. Tap it for the mail bag */
+const TASK_IMG=(()=>{const c=document.createElement('canvas');c.width=c.height=8;const x=c.getContext('2d'),P=(col,a,b,w=1,h=1)=>{x.fillStyle=col;x.fillRect(a,b,w,h);};
+  P('#5a4030',0,1,8,6);P('#f6efe0',1,2,6,4);P('#c9b89a',1,2,1,1);P('#c9b89a',6,2,1,1);P('#c9b89a',2,3,1,1);P('#c9b89a',5,3,1,1);P('#c9b89a',3,4,2,1);P('#d2493c',5,4,1,1);return c.toDataURL();})();
+function updTask(){const t=$('task');if(!t)return;const parts=[];
+  if(mail.active){const n=mail.bag.length,nx=mailDest();parts.push(n?`<b>${n}</b> ${n>1?'letters':'letter'} <span class="dim">next</span> ${nx?nx.name:''}`:`Bag empty <span class="dim">head home to</span> Harbor Field`);
+    const dl=(mail.drops||[]).filter(d=>!d.done).length;if(dl)parts.push(`<b>${dl}</b> ${dl>1?'drops':'drop'}`);}
+  if(typeof activeErrands==='function'){const er=activeErrands();if(er.length)parts.push(er.map(errLine).join(', '));}
+  t.hidden=!parts.length;if(parts.length)t.innerHTML=`<img src="${TASK_IMG}" alt="">`+parts.join(' <span class="dim">/</span> ');}
+function refreshBag(){const b=$('bag');updJob();updTask();if(!mail.active){b.hidden=true;return;}
   const n=mail.bag.length,nx=mailDest();b.hidden=false;b.textContent=n?`✉ ${n} → ${nx.name.toUpperCase()}`:'✉ BAG EMPTY → HOME';}
 /* the little "today's jobs" panel: mail, air drops, errands. Tap it for the mail bag */
 function updJob(){const jd=$('jDay');if(!jd)return;jd.textContent=mail.active?'DAY '+mail.day:'FREE FLIGHT';
@@ -351,7 +359,8 @@ function CLof(a,f){const as=AC.stall+f.dSt,c0=AC.CL0+f.dCL,mx=c0+AC.CLa*as;
   if(a>as)return Math.max(mx*.5,mx-(a-as)*4)*(a>1.2?Math.max(0,(1.57-a)/.37):1);
   const an=-.2;if(a<an){const mn=c0+AC.CLa*an;return Math.min(mn*.5,mn+(an-a)*4);}
   return c0+AC.CLa*a;}
-const thrust=u=>AC.Tmax*ac.throttle*ac.pf*Math.max(0,1-u/AC.Vp);
+let CEIL=1500;   // the air thins above this (m); Gus's supercharger raises it
+const thrust=u=>AC.Tmax*ac.throttle*ac.pf*Math.max(0,1-u/AC.Vp)*clamp(1-(ac.pos.y-CEIL)/450,0,1);
 function engine(dt){
   const ft=(ac.pos.y-AC.gearH)*FT;
   if(!ac.ground&&!ac.carb&&ac.throttle<.4)ac.ice=Math.min(1,ac.ice+dt/32);
@@ -676,6 +685,8 @@ function setView(v){camMode=v;$('view').textContent=VNAME[v];snapCam=true;camera
 $('view').addEventListener('click',()=>setView(VIEWS[(VIEWS.indexOf(camMode)+1)%VIEWS.length]));
 $('pause').addEventListener('click',()=>{if(mode==='fly')openMenu();});
 $('job').addEventListener('click',()=>{if(mode!=='fly')return;if(mail.active)mailCard();else{mode='paused';bigMap();}});
+$('task').addEventListener('click',e=>{e.stopPropagation();if(mode!=='fly')return;if(mail.active)mailCard();else{mode='paused';bigMap();}});
+setInterval(()=>{if(typeof updTask==='function')updTask();},1000);
 $('center').addEventListener('click',()=>{recenterTilt();toast('Tilt centered. Hold the phone like this to fly level.',2);});
 $('dest').addEventListener('click',()=>{const i=STRIPS.indexOf(dest);dest=STRIPS[(i+1)%STRIPS.length];toast('Heading for '+dest.name,1.6);});
 $('mapc').addEventListener('click',()=>{if(mode==='fly'){mode='paused';bigMap();}});
@@ -721,8 +732,12 @@ const snd={ctx:null,
     g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+dur);s.connect(f);f.connect(g);g.connect(this.master);s.start(t,Math.random());s.stop(t+dur+.05);},
   beep(f){if(!this.ctx)return;const c=this.ctx,o=c.createOscillator(),g=c.createGain(),t=c.currentTime;o.type='triangle';o.frequency.value=f;g.gain.setValueAtTime(.08,t);g.gain.exponentialRampToValueAtTime(.001,t+.18);o.connect(g);g.connect(this.master);o.start(t);o.stop(t+.2);},
   thump(v=1){this.burst(.6*v,260,.25);},crash(){this.burst(.5,900,1.2);},click(){this.burst(.25,3000,.03);},toot(){if(!this.ctx)return;const c=this.ctx;for(let k=0;k<2;k++){const t=c.currentTime+.02+k*.75,g=c.createGain(),lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=700;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.3,t+.08);g.gain.setValueAtTime(.3,t+.5);g.gain.linearRampToValueAtTime(0,t+.65);lp.connect(g);g.connect(this.master);
-    for(const f of [k?98:110,k?147:165]){const o=c.createOscillator();o.type='sawtooth';o.frequency.value=f;o.connect(lp);o.start(t);o.stop(t+.7);}}},honk(){if(!this.ctx)return;const c=this.ctx,t0=c.currentTime+.02;for(let k=0;k<2;k++){const t=t0+k*.27,g=c.createGain(),lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=2200;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.22,t+.015);g.gain.setValueAtTime(.22,t+.17);g.gain.linearRampToValueAtTime(0,t+.21);lp.connect(g);g.connect(this.master);
-    for(const f of [415,523]){const o=c.createOscillator();o.type='square';o.frequency.setValueAtTime(f*(k?1:1.02),t);o.frequency.linearRampToValueAtTime(f*.97,t+.2);o.connect(lp);o.start(t);o.stop(t+.25);}}},squelch(){this.burst(.3,5200,.07);setTimeout(()=>this.burst(.12,2600,.05),70);},hiss(v=1){this.burst(.45*v,3600,.9);setTimeout(()=>this.burst(.3*v,900,.15),650);},flick(){this.burst(.4,7000,.012);setTimeout(()=>this.burst(.22,2200,.025),22);},clunk(){this.burst(.35,1400,.05);setTimeout(()=>this.burst(.25,600,.08),40);},
+    for(const f of [k?98:110,k?147:165]){const o=c.createOscillator();o.type='sawtooth';o.frequency.value=f;o.connect(lp);o.start(t);o.stop(t+.7);}}},honk(){if(!this.ctx)return;/* a foghorn: one long low blat. Two reedy sawtooths a fifth apart over a sub, through a low-pass, with a slight sag in pitch */
+    const c=this.ctx,t=c.currentTime+.02,D=1.15,g=c.createGain(),lp=c.createBiquadFilter(),lp2=c.createBiquadFilter();lp.type='lowpass';lp.frequency.setValueAtTime(380,t);lp.frequency.linearRampToValueAtTime(900,t+.12);lp.frequency.linearRampToValueAtTime(620,t+D);lp.Q.value=2.2;
+    lp2.type='lowpass';lp2.frequency.value=1600;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.34,t+.09);g.gain.setValueAtTime(.32,t+D-.25);g.gain.linearRampToValueAtTime(0,t+D);
+    lp.connect(lp2);lp2.connect(g);g.connect(this.master);const vib=c.createOscillator(),vg=c.createGain();vib.frequency.value=5.5;vg.gain.value=.9;vib.connect(vg);
+    for(const [f,ty,a] of [[92,'sawtooth',.55],[138,'sawtooth',.32],[46,'sine',.8],[93.2,'square',.18]]){const o=c.createOscillator(),og=c.createGain();o.type=ty;o.frequency.setValueAtTime(f*1.02,t);o.frequency.linearRampToValueAtTime(f,t+.15);o.frequency.linearRampToValueAtTime(f*.96,t+D);
+      vg.connect(o.frequency);og.gain.value=a;o.connect(og);og.connect(lp);o.start(t);o.stop(t+D+.05);}vib.start(t);vib.stop(t+D+.05);},squelch(){this.burst(.3,5200,.07);setTimeout(()=>this.burst(.12,2600,.05),70);},hiss(v=1){this.burst(.45*v,3600,.9);setTimeout(()=>this.burst(.3*v,900,.15),650);},flick(){this.burst(.4,7000,.012);setTimeout(()=>this.burst(.22,2200,.025),22);},clunk(){this.burst(.35,1400,.05);setTimeout(()=>this.burst(.25,600,.08),40);},
   setOn(v){if(this.master)this.master.gain.value=v?.5:0;if(this.ctx&&this.ctx.state==='suspended')this.ctx.resume();}};
 
 /* ---------- the radio: five generative stations (all WebAudio), one dial on the flight screen ---------- */
@@ -1185,7 +1200,7 @@ function loop(now){
   skyMat.uniforms.uTime.value=t;waterMat.uniforms.uTime.value=t;for(const a of anims)a(t);
   cloudGroup.position.set((t*2.2)%4000,0,-(t*.8)%4000);
   {const pu=postMat.uniforms;pu.mist.value=lerp(pu.mist.value,cloudMist(camera.position),1-Math.exp(-dt*5));pu.mistC.value.copy(scene.fog.color).lerp(_mistW,.3);}
-  if(mode==='fly'){readInput(dt);acc+=dt;const H_=1/120;let n=0;while(acc>=H_&&n<10){if(ac.ground)stepGround(H_);else{stepAir(H_);stepBoost(H_);stepUp(H_);stepBumps(H_);if(typeof stepWeather==='function')stepWeather(H_);}simT+=H_;acc-=H_;n++;if(mode!=='fly')break;}if(n>=10)acc=0;
+  if(mode==='fly'){readInput(dt);acc+=dt;const H_=1/120;let n=0;while(acc>=H_&&n<10){if(ac.ground)stepGround(H_);else{stepAir(H_);stepBoost(H_);stepUp(H_);stepBumps(H_);if(typeof stepWeather==='function')stepWeather(H_);if(typeof stepGuard==='function')stepGuard(H_);}simT+=H_;acc-=H_;n++;if(mode!=='fly')break;}if(n>=10)acc=0;
     if(!Number.isFinite(ac.pos.x+ac.pos.y+ac.pos.z+ac.vel.x+ac.vel.y+ac.vel.z+ac.q.x+ac.q.w)){console.warn('sim NaN, respawning');spawnField(stripById(ac.lastField)||STRIPS[0]);}
     if(mode==='fly'){gameChecks(dt);playChecks(dt);}runTips(dt);}
   else acc=0;

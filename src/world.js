@@ -367,36 +367,68 @@ const SURF={paved:0x5e5a66,grass:0x6c9c45,dirt:0xd6b07c,sand:0xd9c48e,cinder:0x5
 })();
 
 /* ---------------- plane model ---------------- */
-function buildPlane(pal){
-  const body=[],wing=[];
-  const cream=pal.body,red=pal.trim,dark=0x2c2833,glass=0x34465c,tire=0x29252b;
-  body.push({geo:BOX(1.0,.95,1.0),m:M([0,-.05,-2.2]),color:cream});
-  body.push({geo:new THREE.ConeGeometry(.3,.5,8).rotateX(-Math.PI/2),m:M([0,-.05,-2.95]),color:red});
-  body.push({geo:BOX(1.15,1.25,2.3),m:M([0,.05,-.6]),color:cream});
-  body.push({geo:BOX(1.0,.55,.08),m:M([0,.42,-1.72],[-.45,0,0]),color:glass});
-  for(const sx of [-1,1]) body.push({geo:BOX(.04,.5,1.4),m:M([sx*.585,.4,-.55]),color:glass});
-  const tail=BOX(1.0,1.0,3.6);{const p=tail.attributes.position;for(let i=0;i<p.count;i++){if(p.getZ(i)>0){p.setX(i,p.getX(i)*.28);p.setY(i,p.getY(i)*.38+.3);}}tail.computeVertexNormals();}
-  body.push({geo:tail,m:M([0,.08,2.3]),color:cream});
-  body.push({geo:BOX(1.18,.15,3.4),m:M([0,-.14,-1.1]),color:red});
-  body.push({geo:BOX(3.4,.09,.85),m:M([0,.42,4.05]),color:cream});
-  for(const sx of [-1,1]) body.push({geo:BOX(.5,.1,.86),m:M([sx*1.5,.42,4.05]),color:red});
-  const fin=BOX(.09,1.3,1.0);{const p=fin.attributes.position;for(let i=0;i<p.count;i++){if(p.getY(i)>0)p.setZ(i,p.getZ(i)*.6+.35);}fin.computeVertexNormals();}
-  body.push({geo:fin,m:M([0,1.0,4.05]),color:red});
-  for(const sx of [-1,1]){
-    beam(body,new V3(sx*.5,-.55,.15),new V3(sx*1.12,-1.0,.15),.09,dark);
-    body.push({geo:new THREE.CylinderGeometry(.33,.33,.2,10).rotateZ(Math.PI/2),m:M([sx*1.15,-1.02,.15]),color:tire});
+/* the plane. pal = {body, trim} colors; o = {model, wingK (span stretch), spats, pod}.
+   Models: cub (the Puddle Jumper: high wing, struts), bi (the Bluebird: biplane, round cowling, open cockpit),
+   racer (the Gannet: low tapered wing, long nose, bubble canopy), float (the Pelican: big high wing on built-in floats) */
+function buildPlane(pal,o={}){
+  const body=[],wing=[],model=o.model||'cub',wk=o.wingK||1;
+  const cream=pal.body,red=pal.trim,dark=0x2c2833,glass=0x34465c,tire=0x29252b,metal=0x9a96a2;
+  const wheels=(z0,spread,h)=>{for(const sx of [-1,1]){beam(body,new V3(sx*.5,-.55,z0),new V3(sx*spread,-h,z0),.09,dark);
+      if(o.spats)body.push({geo:new THREE.SphereGeometry(.42,8,6).scale(.7,1,1.6),m:M([sx*spread,-h-.05,z0]),color:red});
+      else body.push({geo:new THREE.CylinderGeometry(.33,.33,.2,10).rotateZ(Math.PI/2),m:M([sx*spread,-h-.02,z0]),color:tire});}};
+  const tailGeo=(len,wx,wy)=>{const t=BOX(1.0,1.0,len);const p=t.attributes.position;for(let i=0;i<p.count;i++){if(p.getZ(i)>0){p.setX(i,p.getX(i)*wx);p.setY(i,p.getY(i)*wy+.3);}}t.computeVertexNormals();return t;};
+  const finGeo=(h,d)=>{const f=BOX(.09,h,d);const p=f.attributes.position;for(let i=0;i<p.count;i++){if(p.getY(i)>0)p.setZ(i,p.getZ(i)*.6+.35);}f.computeVertexNormals();return f;};
+  let propZ=-2.82,propY=-.05;
+  if(model==='bi'){
+    body.push({geo:new THREE.CylinderGeometry(.62,.58,.7,12).rotateX(Math.PI/2),m:M([0,0,-2.1]),color:red});
+    body.push({geo:new THREE.ConeGeometry(.24,.4,8).rotateX(-Math.PI/2),m:M([0,0,-2.65]),color:metal});
+    body.push({geo:BOX(1.05,1.05,2.2),m:M([0,0,-.7]),color:cream});
+    body.push({geo:BOX(.9,.22,.06),m:M([0,.62,-1.2],[-.5,0,0]),color:glass});
+    body.push({geo:BOX(1.0,.12,.9),m:M([0,.52,-.4]),color:dark});
+    body.push({geo:tailGeo(3.2,.3,.4),m:M([0,.05,2.0]),color:cream});
+    body.push({geo:BOX(3.0,.09,.8),m:M([0,.38,3.55]),color:cream});
+    body.push({geo:finGeo(1.2,.9),m:M([0,.95,3.55]),color:red});
+    for(const [y,span] of [[1.35,8.6],[-.42,8.0]]){wing.push({geo:BOX(span*wk,.14,1.35),m:M([0,y,-.95]),color:cream});
+      for(const sx of [-1,1])wing.push({geo:BOX(.5,.15,1.36),m:M([sx*(span*wk/2-.25),y,-.95]),color:red});}
+    for(const sx of [-1,1]){for(const zz of [-1.45,-.45]){beam(body,new V3(sx*3.0*wk,-.35,zz),new V3(sx*3.0*wk,1.3,zz),.06,dark);beam(body,new V3(sx*.45,.5,zz),new V3(sx*.9,1.3,zz),.05,dark);}}
+    wheels(-1.2,.95,1.0);propZ=-2.5;propY=0;
+  }else if(model==='racer'){
+    body.push({geo:BOX(.9,.85,1.6),m:M([0,-.1,-2.5]),color:cream});
+    body.push({geo:new THREE.ConeGeometry(.36,.8,10).rotateX(-Math.PI/2),m:M([0,-.1,-3.7]),color:red});
+    body.push({geo:BOX(1.0,1.0,2.4),m:M([0,-.05,-.6]),color:cream});
+    body.push({geo:new THREE.SphereGeometry(.5,10,6,0,TAU,0,Math.PI/2).scale(.95,1.0,2.2),m:M([0,.42,-.7]),color:glass});
+    body.push({geo:tailGeo(3.8,.24,.32),m:M([0,0,2.4]),color:cream});
+    body.push({geo:BOX(1.02,.12,4.6),m:M([0,-.36,-1.0]),color:red});
+    body.push({geo:BOX(3.0,.08,.7),m:M([0,.3,4.2]),color:cream});
+    body.push({geo:finGeo(1.25,.9),m:M([0,.9,4.15]),color:red});
+    const wg=BOX(9.4*wk,.15,1.6);{const p=wg.attributes.position;for(let i=0;i<p.count;i++){const t=Math.abs(p.getX(i))/(4.7*wk);p.setZ(i,p.getZ(i)*(1-.45*t)+.2*t);}wg.computeVertexNormals();}
+    wing.push({geo:wg,m:M([0,-.38,-.5]),color:cream});for(const sx of [-1,1])wing.push({geo:BOX(.45,.16,.9),m:M([sx*(4.7*wk-.2),-.38,-.3]),color:red});
+    wheels(-.9,1.4,1.05);propZ=-4.15;propY=-.1;
+  }else{
+    const big=model==='float'?1.12:1;
+    body.push({geo:BOX(1.0*big,.95*big,1.0),m:M([0,-.05,-2.2]),color:cream});
+    body.push({geo:new THREE.ConeGeometry(.3,.5,8).rotateX(-Math.PI/2),m:M([0,-.05,-2.95]),color:red});
+    body.push({geo:BOX(1.15*big,1.25*big,2.3*big),m:M([0,.05,-.6]),color:cream});
+    body.push({geo:BOX(1.0,.55,.08),m:M([0,.42,-1.72],[-.45,0,0]),color:glass});
+    for(const sx of [-1,1]) body.push({geo:BOX(.04,.5,1.4),m:M([sx*.585*big,.4,-.55]),color:glass});
+    body.push({geo:tailGeo(3.6*big,.28,.38),m:M([0,.08,2.3*big]),color:cream});
+    body.push({geo:BOX(1.18*big,.15,3.4),m:M([0,-.14,-1.1]),color:red});
+    body.push({geo:BOX(3.4*big,.09,.85),m:M([0,.42,4.05*big]),color:cream});
+    for(const sx of [-1,1]) body.push({geo:BOX(.5,.1,.86),m:M([sx*1.5*big,.42,4.05*big]),color:red});
+    body.push({geo:finGeo(1.3*big,1.0),m:M([0,1.0,4.05*big]),color:red});
+    const span=(model==='float'?12.4:10.5)*wk,wy=.78+(big-1)*.6;
+    wing.push({geo:BOX(span,.16,1.55*big),m:M([0,wy,-.55]),color:cream});
+    for(const sx of [-1,1]){wing.push({geo:BOX(.6,.17,1.56*big),m:M([sx*(span/2-.3),wy,-.55]),color:red});
+      for(const zz of [-.95,-.2]) beam(body,new V3(sx*.56,-.3,zz),new V3(sx*2.7*wk,wy-.08,zz-.05),.07,dark);}
+    if(model==='float'){for(const sx of [-1,1]){body.push({geo:BOX(.62,.5,5.6),m:M([sx*1.45,-1.85,-.5]),color:red});body.push({geo:new THREE.ConeGeometry(.31,.9,6).rotateX(-Math.PI/2).scale(1,.8,1),m:M([sx*1.45,-1.8,-3.7]),color:red});
+        body.push({geo:BOX(.64,.08,5.62),m:M([sx*1.45,-1.58,-.5]),color:cream});for(const zz of [-1.6,.6])beam(body,new V3(sx*.5,-.5,zz),new V3(sx*1.45,-1.6,zz),.08,dark);}}
+    else{wheels(.15,1.12,1.0);beam(body,new V3(0,-.5,-2.15),new V3(0,-1.05,-2.15),.08,dark);body.push({geo:new THREE.CylinderGeometry(.28,.28,.18,10).rotateZ(Math.PI/2),m:M([0,-1.07,-2.15]),color:tire});}
   }
-  beam(body,new V3(0,-.5,-2.15),new V3(0,-1.05,-2.15),.08,dark);
-  body.push({geo:new THREE.CylinderGeometry(.28,.28,.18,10).rotateZ(Math.PI/2),m:M([0,-1.07,-2.15]),color:tire});
-  wing.push({geo:BOX(10.5,.16,1.55),m:M([0,.78,-.55]),color:cream});
-  for(const sx of [-1,1]){
-    wing.push({geo:BOX(.6,.17,1.56),m:M([sx*4.95,.78,-.55]),color:red});
-    for(const zz of [-.95,-.2]) beam(body,new V3(sx*.56,-.3,zz),new V3(sx*2.7,.7,zz-.05),.07,dark);
-  }
+  if(o.pod)body.push({geo:BOX(.8,.55,2.4),m:M([0,model==='racer'?-.75:-.85,-.4]),color:red},{geo:new THREE.ConeGeometry(.38,.6,8).rotateX(-Math.PI/2).scale(1,.7,1),m:M([0,model==='racer'?-.75:-.85,-1.9]),color:red});
   const g=new THREE.Group();
   const bodyM=new THREE.Mesh(merge(body),litify(toon({},false))),wingM=new THREE.Mesh(merge(wing),litify(toon({},false)));
-  const blades=new THREE.Mesh(merge([{geo:BOX(.16,2.0,.05),m:M([0,0,0]),color:0x3a3438}]),toon({},false));blades.position.set(0,-.05,-2.82);
-  const disc=new THREE.Mesh(new THREE.CircleGeometry(1.0,18),new THREE.MeshBasicMaterial({color:0xe9e0d0,transparent:true,opacity:.18,depthWrite:false}));disc.position.set(0,-.05,-2.84);
+  const blades=new THREE.Mesh(merge([{geo:BOX(.16,2.0,.05),m:M([0,0,0]),color:0x3a3438}]),toon({},false));blades.position.set(0,propY,propZ);
+  const disc=new THREE.Mesh(new THREE.CircleGeometry(1.0,18),new THREE.MeshBasicMaterial({color:0xe9e0d0,transparent:true,opacity:.18,depthWrite:false}));disc.position.set(0,propY,propZ-.02);
   bodyM.castShadow=wingM.castShadow=true;g.add(bodyM,wingM,blades,disc); g.userData={bodyM,wingM,blades,disc}; return g;
 }
 const plane=buildPlane({body:0xf3e7cf,trim:0xd2493c}); scene.add(plane);

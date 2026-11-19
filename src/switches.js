@@ -102,7 +102,7 @@ function spotUniforms(){const U=postMat.uniforms;U.uSpotOn.value=spotK;if(spotK<
   U.uInvProj.value.copy(camera.projectionMatrixInverse);U.uCamW.value.copy(camera.matrixWorld);}
 
 /* ---- inflatable floats ---- */
-ac.floats=0;let floatsOn=false;
+ac.floats=0;let floatsOn=false,PLANE_FLOATS=false;
 const floatG=new THREE.Group();floatG.visible=false;plane.add(floatG);
 {const parts=[];for(const sd of [-1,1]){const x=sd*1.45;
   parts.push({geo:new THREE.CylinderGeometry(.46,.46,4.4,10).rotateX(Math.PI/2),m:M([x,0,-.3]),color:0xf0a03a},
@@ -115,19 +115,19 @@ const floatLift=()=>FLOAT_H*ac.floats;
 function setFloats(on){if(on===floatsOn)return;
   if(!on&&ac.ground&&groundH(ac.pos.x,ac.pos.z)<.3){toast('Not while you\'re floating on them!',2);updFunUI();return;}
   floatsOn=on;if(on){snd.hiss();tip('floats','Floats out! You can land on calm water now: same as a runway, gentle and wings level. They add a little drag, so you\'re a touch slower.');}else snd.squelch();updFunUI();}
-function updFloats(dt){const tgt=floatsOn?1:0;if(floatsOn)ac.floats=Math.min(1,ac.floats+dt/.7);else ac.floats=Math.max(0,ac.floats-dt/1.8);
+function updFloats(dt){if(PLANE_FLOATS){floatsOn=true;ac.floats=1;floatG.visible=false;return;}const tgt=floatsOn?1:0;if(floatsOn)ac.floats=Math.min(1,ac.floats+dt/.7);else ac.floats=Math.max(0,ac.floats-dt/1.8);
   floatG.visible=ac.floats>.01;if(floatG.visible){const u=ac.floats,v=u-1,s=floatsOn?1+2.7*v*v*v+1.7*v*v:u;floatG.scale.set(Math.max(.05,s),Math.max(.05,s),.3+.7*Math.min(1,u*1.5));}}
 
 /* ---- the panel ---- */
 function updFunUI(){$('swSearch').classList.toggle('on',searchOn);$('swSmoke').classList.toggle('on',smokeOn);$('swFloat').classList.toggle('on',floatsOn);updMicUI();}
 $('swSearch').addEventListener('click',()=>{searchOn=!searchOn;snd.flick();updFunUI();if(searchOn)tip('search','Searchlight on. It lights up a circle of ground ahead of you, as bright as midday. Turn to sweep it around; fly lower to bring it closer. Best after dark.');});
 $('swSmoke').addEventListener('click',()=>{smokeOn=!smokeOn;snd.flick();if(smokeOn)snd.hiss(.5);updFunUI();if(smokeOn)tip('smoke','Smoke on! It hangs in the air for a while, so you can draw loops and letters in the sky.');});
-$('swFloat').addEventListener('click',()=>{setFloats(!floatsOn);});
+$('swFloat').addEventListener('click',()=>{if(PLANE_FLOATS){toast('The Pelican\'s floats are built in.',1.4);return;}setFloats(!floatsOn);});
 $('micBtn').addEventListener('pointerdown',e=>{e.preventDefault();keyMic();});
 /* ---- the horn: a little double honk. Folk in town, at drop camps, and the errand goats and sheep nearby jump and
    turn to look up at you; Biscuit joins in ---- */
 let honkT=-1;const honkers=[];
-function honk(){if(mode!=='fly'||(honkT>=0&&honkT<.6))return;snd.honk();honkT=0;honkers.length=0;const P=ac.pos,b=$('hornBtn');b.classList.add('honk');setTimeout(()=>b.classList.remove('honk'),550);
+function honk(){if(mode!=='fly'||(honkT>=0&&honkT<1.1))return;snd.honk();honkT=0;honkers.length=0;const P=ac.pos,b=$('hornBtn');b.classList.add('honk');setTimeout(()=>b.classList.remove('honk'),550);
   const near=(x,y,z)=>Math.hypot(x-P.x,z-P.z)<420&&P.y-y<320;
   for(const o of (window.FOLK||[])){o.updateMatrixWorld();const w=o.getWorldPosition(_so);if(near(w.x,w.y,w.z))honkers.push({o,mv:true,ph:Math.random()*.35});}
   for(const set of ['goats','sheep'])for(const f of (FINDS[set]||[]))if(f.obj&&near(f.x,f.y,f.z))honkers.push({o:f.obj,mv:false,y0:f.obj.position.y,ph:Math.random()*.35});
@@ -170,7 +170,7 @@ setInterval(()=>{const c=snd.ctx;if(c&&c.onstatechange==null)c.onstatechange=()=
 
 /* ---- updraft: like the tailwind but straight up. Three charges; tap again while one is lifting you to stack them.
    Holding BRAKE in the air calls it off, same as the tailwind ---- */
-const UP_T=3,UP_V=26,UP_STACK=[0,1,1.6,2.1,2.5,2.85];let UP_N=3,UP_CD=6;let upCharges=UP_N,upCD=0,upUiT=0;
+const UP_T=3,UP_V=26,UP_STACK=[0,1,1.6,2.1,2.5,2.85,3.15,3.4];let UP_N=5,UP_CD=6;let upCharges=UP_N,upCD=0,upUiT=0;
 function useUpdraft(){if(mode!=='fly')return;if(ac.ground){toast('Updrafts work once you\'re flying.',1.6);return;}
   if(upCharges<=0){toast(`The next updraft is gathering. ${Math.ceil(upCD)} s.`,1.3);return;}
   if(!ac.ups)ac.ups=[];ac.ups.push(UP_T);upCharges--;upCD=UP_CD;const n=ac.ups.length;snd.beep(660+n*120);setTimeout(()=>snd.beep(990+n*160),80);
