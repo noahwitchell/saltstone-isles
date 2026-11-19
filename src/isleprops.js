@@ -64,7 +64,7 @@ function spireAt(it,x,z,y0,top,r0,r1,seed){const n=7;let px=x,pz=z;
    if(c){const y=c.h;it.push({geo:BOX(22,9,14),m:M([c.x,y+3.5,c.z],[0,.3,0]),color:0xb8443a});rf.push({geo:new THREE.CylinderGeometry(9,9,23,4,1).rotateZ(Math.PI/2),m:M([c.x,y+9,c.z],[0,.3,0],[1,.55,1]),color:0x6a5040});
      for(let k=0;k<4;k++)it.push({geo:new THREE.CylinderGeometry(1.8,1.8,2.6,8).rotateZ(Math.PI/2),m:M([c.x+Math.cos(.3)*(-14),y+1.3,c.z-Math.sin(.3)*(-14)+(k-1.5)*3.2],[0,.3,0]),color:0x8a6a4a});
      lit.push([c.x,y+5,c.z,0xffc25a]);mark('cider',c.x,c.z,y,'The Cider Barn','Red barn, four barrels outside, and a smell you can follow from the air in autumn.');}
-   FINDS.kites=[];const kc=[0xd2493c,0x3f8fc0,0xe8a33a,0x7a4ab8,0x3f8f5a,0xff7a2e];for(let k=0;k<6;k++){const p=onIsle('apple',(x,z,h)=>orchardAt(x,z)&&clearOf(x,z,60),()=>rnd());if(!p)continue;
+   FINDS.kites=[];const kc=[0xd2493c,0x3f8fc0,0xe8a33a,0x7a4ab8,0x3f8f5a,0xff7a2e,0xf2c84a,0xc2456a];for(let k=0;k<8;k++){const p=onIsle('apple',(x,z,h)=>orchardAt(x,z)&&clearOf(x,z,60),()=>rnd());if(!p)continue;
      const g=new THREE.Group(),y=p.h+28+rnd()*12;g.scale.setScalar(2.4);g.add(new THREE.Mesh(merge([{geo:BOX(3.4,4.6,.15),m:M([0,0,0],[0,0,Math.PI/4],[1,1,1]),color:kc[k]},{geo:BOX(.12,7,.12),m:M([0,-5.5,0]),color:0xf4efe2},
        ...[0,1,2].map(i=>({geo:BOX(.9,.5,.1),m:M([0,-3.5-i*1.8,0],[0,0,.6]),color:kc[(k+2)%6]}))]),toon({},false)));g.position.set(p.x,y,p.z);scene.add(g);
      const ph=rnd()*6;const fo={x:p.x,y,z:p.z,obj:g,kind:'loop',busy:0};anims.push(t=>{if(fo.busy)return;g.rotation.y=t*.2+ph;g.rotation.z=Math.sin(t*1.3+ph)*.25;g.position.y=y+Math.sin(t*.9+ph)*1.5;});FINDS.kites.push(fo);}}
@@ -105,7 +105,7 @@ function spireAt(it,x,z,y0,top,r0,r1,seed){const n=7;let px=x,pz=z;
      anims.push(t=>{for(let i=0;i<N2;i++){const ph=(t*.25+i/N2)%1,s=(2+ph*6)*(ph>.7?(1-ph)/.3:1);mm.compose(new V3(bp.x+Math.cos(i*2.4)*ph*14,by+ph*14,bp.z+Math.sin(i*2.4)*ph*14),q,new V3(s,s,s));pm.setMatrixAt(i,mm);}pm.instanceMatrix.needsUpdate=true;});
      const top=fromUV(I,lip.u,gv(lip.u));mark('falls',top.x,top.z,foot.h,'Cascade Falls','Two hundred metres of white water. Kit says the hut shakes when it rains.');}
    const S=stripOf('cascade'),h=toWorld(S,-S.len/2+80,S.wid/2+26);hutAt(it,rf,h.x,h.z,-S.hdg*DEG,7,6,3.4,0x8a6a4a,0x3f6b3a,2);
-   FINDS.cairns=[];for(let k=0;k<6;k++){const p=onIsle('cascade',(x,z,h)=>h>200&&slopeAt(x,z)<.3&&clearOf(x,z,30),()=>rnd());if(!p)continue;
+   FINDS.cairns=[];for(let k=0;k<4;k++){const p=onIsle('cascade',(x,z,h)=>h>200&&slopeAt(x,z)<.3&&clearOf(x,z,30),()=>rnd());if(!p)continue;
      for(let j=0;j<5;j++)it.push({geo:new THREE.DodecahedronGeometry(1,0),m:M([p.x,p.h+j*3+1,p.z],[j,j*2,0],[5.2-j*.8,2,4.8-j*.7]),color:j%2?0xd8d4cc:0xf4f0e8});
      it.push({geo:BOX(.5,13,.5),m:M([p.x,p.h+20,p.z]),color:0x2c2833});const fl=new THREE.Mesh(BOX(6,3.4,.2).translate(3,0,0),toon({vertexColors:false,color:0xff6a1e},false));fl.position.set(p.x,p.h+19,p.z);scene.add(fl);
      FINDS.cairns.push({x:p.x,y:p.h,z:p.z,obj:fl,kind:'flag'});}}
@@ -137,7 +137,7 @@ function spireAt(it,x,z,y0,top,r0,r1,seed){const n=7;let px=x,pz=z;
      s.position.set(p.x+nx*7,h+26,p.z+nz*7);s.rotation.y=yw;scene.add(s);mills.push(s);solidSph(p.x+nx*7,h+26,p.z+nz*7,17);}
    anims.push(t=>{mills.forEach((s,i)=>{s.rotation.z=t*.9+i;});});
    const c=fromUV(I,0,-70);mark('mills',c.x,c.z,groundH(c.x,c.z),'The Seven Mills','They grind flour for half the islands. Agnes knows each one by its creak.');
-   FINDS.sheep=[];for(let k=0;k<6;k++){const p=onIsle('windward',(x,z,h)=>h>8&&slopeAt(x,z)<.3&&clearOf(x,z,40),()=>rnd());if(!p)continue;const ry=rnd()*6;
+   FINDS.sheep=[];for(let k=0;k<3;k++){const p=onIsle('windward',(x,z,h)=>h>8&&slopeAt(x,z)<.3&&clearOf(x,z,40),()=>rnd());if(!p)continue;const ry=rnd()*6;
      const sm=new THREE.Mesh(merge([{geo:BOX(2.2,1.8,3.2),m:M([0,3,0],[0,0,0],[2.6,2.6,2.6]),color:0xff3a2a},{geo:BOX(1,1,1.2),m:M([0,4.6,5],[0,0,0],[2.6,2.6,2.6]),color:0x2c2833},...[[-1,-1],[1,-1],[-1,1],[1,1]].map(([a,c])=>({geo:BOX(.8,2,.8),m:M([a*1.8,.6,c*2.8]),color:0x2c2833}))]),toon({},false));
      sm.position.set(p.x,p.h,p.z);sm.rotation.y=ry;scene.add(sm);FINDS.sheep.push({x:p.x,y:p.h,z:p.z,obj:sm,kind:'hop'});}}
   /* ---- Bell Rock ---- */
@@ -150,11 +150,11 @@ function spireAt(it,x,z,y0,top,r0,r1,seed){const n=7;let px=x,pz=z;
    mark('wreck',w.x,w.z,0,'The Wreck of the Merrow','A coaster that ran onto the bars in a storm. The terns moved in the next morning.');
    for(const [du,dv] of TERN)for(let k=0;k<3;k++){const p=fromUV(I,du+(rnd()-.5)*80,dv+(rnd()-.5)*20),h=groundH(p.x,p.z);if(h<.3)continue;it.push({geo:new THREE.SphereGeometry(1,6,4),m:M([p.x,h+.4,p.z],[0,rnd()*3,0],[1,.6,2]),color:0x8a8890});}}
   /* ---- Marram: Ollie's dad's lobster-pot buoys, scattered by the storm ---- */
-  {const I=ISLES.marram;FINDS.buoys=[];for(let k=0;k<6;k++){const a=k/6*TAU+.4,r=1100+rnd()*700,x=I.x+Math.cos(a)*r,z=I.z+Math.sin(a)*r;if(groundH(x,z)>-1)continue;
+  {const I=ISLES.marram;FINDS.buoys=[];for(let k=0;k<4;k++){const a=k/4*TAU+.4,r=1100+rnd()*700,x=I.x+Math.cos(a)*r,z=I.z+Math.sin(a)*r;if(groundH(x,z)>-1)continue;
      const m=new THREE.Mesh(merge([{geo:new THREE.SphereGeometry(4,10,7),m:M([0,0,0]),color:0xff6a1e},{geo:BOX(4.2,1.2,4.2),m:M([0,0,0]),color:0xffffff},{geo:BOX(.4,12,.4),m:M([0,7,0]),color:0x2c2833},{geo:BOX(5,3,.2),m:M([2.5,11.5,0]),color:0xffd34a}]),toon({},false));
      m.position.set(x,0,z);scene.add(m);const ph=rnd()*6;const fo={x,y:0,z,obj:m,kind:'ring',ring:0};anims.push(t=>{m.position.y=Math.sin(t*1.3+ph)*.3+fo.ring*Math.abs(Math.sin(t*9))*1.6;m.rotation.z=Math.sin(t+ph)*.15+fo.ring*Math.sin(t*16)*.45;});FINDS.buoys.push(fo);}}
   /* ---- Tallpine: osprey nests on dead snags ---- */
-  {FINDS.nests=[];for(let k=0;k<6;k++){const p=findSpot(1100,-200,1500,(x,z,h)=>isleAt(x,z)==='tall'&&h>60&&h<380&&slopeAt(x,z)<.35&&clearOf(x,z,40),()=>rnd());if(!p)continue;
+  {FINDS.nests=[];for(let k=0;k<3;k++){const p=findSpot(1100,-200,1500,(x,z,h)=>isleAt(x,z)==='tall'&&h>60&&h<380&&slopeAt(x,z)<.35&&clearOf(x,z,40),()=>rnd());if(!p)continue;
      beam(it,new V3(p.x,p.h-1,p.z),new V3(p.x+.6,p.h+36,p.z+.3),1.4,0xf4efe4);for(const a of [0,2.2,4.1])beam(it,new V3(p.x+.4,p.h+24+a,p.z+.2),new V3(p.x+Math.cos(a)*7,p.h+30+a,p.z+Math.sin(a)*7),.5,0xf4efe4);
      it.push({geo:new THREE.CylinderGeometry(6,3.5,3.2,9),m:M([p.x+.6,p.h+37.4,p.z+.3]),color:0xf0c050});const os=new THREE.Group(),om=toon({},false);os.add(new THREE.Mesh(merge([{geo:BOX(2.4,2.4,4),m:M([0,0,0]),color:0xffffff},{geo:BOX(1.2,1.2,1.4),m:M([0,1,-2.4]),color:0xffffff},{geo:BOX(.5,.4,.8),m:M([0,.8,-3.4]),color:0xffc040},{geo:BOX(1.3,.3,1.6),m:M([0,1.1,-2.3]),color:0x2c2833},{geo:BOX(2,.3,2),m:M([0,0,2.6]),color:0x5a4030}]),om));
      const wL=new THREE.Group(),wR=new THREE.Group();wL.add(new THREE.Mesh(merge([{geo:BOX(6,.3,2.4),m:M([-3.2,0,0]),color:0x5a4030},{geo:BOX(2,.32,2.4),m:M([-1.4,.02,0]),color:0xffffff}]),om));wR.add(new THREE.Mesh(merge([{geo:BOX(6,.3,2.4),m:M([3.2,0,0]),color:0x5a4030},{geo:BOX(2,.32,2.4),m:M([1.4,.02,0]),color:0xffffff}]),om));
