@@ -75,28 +75,28 @@ function wallpaper(id,bg,hs,mixH){const L=shade(bg,.14),LL=shade(bg,.26),D=shade
    with a glow behind the head. Light comes from the upper left. */
 const FACES={
   mabel:{outfit:'postal',shirt:'#2f3f6a',w:10.6,top:12,bot:10.5,jaw:2.2,cheek:1.06,eye:'small',sep:4,brow:{a:-.6},nose:'button',nl:5,mouth:'smile',mw:3,age:2,chub:1,blush:1.3},
-  bea:{under:'wisps',w:9.4,top:12.5,bot:12.4,jaw:2.6,eye:'narrow',tilt:-1,sep:4,brow:{t:2,a:.4},nose:'long',nl:6,mouth:'smirk',mw:3,age:3,bones:1},
+  bea:{outfit:'flight',shirt:'#7a4a2a',under:'wisps',w:9.4,top:12.5,bot:12.4,jaw:2.6,eye:'narrow',tilt:-1,sep:4,brow:{t:2,a:.4},nose:'long',nl:6,mouth:'smirk',mw:3,age:3,bones:1},
   gus:{outfit:'coveralls',shirt:'#4a5e7a',fh:'boxed',under:'none',w:12,top:10.8,bot:11,jaw:2.2,cheek:1.14,sep:5,age:0,sh:1.2,nk:6,ears:1.3,chub:1},
-  tomas:{fh:'walrus',w:9.6,top:12.8,bot:12.6,jaw:2.4,eye:'heavy',sep:4,brow:{t:2,a:-.3},nose:'hook',nl:6,mouth:'flat',mw:3,age:1,bones:1},
-  nell:{hair:'braids',w:9.8,top:12.4,bot:10.6,jaw:1.45,eye:'big',sep:4,tilt:1,brow:{a:-.5,y:-5},nose:'button',nl:4,mouth:'laugh',mw:3,blush:1.4},
-  ada:{under:'curls',w:9.4,top:12.8,bot:11.8,jaw:1.35,sep:4,bones:1,earring:'#f1c84a'},
-  hank:{fh:'bushy',under:'shaggy',w:10,top:13.2,bot:13,jaw:3.2,cheek:1,sep:4,sh:1.22,nk:6,ears:1.05},
-  ollie:{under:'curls',w:10.2,top:11.6,bot:11.2,jaw:2.1,cheek:1.04,eye:'open',sep:4,brow:{y:-4},nose:'button',nl:4,mouth:'laugh',mw:3,my:8,sh:.86,nk:3,ears:1.15,blush:1.4,dimple:1},
-  rosa:{hair:'wavy',w:10.4,top:11.8,bot:11,jaw:2,cheek:1.05,eye:'happy',sep:4,brow:{a:-.4,y:-5},nose:'wide',nl:5,mouth:'laugh',mw:4,blush:1.3},
-  ines:{hair:'pony',w:9,top:13,bot:12,jaw:1.6,eye:'almond',sep:4,brow:{raise:1,a:.2},nose:'pointed',nl:6,mouth:'pursed',age:1,bones:1},
-  otto:{hat:null,hair:'bald',fh:'fluffy',w:11.4,top:11.2,bot:11.2,jaw:2.2,cheek:1.1,eye:'happy',sep:5,brow:{a:-.6},nose:'button',nl:4,mouth:'grin',mw:4,chub:1,age:1,blush:1.6,sh:1.12,nk:5},
-  fen:{hat:'flat',fh:'pencil',w:9,top:13,bot:12.8,jaw:2.3,eye:'heavy',tilt:-1,sep:4,brow:{a:-.7},nose:'long',nl:7,mouth:'flat',mw:2,age:1,ears:1.2},
-  ivy:{w:9.4,top:12.6,bot:11.2,jaw:1.6,eye:'happy',sep:4,brow:{a:-.5,y:-5},nose:'pointed',nl:5,mouth:'small',age:3,blush:1.2},
+  tomas:{outfit:'cableknit',fh:'walrus',w:9.6,top:12.8,bot:12.6,jaw:2.4,eye:'heavy',sep:4,brow:{t:2,a:-.3},nose:'hook',nl:6,mouth:'flat',mw:3,age:1,bones:1},
+  nell:{outfit:'fairisle',hair:'braids',w:9.8,top:12.4,bot:10.6,jaw:1.45,eye:'big',sep:4,tilt:1,brow:{a:-.5,y:-5},nose:'button',nl:4,mouth:'laugh',mw:3,blush:1.4},
+  ada:{outfit:'ranger',under:'curls',w:9.4,top:12.8,bot:11.8,jaw:1.35,sep:4,bones:1,earring:'#f1c84a'},
+  hank:{outfit:'suspenders',fh:'bushy',under:'shaggy',w:10,top:13.2,bot:13,jaw:3.2,cheek:1,sep:4,sh:1.22,nk:6,ears:1.05},
+  ollie:{outfit:'hivis',under:'curls',w:10.2,top:11.6,bot:11.2,jaw:2.1,cheek:1.04,eye:'open',sep:4,brow:{y:-4},nose:'button',nl:4,mouth:'laugh',mw:3,my:8,sh:.86,nk:3,ears:1.15,blush:1.4,dimple:1},
+  rosa:{outfit:'aloha',hair:'wavy',w:10.4,top:11.8,bot:11,jaw:2,cheek:1.05,eye:'happy',sep:4,brow:{a:-.4,y:-5},nose:'wide',nl:5,mouth:'laugh',mw:4,blush:1.3},
+  ines:{outfit:'fieldvest',hair:'pony',w:9,top:13,bot:12,jaw:1.6,eye:'almond',sep:4,brow:{raise:1,a:.2},nose:'pointed',nl:6,mouth:'pursed',age:1,bones:1},
+  otto:{outfit:'chef',hat:'toque',under:'none',hair:'bald',fh:'fluffy',w:11.4,top:11.2,bot:11.2,jaw:2.2,cheek:1.1,eye:'happy',sep:5,brow:{a:-.6},nose:'button',nl:4,mouth:'grin',mw:4,chub:1,age:1,blush:1.6,sh:1.12,nk:5},
+  fen:{outfit:'raincoat',shirt:'#c8a03a',hat:'flat',fh:'pencil',w:9,top:13,bot:12.8,jaw:2.3,eye:'heavy',tilt:-1,sep:4,brow:{a:-.7},nose:'long',nl:7,mouth:'flat',mw:2,age:1,ears:1.2},
+  ivy:{outfit:'cardigan',w:9.4,top:12.6,bot:11.2,jaw:1.6,eye:'happy',sep:4,brow:{a:-.5,y:-5},nose:'pointed',nl:5,mouth:'small',age:3,blush:1.2},
   wren:{outfit:'climber',under:'locs',w:10.2,top:11.2,bot:11.4,jaw:2.8,cheek:1.02,sep:5},
-  tam:{hat:null,hair:'tousled',fh:'goatee',w:9,top:12.6,bot:13.4,jaw:2.6,cheek:.95,sep:3,age:1,ears:1.35,bones:1,blush:1.9},
-  hattie:{hair:'sidebraid',w:10.8,top:11.4,bot:10.4,jaw:2.2,cheek:1.1,sep:4,age:1,blush:1.5,dimple:1},
-  desmond:{hat:'straw',fh:'trim',w:10.4,top:13,bot:12,jaw:2,cheek:1.02,sep:4,age:3,ears:1.2},
-  lio:{hair:'bob',w:9.2,top:12.2,bot:11.4,jaw:1.5,eye:'heavy',sep:4,tilt:1,brow:{a:-.2},nose:'pointed',nl:5,mouth:'small',mole:[-6,6]},
-  odile:{hair:'topknot',w:9.2,top:13.2,bot:12,jaw:1.8,eye:'almond',sep:4,brow:{raise:1,a:.4},nose:'long',nl:6,mouth:'pursed',age:2,bones:1},
-  kit:{hat:null,hair:'side',w:10.2,top:11.6,bot:10.8,jaw:2,eye:'open',sep:5,brow:{a:-.2},nose:'button',nl:4,mouth:'grin',mw:3,dimple:1,ears:1.1},
-  lu:{hair:'perm',w:10.8,top:11.6,bot:10.8,jaw:2.1,cheek:1.06,eye:'happy',sep:4,brow:{a:-.5,y:-5},nose:'wide',nl:5,mouth:'laugh',mw:3,age:3,chub:1,blush:1.4},
-  bram:{hat:null,hair:'crop',fh:'handlebar',w:11.4,top:11.2,bot:12,jaw:3.8,eye:'small',sep:5,brow:{t:2,a:.25,y:-4},nose:'broad',nl:5,mouth:'flat',mw:3,sh:1.18,nk:6,dimple:1},
-  agnes:{hair:'chignon',w:9.6,top:12.4,bot:11,jaw:1.5,eye:'small',sep:4,brow:{a:.1},nose:'hook',nl:6,mouth:'small',age:2,bones:1},
+  tam:{outfit:'sheepvest',hat:null,hair:'tousled',fh:'goatee',w:9,top:12.6,bot:13.4,jaw:2.6,cheek:.95,sep:3,age:1,ears:1.35,bones:1,blush:1.9},
+  hattie:{outfit:'pickbag',hair:'sidebraid',w:10.8,top:11.4,bot:10.4,jaw:2.2,cheek:1.1,sep:4,age:1,blush:1.5,dimple:1},
+  desmond:{outfit:'waders',hat:'straw',fh:'trim',w:10.4,top:13,bot:12,jaw:2,cheek:1.02,sep:4,age:3,ears:1.2},
+  lio:{outfit:'breton',shirt:'#f0ece0',hair:'bob',w:9.2,top:12.2,bot:11.4,jaw:1.5,eye:'heavy',sep:4,tilt:1,brow:{a:-.2},nose:'pointed',nl:5,mouth:'small',mole:[-6,6]},
+  odile:{outfit:'labcoat',hair:'topknot',w:9.2,top:13.2,bot:12,jaw:1.8,eye:'almond',sep:4,brow:{raise:1,a:.4},nose:'long',nl:6,mouth:'pursed',age:2,bones:1},
+  kit:{outfit:'fleece',hat:null,hair:'side',w:10.2,top:11.6,bot:10.8,jaw:2,eye:'open',sep:5,brow:{a:-.2},nose:'button',nl:4,mouth:'grin',mw:3,dimple:1,ears:1.1},
+  lu:{outfit:'shawl',hair:'perm',w:10.8,top:11.6,bot:10.8,jaw:2.1,cheek:1.06,eye:'happy',sep:4,brow:{a:-.5,y:-5},nose:'wide',nl:5,mouth:'laugh',mw:3,age:3,chub:1,blush:1.4},
+  bram:{outfit:'donkey',shirt:'#2e3240',hat:null,hair:'crop',fh:'handlebar',w:11.4,top:11.2,bot:12,jaw:3.8,eye:'small',sep:5,brow:{t:2,a:.25,y:-4},nose:'broad',nl:5,mouth:'flat',mw:3,sh:1.18,nk:6,dimple:1},
+  agnes:{outfit:'flourapron',hair:'chignon',w:9.6,top:12.4,bot:11,jaw:1.5,eye:'small',sep:4,brow:{a:.1},nose:'hook',nl:6,mouth:'small',age:2,bones:1},
 };
 /* Each character's own eyes, brows, nose and mouth. No two unrelated people share a set: the checker in the test
    harness fails if any eye, brow, nose or mouth spec repeats. (Nobody on the islands is related to anyone else with a
@@ -141,6 +141,7 @@ function portrait(id){if(PORT[id])return PORT[id];
   const get=(x,y)=>L[y*N+x];
   const rect=(x,y,w,h,c)=>{for(let j=0;j<h;j++)for(let i=0;i<w;i++)put(x+i,y+j,c);};
   const ell=(cx,cy,rx,ry,c,fn)=>{for(let j=Math.floor(-ry);j<=ry;j++)for(let i=Math.floor(-rx);i<=rx;i++)if((i*i)/(rx*rx)+(j*j)/(ry*ry)<=1.02){const col=fn?fn(i,j,c):c;if(col)put(cx+i,cy+j,col);}};
+  const ellRaw=(cx,cy,rx,ry,c)=>ell(cx,cy,rx,ry,c);
   const tint=(x,y,c,t)=>{x=Math.round(x);y=Math.round(y);const o=F[y*N+x];if(o)F[y*N+x]=mixH(o,c,t);};
   const skin=sp.skin,hair=sp.hair,old=fc.age>=2,_d=0,dark=lum(skin)<120;
   const hairD=shade(hair,old?-.22:-.3),hairL=shade(hair,old?.25:.3),hairDD=shade(hair,-.5);
@@ -208,6 +209,9 @@ function portrait(id){if(PORT[id])return PORT[id];
       for(let x=CX-4;x<=CX+15;x++){put(x,C0-6,hDD);put(x,C0-7,x>CX+11?hD:get(x,C0-7));}put(CX,C0-17,hL);for(let j=0;j<5;j++)put(CX+(j>>1),C0-16+j,hD);}
     if(HT==='flat'){ell(CX+1,C0-10,12,5.4,h,(i,j)=>j>2?null:((i+j+40)%3===0?hD:(i>6?hD:(i<-5?hL:h))));for(let x=CX-11;x<=CX+12;x++)put(x,C0-11,(x%2)?hD:h);
       for(let x=CX-9;x<=CX+11;x++){put(x,C0-7,hDD);put(x,C0-8,x>CX+6?hD:h);}put(CX+1,C0-15,hD);}
+    if(HT==='toque'){const W='#f6f4ee',WD='#dcd8ce',WL='#ffffff';for(let y=C0-9;y<=C0-6;y++)for(let x=CX-11;x<=CX+11;x++)put(x,y,y===C0-6?WD:(x>CX+6?WD:W));
+      for(const [cx,cy,r] of [[CX-6,C0-15,5.2],[CX+5,C0-15,5.2],[CX,C0-18,5.6],[CX-1,C0-12,6.5]])ell(cx,cy,r,r*.85,W,(i,j)=>i+j>3?WD:(i+j<-4?WL:W));
+      for(const x of [CX-6,CX-2,CX+2,CX+6])for(let y=C0-11;y<=C0-9;y++)put(x,y,WD);}
     if(HT==='straw'){const band='#3f6f8f';for(let y=C0-9;y<=C0-7;y++)for(let x=CX-18+(y===C0-9?1:0);x<=CX+18-(y===C0-9?1:0);x++)put(x,y,y===C0-7?hDD:((x+y)%2?hD:h));
       for(let y=C0-17;y<=C0-10;y++){const w=y<C0-15?7:9;for(let x=CX-w;x<=CX+w;x++){let c=(x*2+y)%3===0?hD:(x<CX-4?hL:h);if(x>CX+5)c=hD;if(y>=C0-12)c=y===C0-12?shade(band,.15):band;put(x,y,c);}}}
     if(HT==='beanie'){ell(CX,C0-11,11.4,7.5,h,(i,j)=>j>3?null:((i+40)%3===0?hD:(i<-5?hL:h)));for(let x=CX-12;x<=CX+12;x++)for(let j=0;j<3;j++)put(x,C0-8+j,((x)%2===0)?hD:h);
@@ -221,9 +225,9 @@ function portrait(id){if(PORT[id])return PORT[id];
   const fit=(S,dst)=>{for(let y=0;y<N;y++)for(let x=0;x<N;x++){const dy=y-CY,sy=Math.round(C0+(dy<0?dy/st:dy)),sx=Math.round(CX+(x-CX)/sw);if(sx<0||sy<0||sx>=N||sy>=N)continue;const v=S[sy*N+sx];if(v)dst[y*N+x]=v;}};
   L=F;fit(HB,F);
   /* shoulders and shirt */
-  const SHIRT=fc.shirt||sp.shirt;const SH=fc.sh;for(let y=CY+14;y<N;y++){const w=Math.min(23*SH,(11+(y-CY-14)*1.6)*SH);for(let x=Math.ceil(CX-w);x<=Math.floor(CX+w);x++){const e=(x-CX)/w;
+  const SHIRT=fc.shirt||sp.shirt,SHM=new Uint8Array(N*N);const SH=fc.sh;for(let y=CY+14;y<N;y++){const w=Math.min(23*SH,(11+(y-CY-14)*1.6)*SH);for(let x=Math.ceil(CX-w);x<=Math.floor(CX+w);x++){const e=(x-CX)/w;
       let c=SHIRT;if(e<-.55&&y<CY+20)c=shade(SHIRT,.12);if(e>.5)c=shade(SHIRT,-.16);if(e>.82||y>45)c=shade(SHIRT,-.26);
-      if(sp.plaid&&((x%5===0)||(y%5===2)))c=shade(c,-.32);put(x,y,c);}}
+      if(sp.plaid&&!fc.noPlaid&&((x%5===0)||(y%5===2)))c=shade(c,-.32);put(x,y,c);SHM[y*N+x]=1;}}
   for(let y=CY+19;y<N;y++){put(CX-Math.round(15*SH)+((y-CY-19)>>2),y,shade(SHIRT,-.22));put(CX+Math.round(15*SH)-((y-CY-19)>>2),y,shade(SHIRT,-.3));}
   /* neck, collar */
   const NK=fc.nk,NY=CY+fc.bot-3;
@@ -231,7 +235,71 @@ function portrait(id){if(PORT[id])return PORT[id];
   for(let k=0;k<5;k++){for(let x=CX-NK+k;x<=CX+NK-k;x++)put(x,CY+15+k,x>CX+1?sk(-.16):sk(-.06));}
   const col=shade(SHIRT,.28),colD=shade(SHIRT,-.1),cy0=CY+14;
   for(let k=0;k<5;k++){put(CX-NK-1-k,cy0+k,col);put(CX-NK-k,cy0+1+k,col);put(CX-NK-1+k,cy0+1+k,colD);put(CX+NK+1+k,cy0+k,colD);put(CX+NK+k,cy0+1+k,colD);put(CX+NK+1-k,cy0+1+k,col);}
-  if(fc.outfit==='climber'){/* technical shell: high zipped collar, pack straps with a sternum strap, a coil of rope over one shoulder, a carabiner */
+  /* ---- outfits: what each person wears for their job ---- */
+  const inB=(x,y)=>x>=0&&y>=0&&x<N&&y<N&&SHM[y*N+x];
+  const tone=(c,x,y)=>{const w=Math.min(23*SH,(11+(y-CY-14)*1.6)*SH),e=(x-CX)/w;let o=c;if(e<-.55&&y<CY+20)o=shade(c,.12);if(e>.5)o=shade(c,-.16);if(e>.82||y>45)o=shade(c,-.26);return o;};
+  const fillB=(fn)=>{for(let y=cy0-3;y<N;y++)for(let x=0;x<N;x++)if(inB(x,y)){const c=fn(x,y);if(c)put(x,y,c);}};
+  const coverV=(c,rows=6)=>{for(let k=0;k<rows;k++)for(let x=CX-NK-2;x<=CX+NK+2;x++)if(inB(x,cy0+k)||Math.abs(x-CX)<=NK)put(x,cy0+k,tone(c,x,cy0+k));};
+  const crew=(c)=>{coverV(c);for(let x=CX-NK-1;x<=CX+NK+1;x++){put(x,cy0,shade(c,.18));put(x,cy0+1,x%2?shade(c,.06):shade(c,-.1));}};
+  const rnd2=(x,y)=>(((x*73856093)^(y*19349663)^(hs*83492791))>>>0)%1000/1000;
+  const OF=fc.outfit;
+  if(OF==='flight'){const L=SHIRT,cr='#efe4cc',crD='#d4c6a6';fillB((x,y)=>{let c=tone(L,x,y);if(x<CX-6&&(x*3+y)%9===0)c=shade(c,.2);return c;});
+    for(let y=cy0+5;y<N;y++)put(CX,y,y%2?'#c8b070':'#a08850');
+    for(let k=0;k<7;k++)for(let t=0;t<3;t++){put(CX-NK-1-k-t+(k>>1),cy0-1+k,(k+t)%2?cr:crD);put(CX+NK+1+k+t-(k>>1),cy0-1+k,(k+t)%2?crD:shade(crD,-.08));}
+    for(let y=cy0+8;y<=cy0+12;y++)for(let x=CX-11;x<=CX-7;x++){const d=Math.hypot(x-CX+9,y-cy0-10);if(d<2.4)put(x,y,d<1.2?'#f6f0e2':'#2f4f8a');}}
+  else if(OF==='cableknit'){const K=SHIRT,KL=shade(K,.2),KD=shade(K,-.2);fillB((x,y)=>{let c=tone(K,x,y);for(const cx of [CX-8,CX,CX+8]){const u=x-cx;if(u>=-1&&u<=1){c=((y+Math.abs(u))%4<2)?KL:KD;}}return ((x+y)%2&&c===tone(K,x,y))?shade(c,-.05):c;});
+    for(let y=NY+2;y<=cy0+2;y++)for(let x=CX-NK-1;x<=CX+NK+1;x++)put(x,y,x%2?KL:K);}
+  else if(OF==='fairisle'){const K=SHIRT,cr='#f2ead8',rd='#c2453a';fillB((x,y)=>{const r=y-cy0;let c=tone(K,x,y);if(r===5||r===10)c=(x%2)?cr:c;if(r>=6&&r<=9){const u=((x%6)+6)%6,d=Math.abs(u-3)+Math.abs(r-7.5);c=d<1.6?rd:(d<2.6?cr:c);}return c;});crew(K);}
+  else if(OF==='ranger'){fillB((x,y)=>tone(SHIRT,x,y));coverV(SHIRT,0);
+    for(let k=0;k<5;k++){put(CX-NK-1-k,cy0+k,shade(SHIRT,.25));put(CX-NK-k,cy0+1+k,shade(SHIRT,.25));put(CX+NK+1+k,cy0+k,shade(SHIRT,.05));put(CX+NK+k,cy0+1+k,shade(SHIRT,.05));}
+    for(let y=cy0+5;y<N;y++)put(CX,y,shade(SHIRT,-.2));for(const y of [cy0+7,cy0+10])put(CX,y,'#e8e0c8');
+    for(const s of [-1,1]){const x0=s<0?CX-10:CX+4;for(let x=x0;x<x0+6;x++){put(x,cy0+6,shade(SHIRT,-.25));for(let y=cy0+7;y<=cy0+11;y++)if(x===x0||x===x0+5||y===cy0+11)put(x,y,shade(SHIRT,-.15));}put(x0+3,cy0+7,'#e8e0c8');}
+    put(CX-8,cy0+3,'#f1c84a');put(CX-7,cy0+3,'#f1c84a');put(CX-8,cy0+4,'#c8a03a');put(CX-7,cy0+4,'#f1c84a');
+    for(const s of [-1,1])for(let a=12;a<=17;a++){put(CX+s*a,cy0+2+((a-12)>>1),shade(SHIRT,-.3));}}
+  else if(OF==='suspenders'){for(let y=cy0+4;y<cy0+11;y++)put(CX,y,shade(SHIRT,-.3));for(const y of [cy0+6,cy0+9])put(CX,y,'#e8e0d0');
+    for(const s of [-1,1])for(let y=cy0;y<N;y++){const x=CX+s*(6+((y-cy0)>>3));put(x,y,'#2a1a14');put(x+s,y,'#3a2418');if(y===cy0+4){put(x,y,'#e8c060');put(x+s,y,'#c8a040');}}}
+  else if(OF==='hivis'){const V='#d8ec3a';crew(SHIRT);fillB((x,y)=>{const u=Math.abs(x-CX);if(u<=3||y<cy0+1)return null;let c=tone(V,x,y);if(u===4)c=shade(V,-.25);const r=y-cy0;if(r===8||r===12)c=u===4?'#a8acb0':'#e4e8ec';return c;});}
+  else if(OF==='aloha'){fillB((x,y)=>{let c=tone(SHIRT,x,y);const gx=Math.floor((x+2)/6),gy=Math.floor((y+1)/6),cx=gx*6+1,cy=gy*6+2;if(rnd2(gx,gy)<.55){const d=Math.hypot(x-cx,y-cy);if(d<.8)c='#f6e08a';else if(d<2.2)c=(gx+gy)%2?'#e8507a':'#f6f2ea';else if(d<3&&(x+y)%2)c='#3f8f4a';}return c;});
+    for(let k=0;k<5;k++){put(CX-NK-1-k,cy0+k,'#f6f2ea');put(CX+NK+1+k,cy0+k,'#e4ddd0');}}
+  else if(OF==='fieldvest'){const V='#8a7a52';fillB((x,y)=>{const u=Math.abs(x-CX);if(u<=3)return null;let c=tone(V,x,y);if(u===4)c=shade(V,-.25);return c;});
+    for(const s of [-1,1])for(const yy of [cy0+5,cy0+10]){const x0=s<0?CX-11:CX+5;for(let x=x0;x<x0+6;x++){put(x,yy,shade(V,-.28));put(x,yy+3,shade(V,-.18));}put(x0,yy+1,shade(V,-.18));put(x0+5,yy+1,shade(V,-.25));put(x0,yy+2,shade(V,-.18));put(x0+5,yy+2,shade(V,-.25));}
+    put(CX+6,cy0+3,'#3f6fb0');put(CX+6,cy0+4,'#3f6fb0');put(CX+7,cy0+4,'#e8e4dc');put(CX-8,cy0+3,'#e2703f');put(CX-9,cy0+4,'#e2703f');put(CX-8,cy0+4,'#f1a03a');put(CX-7,cy0+4,'#e2703f');}
+  else if(OF==='chef'){const W='#f2efe8';fillB((x,y)=>{let c=tone(W,x,y);if(x===CX-3&&y>cy0+3)c=shade(W,-.14);return c;});
+    for(let y=cy0-2;y<=cy0+1;y++)for(let x=CX-NK-1;x<=CX+NK+1;x++)put(x,y,y===cy0-2?shade(W,.04):(x>CX+2?shade(W,-.1):W));
+    for(const xx of [CX-6,CX+2])for(const y of [cy0+5,cy0+8,cy0+11])put(xx,y,'#4a4a52');put(CX-1,cy0+2,'#c2453a');put(CX,cy0+2,'#e2584a');put(CX+1,cy0+2,'#c2453a');put(CX,cy0+3,'#c2453a');}
+  else if(OF==='raincoat'){fillB((x,y)=>{let c=tone(SHIRT,x,y);if(x<CX-5&&((x-y)%7===0))c=shade(c,.22);return c;});
+    for(const s of [-1,1])for(let y=cy0-2;y<=cy0+3;y++)for(let a=NK+1;a<=NK+3;a++)put(CX+s*a,y,s<0?shade(SHIRT,.1):shade(SHIRT,-.18));
+    for(let y=cy0+4;y<N;y++)put(CX+1,y,shade(SHIRT,-.3));for(const y of [cy0+6,cy0+9,cy0+12]){put(CX-1,y,'#7a5230');put(CX,y,'#9a6a3a');put(CX+2,y,'#3a2a20');}}
+  else if(OF==='cardigan'){const bl='#f4ecdc';fillB((x,y)=>{const u=x-CX;if(Math.abs(u)<=4)return tone(bl,x,y);let c=tone(SHIRT,x,y);if((x+y*2)%5===0)c=shade(c,-.08);if(Math.abs(u)===5)c=shade(SHIRT,.15);return c;});coverV(bl,3);
+    for(const y of [cy0+5,cy0+8,cy0+11])put(CX+5,y,'#e8e0d0');for(let k=0;k<3;k++){put(CX-2-k,cy0+k,'#ffffff');put(CX+2+k,cy0+k,'#ffffff');}
+    put(CX-8,cy0+5,'#f1c84a');put(CX-7,cy0+5,'#c2456a');put(CX-8,cy0+6,'#c2456a');put(CX-7,cy0+6,'#f1c84a');}
+  else if(OF==='sheepvest'){const V='#8a6a4a',fl='#efe6d2';fillB((x,y)=>{const u=Math.abs(x-CX);if(u<=3)return null;let c=tone(V,x,y);if(u<=5)c=(x+y)%2?fl:shade(fl,-.1);return c;});
+    for(const s of [-1,1])for(let y=cy0+2;y<N;y++){const x=CX+s*Math.round(15*SH-((y-cy0)>>2));if(inB(x,y))put(x,y,(y%2)?fl:shade(fl,-.1));}}
+  else if(OF==='pickbag'){fillB((x,y)=>{const a=(x>>1)%2,b=(y>>1)%2;let c=tone(SHIRT,x,y);return a&&b?mixH(c,'#ffffff',.6):(a||b?mixH(c,'#ffffff',.3):c);});
+    for(let k=0;k<26;k++){const x=CX-12+k,y=cy0+Math.round(k*.55);put(x,y,'#c8b48a');put(x,y+1,'#a8946a');}
+    for(let y=cy0+8;y<N;y++)for(let x=CX+8;x<=CX+17;x++)if(inB(x,y)||x<=CX+16)put(x,y,y===cy0+8||y===cy0+9?'#a8946a':((x+y)%5===0?'#b8a47a':'#c8b48a'));
+    ellRaw(CX+12,cy0+7,1.8,1.6,'#d2493c');put(CX+11,cy0+6,'#ff8a7a');put(CX+12,cy0+5,'#6a4a30');put(CX+13,cy0+5,'#4a8a3a');}
+  else if(OF==='waders'){const R='#3f5a3a';for(let y=cy0+6;y<N;y++)for(let x=CX-7;x<=CX+7;x++){let c=tone(R,x,y);if(y===cy0+6)c=shade(R,.2);if(rnd2(x,y)<.06)c='#f4f2ee';put(x,y,c);}
+    for(const s of [-1,1]){for(let y=cy0;y<cy0+7;y++){const x=CX+s*(7+((cy0+6-y)>>1));put(x,y,R);put(x-s,y,shade(R,.15));}put(CX+s*7,cy0+6,'#c8ccd4');put(CX+s*6,cy0+6,'#c8ccd4');}}
+  else if(OF==='breton'){const nv='#2f3f6a';fillB((x,y)=>(y-cy0)%3===0?tone(nv,x,y):tone(SHIRT,x,y));coverV(SHIRT,2);for(let x=CX-NK-2;x<=CX+NK+2;x++)put(x,cy0,shade(SHIRT,-.1));
+    for(const [x,y,c] of [[CX-9,cy0+7,'#e2703f'],[CX-8,cy0+7,'#e2703f'],[CX+6,cy0+10,'#3f8fc0'],[CX+11,cy0+5,'#f1c84a'],[CX-4,cy0+12,'#5fbf5a'],[CX+12,cy0+6,'#f1c84a']])put(x,y,c);}
+  else if(OF==='labcoat'){const W='#f4f2ee',inner='#3f6f7a';fillB((x,y)=>{const u=Math.abs(x-CX),open=4-Math.max(0,(y-cy0-8))*0;if(u<=open&&y>cy0)return tone(inner,x,y);let c=tone(W,x,y);if(u===open+1)c=shade(W,-.16);return c;});
+    for(let k=0;k<7;k++){put(CX-5-k+(k>>2),cy0+1+k,shade(W,-.1));put(CX+5+k-(k>>2),cy0+1+k,shade(W,-.2));}
+    for(let x=CX+6;x<=CX+10;x++)put(x,cy0+8,shade(W,-.18));put(CX+7,cy0+6,'#3f6fb0');put(CX+7,cy0+7,'#3f6fb0');put(CX+9,cy0+6,'#c2453a');put(CX+9,cy0+7,'#c2453a');
+    for(let k=0;k<7;k++){put(CX-4+Math.round(k*.4),cy0+k,'#c2453a');}for(let y=cy0+7;y<=cy0+10;y++)for(let x=CX-3;x<=CX;x++)put(x,y,y===cy0+7?'#3f6fb0':'#ffffff');}
+  else if(OF==='fleece'){fillB((x,y)=>{let c=tone(SHIRT,x,y);if(rnd2(x,y)<.12)c=shade(c,.12);return c;});
+    for(let y=NY+2;y<=cy0+3;y++)for(let x=CX-NK-1;x<=CX+NK+1;x++)put(x,y,y<=NY+3?shade(SHIRT,.18):(x>CX+1?shade(SHIRT,-.15):SHIRT));
+    for(let y=NY+3;y<=cy0+5;y++)put(CX,y,'#c8ccd4');put(CX,cy0+5,'#e8ecf0');put(CX-1,cy0+5,'#a8acb4');
+    put(CX-8,cy0+6,'#f4f2ee');put(CX-9,cy0+7,'#f4f2ee');put(CX-8,cy0+7,'#f4f2ee');put(CX-7,cy0+7,'#f4f2ee');
+    for(let k=0;k<8;k++)put(CX+2+Math.round(k*.35),cy0+k,'#e2703f');put(CX+5,cy0+8,'#d8dce4');put(CX+6,cy0+8,'#b8bcc4');put(CX+5,cy0+9,'#d8dce4');}
+  else if(OF==='shawl'){const sw='#e8c870',swD='#c8a050';fillB((x,y)=>{const u=Math.abs(x-CX),edge=cy0+9-u*.22+(u>9?3:0);if(y<=edge&&!(u<NK-1+(y-cy0)*.5&&y>cy0)){let c=(x+y)%3===0?swD:sw;if(x>CX+6)c=shade(c,-.12);return c;}if(y>edge&&y<=edge+2&&x%2===0&&u>1)return swD;return null;});
+    put(CX+7,cy0+3,'#e8473a');put(CX+7,cy0+4,'#f0a33a');put(CX+7,cy0+2,'#3a3030');}
+  else if(OF==='donkey'){const J=SHIRT,Y='#6a4a3a';crew('#8a8a92');fillB((x,y)=>{const u=Math.abs(x-CX);if(u<=NK+1&&y<cy0+6)return null;let c=tone(J,x,y);if(y<cy0+4&&u>NK+2)c=tone(Y,x,y);if(rnd2(x,y)<.05)c='#c8c4bc';return c;});
+    for(let y=cy0+6;y<N;y++)put(CX+1,y,shade(J,-.3));for(const y of [cy0+8,cy0+11])put(CX+2,y,'#5a5a62');}
+  else if(OF==='flourapron'){const A_='#f2efe6';fillB((x,y)=>{let c=tone(SHIRT,x,y);if(rnd2(x,y)<.08)c=mixH(c,'#ffffff',.6);return c;});
+    for(let y=cy0+4;y<N;y++)for(let x=CX-5;x<=CX+5;x++){if(y===cy0+4&&Math.abs(x-CX)===5)continue;put(x,y,x>CX+3?shade(A_,-.1):A_);}
+    for(const s of [-1,1])for(let y=cy0;y<cy0+4;y++)put(CX+s*(5+((cy0+4-y)>>1)),y,A_);put(CX,cy0+8,'#d8a83a');put(CX-1,cy0+7,'#d8a83a');put(CX+1,cy0+7,'#d8a83a');put(CX,cy0+9,'#b08a3a');put(CX,cy0+10,'#b08a3a');}
+  else if(fc.outfit==='climber'){/* technical shell: high zipped collar, pack straps with a sternum strap, a coil of rope over one shoulder, a carabiner */
     const jk=SHIRT,jkL=shade(jk,.2),jkD=shade(jk,-.22),strap='#2a2a34',strapL='#4a4a58',rope='#3f8fc0',ropeL='#8fd0f0';
     for(let y=NY+2;y<=cy0+3;y++)for(let x=CX-NK-1;x<=CX+NK+1;x++)put(x,y,y===NY+2?jkL:(x>CX+1?jkD:jk));
     for(let y=NY+3;y<N;y++)put(CX,y,'#c8ccd4');put(CX,NY+2,'#e8ecf0');put(CX+1,NY+3,'#e8ecf0');
@@ -321,15 +389,7 @@ function portrait(id){if(PORT[id])return PORT[id];
   for(const s of [-1,1]){const bx=s<0?EYX(s)-1:EYX(s)+ew-2;for(let i=0;i<3;i++){tint(bx+i,ch,blush,bk);tint(bx+i,ch+1,blush,bk*.6);}}
   if(sp.freckles)for(const [a,b] of [[-6,4],[-4,5],[-7,6],[3,4],[5,5],[6,4],[-2,3],[2,3],[4,6]])put(CX+a,EY+b,sk(-.24));
   if(fc.mole)put(CX+fc.mole[0],EY+fc.mole[1],sk(-.42));
-  if(fc.outfit==='climber'){/* technical shell: high zipped collar, pack straps with a sternum strap, a coil of rope over one shoulder, a carabiner */
-    const jk=SHIRT,jkL=shade(jk,.2),jkD=shade(jk,-.22),strap='#2a2a34',strapL='#4a4a58',rope='#3f8fc0',ropeL='#8fd0f0';
-    for(let y=NY+2;y<=cy0+3;y++)for(let x=CX-NK-1;x<=CX+NK+1;x++)put(x,y,y===NY+2?jkL:(x>CX+1?jkD:jk));
-    for(let y=NY+3;y<N;y++)put(CX,y,'#c8ccd4');put(CX,NY+2,'#e8ecf0');put(CX+1,NY+3,'#e8ecf0');
-    for(const s of [-1,1]){for(let y=cy0+2;y<N;y++){const x=CX+s*(9-Math.max(0,(y-cy0-2)>>2));put(x,y,strap);put(x+s,y,strapL);}}
-    for(let x=CX-8;x<=CX+8;x++)put(x,cy0+11,x===CX?'#c8ccd4':strap);
-    for(let k=0;k<14;k++){const x=CX-17+k,y=cy0+1+Math.round(k*.7);for(let t=0;t<3;t++)put(x,y+t,((k+t)%3===0)?ropeL:rope);}
-    put(CX+12,cy0+8,'#d8dce4');put(CX+13,cy0+8,'#d8dce4');put(CX+12,cy0+9,'#d8dce4');put(CX+13,cy0+10,'#a8acb4');put(CX+12,cy0+10,'#d8dce4');}
-  else   if(fc.outfit==='coveralls'){tint(CX+fc.sep+3,EY+5,'#2a2228',.35);tint(CX+fc.sep+4,EY+5,'#2a2228',.25);tint(CX+fc.sep+4,EY+6,'#2a2228',.2);}
+  if(fc.outfit==='coveralls'){tint(CX+fc.sep+3,EY+5,'#2a2228',.35);tint(CX+fc.sep+4,EY+5,'#2a2228',.25);tint(CX+fc.sep+4,EY+6,'#2a2228',.2);}
   if(fc.nosering){put(CX-4,EY+fc.nl,'#f1c84a');}
   if(fc.dimple){const y=CY+Math.round(fc.bot)-2;put(CX,y,sk(-.16));}
   /* mouth */
