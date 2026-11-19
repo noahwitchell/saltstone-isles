@@ -26,8 +26,8 @@ page='''<!doctype html>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Saltstone">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="apple-touch-icon" href="apple-touch-icon-v3.png">
-<link rel="icon" href="icon-v3-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon-v4.png">
+<link rel="icon" href="icon-v4-192.png">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}</style>
 '''+headpart+'''
 </head><body>
@@ -38,10 +38,10 @@ page='''<!doctype html>
 open('docs/index.html','w').write(page)
 json.dump({"name":"Saltstone Isles","short_name":"Saltstone","start_url":".","scope":".","display":"fullscreen","orientation":"landscape",
   "background_color":"#1f1a2b","theme_color":"#1f1a2b",
-  "icons":[{"src":"icon-v3-192.png","sizes":"192x192","type":"image/png"},{"src":"icon-v3-512.png","sizes":"512x512","type":"image/png","purpose":"any maskable"}]},
+  "icons":[{"src":"icon-v4-192.png","sizes":"192x192","type":"image/png"},{"src":"icon-v4-512.png","sizes":"512x512","type":"image/png","purpose":"any maskable"}]},
   open('docs/manifest.webmanifest','w'),indent=1)
 open('docs/sw.js','w').write('''const CACHE='tac-%s';
-const CORE=['./','index.html','manifest.webmanifest','icon-v3-192.png','icon-v3-512.png','apple-touch-icon-v3.png',
+const CORE=['./','index.html','manifest.webmanifest','icon-v4-192.png','icon-v4-512.png','apple-touch-icon-v4.png',
  'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(CORE)).then(()=>self.skipWaiting()));});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));});

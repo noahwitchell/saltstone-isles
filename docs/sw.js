@@ -1,5 +1,5 @@
 const CACHE='tac-6d23955e99';
-const CORE=['./','index.html','manifest.webmanifest','icon-v3-192.png','icon-v3-512.png','apple-touch-icon-v3.png',
+const CORE=['./','index.html','manifest.webmanifest','icon-v4-192.png','icon-v4-512.png','apple-touch-icon-v4.png',
  'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(CORE)).then(()=>self.skipWaiting()));});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));});
