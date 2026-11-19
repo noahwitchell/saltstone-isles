@@ -1739,6 +1739,61 @@ const FORMS=[];
     gate('h_gaunt1','Into the Gauntlet',-200,0,-1,30,12,'Eight leaning slabs, left, right, left. Zigzag all the way through.');
     gate('h_gaunt2','Out of the Gauntlet',190,0,-1,30,12,'Eight leaning slabs, left, right, left. Zigzag all the way through.');shoal(180);}
   NEAR=null;
+  /* ---- 50 more, built from fourteen kinds of formation with their own sizes and shapes, out on the crossings ---- */
+  const K=(lo,hi)=>lo+fr()*(hi-lo);
+  const KIND={
+    arch(id,name,desc){const R=K(16,36),rise=K(6,42),th=K(6,10);if(!place(R+24,id,name))return;for(const e of [-1,1])column(0,e*R,-12,rise,th*1.5,th*1.05);ring(0,0,rise,R,R*K(.5,.75),0,th,0,Math.PI);cap(0,0,rise+R*.62+th*.6,th*1.6);shoal(R);
+      gate(id,'Under '+name,0,0,-1,rise+R*.5-th,R-th*1.2,desc);},
+    skip(id,name,desc){const n=5+(fr()*3|0),R=K(14,19),sp=K(26,34);if(!place(n*sp/2+40,id,name))return;let first,last;for(let k=0;k<n;k++){const a=-(n-1)*sp/2+k*sp,b=Math.sin(k*1.1)*K(0,8),rise=K(.5,3);ring(a,b,rise,R,R*.55,0,5);if(!k)first={a,b,rise};last={a,b,rise};}
+      gate(id+'1','Onto '+name,first.a,first.b,-1,first.rise+R*.55-5,R-6,desc);gate(id+'2','Off '+name,last.a,last.b,-1,last.rise+R*.55-5,R-6,desc);shoal(n*sp/2);},
+    comb(id,name,desc){const half=K(55,85),gap=K(7,10);if(!place(half+30,id,name))return;for(let b=-half;b<=half;b+=K(11,15)){if(Math.abs(b)<gap+3)continue;column(0,b,-12,K(26,62),K(4,5.5),K(2.2,3.4));}
+      for(let b=-half;b<=half;b+=6)rock(0,b,-2,5,3);gate(id,'Through '+name,0,0,-1,24,gap-1,desc);shoal(half);},
+    fork(id,name,desc){const R=K(13,17),off=R+K(10,16),rise=K(8,20);if(!place(off+R+30,id,name))return;column(0,0,-12,rise+R*.7,K(9,12),K(6,8));cap(0,0,rise+R*.7+3,8);
+      for(const e of [-1,1]){column(0,e*(off+R),-12,rise,7,5.5);ring(0,e*off,rise,R,R*.7,0,6,0,Math.PI);gate(id+(e<0?'L':'R'),(e<0?'Left':'Right')+' prong of '+name,0,e*off,-1,rise+R*.7-6,R-6,desc);}shoal(off+R);},
+    stairs(id,name,desc){const n=5,R=K(17,23),sp=K(50,64),top=K(46,60);if(!place(n*sp/2+30,id,name))return;for(let k=0;k<n;k++){const a=-(n-1)*sp/2+k*sp,rise=top-k*(top-6)/(n-1),b=k*K(-4,4);for(const e of [-1,1])column(a,b+e*R,-12,rise,7.5,5.5);ring(a,b,rise,R,R*.6,0,6.5,0,Math.PI);
+        if(k===0)gate(id+'1','Top of '+name,a,b,-1,rise+R*.6-6.5,R-7,desc);if(k===n-1)gate(id+'2','Bottom of '+name,a,b,-1,rise+R*.6-6.5,R-7,desc);}shoal(n*sp/2);},
+    eye(id,name,desc){const Ro=K(62,80),Ri=K(24,32);if(!place(Ro+30,id,name))return;const no=12,ni=7;for(let k=0;k<no;k++){const t=k/no*TAU+.26;if(Math.abs(Math.sin(t))<.2&&Math.cos(t)<0)continue;column(Math.cos(t)*Ro,Math.sin(t)*Ro,-12,K(30,60),K(5,7),K(3,4));}
+      for(let k=0;k<ni;k++){const t=k/ni*TAU;column(Math.cos(t)*Ri,Math.sin(t)*Ri,-12,K(40,75),K(4,5.5),K(2.5,3.5));}
+      gate(id,'Into '+name,-Ro,0,-1,26,12,desc);gate(id+'c','Round '+name,0,(Ro+Ri)/2,-1,26,(Ro-Ri)/2-6,desc);shoal(Ro);},
+    ribs(id,name,desc){const n=6,R0=K(26,32),sp=K(36,46),curve=K(-.4,.4);if(!place(n*sp/2+40,id,name))return;let first,last;for(let k=0;k<n;k++){const a=-(n-1)*sp/2+k*sp,R=R0-k*(R0-17)/(n-1),b=Math.sin(k*.6)*curve*30,rise=K(3,8);
+        for(const e of [-1,1])column(a,b+e*R,-12,rise,6.5,5);ring(a,b,rise,R,R,0,6,0,Math.PI);if(!k)first={a,b,R,rise};last={a,b,R,rise};}
+      rock(first.a-30,first.b,4,12,9);rock(first.a-42,first.b,7,9,7);
+      gate(id+'1','Into '+name,first.a,first.b,-1,first.rise+first.R-7,first.R-7,desc);gate(id+'2','Out of '+name,last.a,last.b,-1,last.rise+last.R-7,last.R-7,desc);shoal(n*sp/2);},
+    chandelier(id,name,desc){const R=K(32,40),rise=K(26,38),th=8;if(!place(R+30,id,name))return;for(const e of [-1,1])column(0,e*R,-12,rise,th*1.4,th);ring(0,0,rise,R,R*.6,0,th,0,Math.PI);cap(0,0,rise+R*.6+th*.6,10);
+      const top=rise+R*.6-th*.6;for(const b of [-14,0,14]){const len=K(12,20);for(let y=top;y>top-len;y-=4.5)rock(0,b+(fr()-.5)*1.5,y,3.4,2.6);}
+      gate(id+'L','Left of '+name+'’s drops',0,-7,-1,top-8,3.5,desc);gate(id+'R','Right of '+name+'’s drops',0,7,-1,top-8,3.5,desc);shoal(R);},
+    goal(id,name,desc){const n=3,sp=K(60,80);if(!place(n*sp/2+30,id,name))return;for(let k=0;k<n;k++){const a=-(n-1)*sp/2+k*sp,w=K(11,15),h=38+k*K(10,16),b=K(-12,12);for(const e of [-1,1])column(a,b+e*w,-12,h,5,4);for(let q=-w;q<=w;q+=4)rock(a,b+q,h+2,3.4,2.6);
+        if(k===0)gate(id+'1','Through '+name,a,b,-1,h-2,w-5,desc);if(k===n-1)gate(id+'2','Through the last of '+name,a,b,-1,h-2,w-5,desc);}shoal(n*sp/2);},
+    tube(id,name,desc){const n=7,sp=K(11,14),R=K(13,16),cy=R+K(1,6);if(!place(n*sp/2+30,id,name))return;for(let k=0;k<n;k++){const a=-(n-1)*sp/2+k*sp;ring(a,Math.sin(k*.5)*3,cy,R,R,0,6);}
+      for(const e of [-1,1])column(-(n-1)*sp/2,e*R*.6,-12,cy-R+2,7,6);gate(id+'1','Into '+name,-(n-1)*sp/2,0,cy-R+6,cy+R-6,R-7,desc);gate(id+'2','Out of '+name,(n-1)*sp/2,Math.sin((n-1)*.5)*3,cy-R+6,cy+R-6,R-7,desc);shoal(n*sp/2);},
+    hoops(id,name,desc){const n=5,sp=K(46,58),R=K(9,12);if(!place(n*sp/2+30,id,name))return;let first,last;for(let k=0;k<n;k++){const a=-(n-1)*sp/2+k*sp,b=(k%2?1:-1)*K(14,24),cy=K(24,52);ring(a,b,cy,R,R,0,4.5);column(a,b,-12,cy-R,4,3);if(!k)first={a,b,cy};last={a,b,cy};}
+      gate(id+'1','Through the first of '+name,first.a,first.b,first.cy-R+4.5,first.cy+R-4.5,R-5.5,desc);gate(id+'2','Through the last of '+name,last.a,last.b,last.cy-R+4.5,last.cy+R-4.5,R-5.5,desc);shoal(n*sp/2);},
+    slalom(id,name,desc){const n=5,sp=K(48,62),w=K(9,12);if(!place(n*sp/2+30,id,name))return;let first,last;for(let k=0;k<n;k++){const a=-(n-1)*sp/2+k*sp,b=(k%2?1:-1)*K(10,22);for(const e of [-1,1])column(a,b+e*w,-12,K(40,70),K(5,6.5),K(2.5,3.5));if(!k)first={a,b};last={a,b};}
+      gate(id+'1','Into '+name,first.a,first.b,-1,36,w-5,desc);gate(id+'2','Out of '+name,last.a,last.b,-1,36,w-5,desc);shoal(n*sp/2);},
+    window(id,name,desc,slot){const W=K(50,70),H=K(55,75),hw=slot?K(11,14):K(9,13),hh=slot?K(3.5,4.5):hw,yc=slot?K(10,16):K(22,36);if(!place(W+30,id,name))return;
+      for(let b=-W;b<=W;b+=6.5)for(let y=0;y<=H*(1-Math.pow(Math.abs(b)/W,2)*.6);y+=6.5){if(Math.abs(b)<hw+3.5&&Math.abs(y-yc)<hh+3.5)continue;rock((fr()-.5)*3,b,y,4.6,4.2);}
+      gate(id,'Through '+name,0,0,yc-hh+1,yc+hh-1,hw-2,desc);shoal(W);},
+    lean(id,name,desc){const half=K(26,34),top=K(70,95);if(!place(half+40,id,name))return;for(const e of [-1,1])for(let k=0;k<=12;k++){const t=k/12,b=e*lerp(half,4,t),y=lerp(-8,top,t),s=lerp(10,5,t);rock(-3,b,y,s,s*1.2);rock(4,b,y+3,s*.9,s*1.1);}
+      gate(id,'Under '+name,0,0,-1,top*.45,half*.45,desc);shoal(half);},
+  };
+  const MORE=[
+    ['arch','m_puffin','Puffin Arch','A stubby arch the puffins use as a doorstep.'],['arch','m_gannetarch','Gannet Arch','Tall and white with gannets. Mind the dive-bombers.'],['arch','m_doorstep','The Old Doorstep','An arch so worn the sea has nearly finished with it.'],
+    ['arch','m_fiddler','Fiddler’s Arch','They say a fiddler played under it all one winter. Nobody says why.'],['arch','m_potarch','Lobster Pot Arch','The lobstermen’s shortcut home, if the tide is kind.'],['arch','m_shag','Shag Rock Arch','A black arch streaked white. Shags, not snow.'],
+    ['skip','m_skip','The Skipping Stones','Low flat arches just above the waves, like stones skipped across the sea. Stay low.'],['skip','m_drakes','Ducks and Drakes','A row of tiny arches, skimming height. Wheels nearly wet.'],['skip','m_stepping','The Stepping Stones','Arch, arch, arch, arch. A path for a giant, or a very low plane.'],['skip','m_pebble','The Pebble Run','Little arches in a wobbly line. Thread them all without climbing.'],
+    ['comb','m_comb','The Comb','A wall of thin stone teeth with one gap in the middle. Find it.'],['comb','m_gullteeth','Gull’s Teeth','Jagged teeth in a long line, and one gap just wide enough.'],['comb','m_picket','The Picket Fence','A fence of stone posts out at sea. One post is missing.'],['comb','m_rake','The Rake','Long tines of rock. Fly between the middle two.'],
+    ['fork','m_fork','The Fork','One rock, two channels, an arch over each. Take both.'],['fork','m_twoways','Two Ways','Left or right? Both, eventually.'],['fork','m_tuning','The Tuning Fork','Two prongs that hum in a gale. Fly through each.'],
+    ['stairs','m_bridgerun','The Bridge Run','Five arches stepping down to the sea, like stairs. Start at the top.'],['stairs','m_staircase','The Staircase','Each arch a step lower than the last. Mind the bottom step.'],['stairs','m_steps','Down the Steps','Down, down, down. A staircase for planes.'],
+    ['eye','m_eye','Eye of the Storm','A ring of spires around a ring of spires. Get in, go round, get out.'],['eye','m_kings','The Ring of Kings','Twelve tall stones round seven taller ones. Circle the middle.'],['eye','m_bandstand','The Bandstand','A stone bandstand out at sea. Round and round the inner ring.'],
+    ['ribs','m_whale','Whale Ribs','The bones of a whale bigger than any whale, half under the sea. Through the ribs, head to tail.'],['ribs','m_wreckribs','The Old Wreck Ribs','Stone ribs like an old ship’s timbers. In at the bow, out at the stern.'],['ribs','m_fishbone','The Fishbone','Ribs getting smaller, like the fish is swimming away.'],
+    ['chandelier','m_chandelier','The Chandelier','A great arch hung with stone drops. Thread between them.'],['chandelier','m_icicles','The Icicles','Stone icicles hanging from an arch. They have not melted in ten thousand years.'],['chandelier','m_belltower','The Bell Tower','An arch with stone bells hanging inside. Ring none of them.'],
+    ['goal','m_goalposts','The Goalposts','Three stone goals, each taller than the last. Score three.'],['goal','m_tallgates','The Tall Gates','Three gates of rock in a row, climbing as they go.'],['goal','m_frames','The Door Frames','Doors with nothing to open, stepping up out at sea.'],
+    ['tube','m_drainpipe','The Drainpipe','A tube of rock right down at the water. Fly the length of it.'],['tube','m_longtube','The Long Tube','Seven rings of rock end to end, like a tunnel with the walls left off.'],['tube','m_smugglers','Smugglers’ Pipe','Where the smugglers hid, they say. A long rock pipe with light at the end.'],['tube','m_spyglass','The Spyglass','Look down it from one end and you can see the other. Then fly it.'],
+    ['hoops','m_hooprun','The Hoop Run','Five rings on stalks, zigzagging. Through every one.'],['hoops','m_circus','The Circus Rings','Hoops of rock like a circus act. You’re the dog.'],['hoops','m_bubbles','The Bubble Rings','Rings of rock like bubbles blown by something enormous under the sea.'],['hoops','m_lifebuoys','The Lifebuoys','Stone lifebuoys on poles. Through them all for luck.'],
+    ['slalom','m_longslalom','The Long Slalom','Five pairs of spires swinging left and right. Bank, bank, bank.'],['slalom','m_skerry','Skerry Slalom','The skerries make a slalom if you squint. Don’t squint while flying it.'],['slalom','m_weave','The Weave','Pairs of spires stepped side to side. Weave through.'],['slalom','m_chicane','The Chicane','A quick left-right through stone posts. Racers love it.'],
+    ['window','m_porthole','The Porthole','A round hole through a wall of rock, like a ship’s porthole.',false],['window','m_letterbox','The Letterbox','A long, low slot through a wall of rock. Post yourself through it.',true],['window','m_window','The Window','A wall of rock with a window in it. Open, thankfully.',false],
+    ['lean','m_tent','The Tent','Two slabs leaning on each other like a tent. In the front door, out the back.'],['lean','m_leaners','The Leaning Sisters','Two rocks leaning together, whispering. Fly between them.'],['lean','m_wigwam','The Wigwam','Rock leaning on rock, a pointed roof over the water.'],
+  ];
+  for(const [k,id,name,desc,extra] of MORE)KIND[k](id,name,desc,extra);
 
   addCells(it,toon(),2500,shadowy);if(grass.length)addCells(grass,toon(),2500,shadowy);
   if(foamIt.length){const fmM=new THREE.MeshBasicMaterial({color:0xf6f1e4,transparent:true,opacity:.55,depthWrite:false});addCells(foamIt,fmM,2500,m=>{m.renderOrder=2;return m;});
@@ -1908,11 +1963,11 @@ const trees=[];
 /* ---------------- clouds ---------------- */
 const cloudGroup=new THREE.Group();scene.add(cloudGroup);const CLOUDS=[],CLOUD_CELLS=[];
 (function clouds(){const it=[];
-  for(let c=0;c<120;c++){const cx=(rnd()-.5)*44000,cz=(rnd()-.5)*19000,cy=620+rnd()*380;const n=5+(rnd()*5|0);const cl=CLOUDS.length;CLOUDS.push({x:cx,y:cy+10,z:cz,r:190});
+  for(let c=0;c<360;c++){const cx=(rnd()-.5)*44000,cz=(rnd()-.5)*19000,cy=620+rnd()*380;const n=5+(rnd()*5|0);const cl=CLOUDS.length;CLOUDS.push({x:cx,y:cy+10,z:cz,r:190});
     for(let k=0;k<n;k++){const s=40+rnd()*60;const y=cy+(rnd()-.3)*20;
       it.push({geo:new THREE.IcosahedronGeometry(1,1),m:M([cx+(rnd()-.5)*220,y,cz+(rnd()-.5)*120],[0,rnd()*3,0],[s,s*.55,s*.9]),color:y>cy?0xfff8f0:0xeae2f2,cl});}}
   // low cumulus: flat bases, stacked tiers of puffs that tower in the middle, and small satellite puffs round the edges
-  let low=0;for(let tries=0;low<130&&tries<1600;tries++){const cx=(rnd()-.5)*44000,cz=(rnd()-.5)*19000;
+  let low=0;for(let tries=0;low<390&&tries<6000;tries++){const cx=(rnd()-.5)*44000,cz=(rnd()-.5)*19000;
     if(STRIPS.some(s=>Math.hypot(s.x-cx,s.z-cz)<1100))continue;let gh=0;for(let k=0;k<5;k++)gh=Math.max(gh,groundH(cx+(k-2)*90,cz+((k*7)%5-2)*60));
     const base=Math.max(230+rnd()*170,gh+150),R=70+rnd()*80,ax=rnd()*TAU,ca=Math.cos(ax),sa=Math.sin(ax),el=.55+rnd()*.35;low++;const cl=CLOUDS.length;CLOUDS.push({x:cx,y:base+R*.55,z:cz,r:R*1.3});
     const P=(u,v,y,s,sy,col)=>it.push({geo:new THREE.IcosahedronGeometry(1,1),m:M([cx+u*ca-v*sa,y,cz+u*sa+v*ca],[rnd()*.4,rnd()*3,rnd()*.4],[s*(.9+rnd()*.25),s*sy,s*(.9+rnd()*.25)]),color:col,cl});
@@ -3145,7 +3200,7 @@ function settingsCard(){
   const mv=[['OFF',0],['SOFT',.5],['ON',1]].map(([n,v])=>`<button data-mv="${v}" class="${(settings.music??.5)==v?'primary':''}">${n}</button>`).join('');
   const st=STATIONS.map(S=>`<button data-st="${S.id}" class="${settings.station===S.id?'primary':''}">${S.fq} ${S.name.toUpperCase()}</button>`).join('');
   const lt=Object.keys(TOD).map(k=>`<button data-lt="${k}" class="${settings.light===k?'primary':''}">${TOD[k].name.toUpperCase()}</button>`).join('');
-  showCard(`<h2>Settings</h2><div class="sub">ASSISTS · TURN THEM OFF ONE AT A TIME AS YOU IMPROVE</div>${rows}<h3>ENGINE VOLUME</h3><div class="btns">${ev}</div><h3>RADIO VOLUME</h3><div class="btns">${mv}</div><h3>RADIO STATION · OR TAP THE DIAL UP TOP WHILE FLYING</h3><div class="btns">${st}</div><h3>TIME OF DAY</h3><div class="btns">${lt}</div><h3>WEATHER · TRYING IT OUT</h3><div class="btns">${Object.entries(WX).map(([k,W])=>`<button data-wx="${k}" class="${settings.weather===k?'primary':''}">${W.name.toUpperCase()}</button>`).join('')}</div><h3>PIXELS</h3><div class="btns">${px}</div><div class="sub" style="margin-top:14px">BUILD ec3bf6e</div>`,[['Back',back,true]]);
+  showCard(`<h2>Settings</h2><div class="sub">ASSISTS · TURN THEM OFF ONE AT A TIME AS YOU IMPROVE</div>${rows}<h3>ENGINE VOLUME</h3><div class="btns">${ev}</div><h3>RADIO VOLUME</h3><div class="btns">${mv}</div><h3>RADIO STATION · OR TAP THE DIAL UP TOP WHILE FLYING</h3><div class="btns">${st}</div><h3>TIME OF DAY</h3><div class="btns">${lt}</div><h3>WEATHER · TRYING IT OUT</h3><div class="btns">${Object.entries(WX).map(([k,W])=>`<button data-wx="${k}" class="${settings.weather===k?'primary':''}">${W.name.toUpperCase()}</button>`).join('')}</div><h3>PIXELS</h3><div class="btns">${px}</div><div class="sub" style="margin-top:14px">BUILD 6021adc</div>`,[['Back',back,true]]);
   const cb=$('cardBody');
   cb.querySelectorAll('[data-k]').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.k;if(k==='tilt'){if(!settings.tilt){settings.tilt=true;saveS();enableTilt().then(()=>{updTiltUI();settingsCard();});}else{settings.tilt=false;saveS();disableTilt();updTiltUI();settingsCard();}return;}settings[k]=!settings[k];saveS();if(k==='sound')snd.setOn(settings.sound);if(k==='fps'){$('fps').hidden=!settings.fps;$('fps').textContent='FPS: measuring…';fpsN=fpsT=0;fpsLast=0;}if(k==='sound')music.setVol();settingsCard();}));
   cb.querySelectorAll('[data-px]').forEach(b=>b.addEventListener('click',()=>{settings.pixels=b.dataset.px;pixMode=settings.pixels;saveS();resize();settingsCard();}));
