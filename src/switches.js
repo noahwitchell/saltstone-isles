@@ -79,7 +79,7 @@ function updSmoke(dt){
   for(let i=0;i<SMOKE_N;i++){const q=SMK[i];if(q.t<0)continue;any=true;q.t+=dt;if(q.t>SMOKE_LIFE){q.t=-1;smokeTrail.setMatrixAt(i,_tm.makeScale(0,0,0));continue;}
     q.p.addScaledVector(q.v,dt);const u=q.t/SMOKE_LIFE,sc=(1.7+Math.min(Math.sqrt(q.t)*1.5,9))*(u>.88?(1-u)/.12:1);
     _tq.setFromAxisAngle(_wy,q.r+q.t*.1);smokeTrail.setMatrixAt(i,_tm.compose(q.p,_tq,_ts.setScalar(sc)));}
-  if(any)smokeTrail.instanceMatrix.needsUpdate=true;
+  smokeTrail.visible=any;if(any)smokeTrail.instanceMatrix.needsUpdate=true;
   const T=TOD[tod],U=smokeMat.uniforms;U.uTint.value=clamp(T.sunI*.55+T.hemiI*.55,.3,1.05);U.fogNear.value=scene.fog.near;U.fogFar.value=scene.fog.far;}
 
 /* ---- searchlight ----

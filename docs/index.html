@@ -633,7 +633,7 @@ function addChunk(m,cx,cy,cz,r){m.geometry.boundingSphere=new THREE.Sphere(new V
    (frustum culling) or far away (cullChunks), instead of the whole world's rocks being drawn every frame */
 function addCells(items,mat,cell=2500,wrap=m=>m){const g=new Map();for(const it of items){const e=it.m.elements,k=Math.floor(e[12]/cell)+','+Math.floor(e[14]/cell);if(!g.has(k))g.set(k,[]);g.get(k).push(it);}
   for(const list of g.values()){const m=wrap(new THREE.Mesh(merge(list),mat));m.geometry.computeBoundingSphere();const s=m.geometry.boundingSphere;scene.add(m);addChunk(m,s.center.x,s.center.y,s.center.z,s.radius);}}
-function cullChunks(p){for(const c of CHUNKS)c.m.visible=Math.hypot(c.x-p.x,c.z-p.z)<c.r+7500;}
+function cullChunks(p){for(const c of CHUNKS)c.m.visible=Math.hypot(c.x-p.x,c.z-p.z)<c.r+7500;if(typeof cullClouds==='function')cullClouds(p);}
 function byChunk(list){const g=new Map();for(const t of list){const k=chunkKey(t.x,t.z);if(!g.has(k))g.set(k,[]);g.get(k).push(t);}return [...g.values()];}
 function boundsOf(list,pad){let x=0,y=0,z=0;for(const t of list){x+=t.x;y+=t.h||0;z+=t.z;}x/=list.length;y/=list.length;z/=list.length;let r=0;for(const t of list)r=Math.max(r,Math.hypot(t.x-x,(t.h||0)-y,t.z-z));return [x,y,z,r+pad];}
 let glideCock=null,tachCock=null;
@@ -1897,15 +1897,16 @@ const trees=[];
     if(sl>.38||h>380){if(rock.length<1400&&rnd()<.6)rock.push({x,z,h,s:1+rnd()*3.5});continue;}
     if(isFarm(x,z,h,sl))continue;if(Math.hypot(x-vc.x,z-vc.z)<200)continue;
     if(bush.length<4500&&rnd()<.55+smooth(-.2,.2,fbm(x*.0026,z*.0026,3,41))*.4)bush.push({x,z,h,s:.35+rnd()*.3});else if(rock.length<1400&&rnd()<.08)rock.push({x,z,h,s:.8+rnd()*1.6});}
-  const bm=new THREE.InstancedMesh(new THREE.IcosahedronGeometry(3.4,0).translate(0,2.2,0),mat,bush.length),rm=new THREE.InstancedMesh(new THREE.DodecahedronGeometry(1,0),mat,rock.length),mm=new THREE.Matrix4(),c=new THREE.Color();
+  // chunked like the trees, so far-off ones aren't drawn
+  const mm=new THREE.Matrix4(),c=new THREE.Color(),bGeo=new THREE.IcosahedronGeometry(3.4,0).translate(0,2.2,0),rGeo=new THREE.DodecahedronGeometry(1,0);
   const bc=[0x5f8f3e,0x6e9c45,0x7aa64c,0x8a9c48,0xa89a50];const rc=[0x9c8a80,0x8a7a74,0xa89a90,0x7e7068];
-  bush.forEach((b,i)=>{mm.compose(new V3(b.x,b.h-.3,b.z),new Q().setFromEuler(new THREE.Euler(0,hash2(i,5,5)*6,0)),new V3(b.s*1.2,b.s*(.7+hash2(i,6,6)*.3),b.s*1.2));bm.setMatrixAt(i,mm);c.setHex(bc[(hash2(i,8,2)*bc.length)|0]);bm.setColorAt(i,c);});
-  rock.forEach((r,i)=>{mm.compose(new V3(r.x,r.h,r.z),new Q().setFromEuler(new THREE.Euler(hash2(i,1,7)*3,hash2(i,2,7)*6,0)),new V3(r.s*1.3,r.s*.8,r.s));rm.setMatrixAt(i,mm);c.setHex(rc[(hash2(i,3,7)*rc.length)|0]);rm.setColorAt(i,c);});
-  bm.castShadow=rm.castShadow=true;bm.receiveShadow=rm.receiveShadow=true;scene.add(bm,rm);
+  const inst=(all,geo,set)=>{const idx=new Map(all.map((t,i)=>[t,i]));for(const list of byChunk(all)){const m=new THREE.InstancedMesh(geo,mat,list.length);list.forEach((t,j)=>{set(m,j,t,idx.get(t));});m.castShadow=m.receiveShadow=true;scene.add(addChunk(m,...boundsOf(list,12)));}};
+  inst(bush,bGeo,(m,j,b,i)=>{mm.compose(new V3(b.x,b.h-.3,b.z),new Q().setFromEuler(new THREE.Euler(0,hash2(i,5,5)*6,0)),new V3(b.s*1.2,b.s*(.7+hash2(i,6,6)*.3),b.s*1.2));m.setMatrixAt(j,mm);c.setHex(bc[(hash2(i,8,2)*bc.length)|0]);m.setColorAt(j,c);});
+  inst(rock,rGeo,(m,j,r,i)=>{mm.compose(new V3(r.x,r.h,r.z),new Q().setFromEuler(new THREE.Euler(hash2(i,1,7)*3,hash2(i,2,7)*6,0)),new V3(r.s*1.3,r.s*.8,r.s));m.setMatrixAt(j,mm);c.setHex(rc[(hash2(i,3,7)*rc.length)|0]);m.setColorAt(j,c);});
 })();
 
 /* ---------------- clouds ---------------- */
-const cloudGroup=new THREE.Group();scene.add(cloudGroup);const CLOUDS=[];
+const cloudGroup=new THREE.Group();scene.add(cloudGroup);const CLOUDS=[],CLOUD_CELLS=[];
 (function clouds(){const it=[];
   for(let c=0;c<120;c++){const cx=(rnd()-.5)*44000,cz=(rnd()-.5)*19000,cy=620+rnd()*380;const n=5+(rnd()*5|0);const cl=CLOUDS.length;CLOUDS.push({x:cx,y:cy+10,z:cz,r:190});
     for(let k=0;k<n;k++){const s=40+rnd()*60;const y=cy+(rnd()-.3)*20;
@@ -1921,9 +1922,11 @@ const cloudGroup=new THREE.Group();scene.add(cloudGroup);const CLOUDS=[];
     const ns=3+(rnd()*4|0);for(let k=0;k<ns;k++){const a=rnd()*TAU,d=R*(1+rnd()*.35);P(Math.cos(a)*d,Math.sin(a)*d*el,base+8+rnd()*14,R*(.1+rnd()*.1),.7,0xf6f0f4);}}
   /* every cloud fades out as you fly into it: each vertex carries its cloud's centre and size (cc), the opaque pass
      draws clouds you're well clear of, and a see-through pass draws the ones you're entering at their faded opacity */
-  const geo=merge(it),cc=new Float32Array(geo.attributes.position.count*4);let o=0;
-  it.forEach((q,i)=>{const n=q.geo.index?q.geo.index.count:q.geo.attributes.position.count,c=CLOUDS[q.cl];for(let k=0;k<n;k++,o++){cc[o*4]=c.x;cc[o*4+1]=c.y;cc[o*4+2]=c.z;cc[o*4+3]=c.r;}});
-  geo.setAttribute('cc',new THREE.BufferAttribute(cc,4));
+  /* clouds are built in 4 km cells (see cullClouds): each cell's geometry carries every vertex's cloud centre and size (cc) */
+  const cellOf=q=>{const c=CLOUDS[q.cl];return Math.floor(c.x/4000)+','+Math.floor(c.z/4000);},cells=new Map();for(const q of it){const k=cellOf(q);if(!cells.has(k))cells.set(k,[]);cells.get(k).push(q);}
+  const cellGeo=list=>{const geo=merge(list),cc=new Float32Array(geo.attributes.position.count*4);let o=0;
+    list.forEach(q=>{const n=q.geo.index?q.geo.index.count:q.geo.attributes.position.count,c=CLOUDS[q.cl];for(let k=0;k<n;k++,o++){cc[o*4]=c.x;cc[o*4+1]=c.y;cc[o*4+2]=c.z;cc[o*4+3]=c.r;}});
+    geo.setAttribute('cc',new THREE.BufferAttribute(cc,4));geo.computeBoundingSphere();return geo;};
   /* clouds look solid until you get close, then fade out smoothly as you fly into them. Clouds you're clear of draw in
      the opaque pass; the ones you're entering draw in a see-through pass at their faded opacity. That pass still writes
      depth, so each cloud's inner puffs stay hidden behind its outer ones (without it they drew in random order and
@@ -1936,8 +1939,13 @@ const cloudGroup=new THREE.Group();scene.add(cloudGroup);const CLOUDS=[];
     const keep=['if(vFade<.999)discard;','if(vFade>=.999||vFade<.3)discard;','if(vFade>=.3||vFade<.01)discard;'][k];
     sh.fragmentShader='varying float vFade;\n'+sh.fragmentShader.replace('void main() {','void main() {\n'+keep).replace('#include <dithering_fragment>','#include <dithering_fragment>\ngl_FragColor.a*='+(k?'vFade*vFade':'1.')+';');};
     m.customProgramCacheKey=()=>'cloudFade'+k;return m;};
-  cloudGroup.add(new THREE.Mesh(geo,cmat(0)));for(const k of [1,2]){const sm=new THREE.Mesh(geo,cmat(k));sm.renderOrder=4+k;cloudGroup.add(sm);}
+  const M0=cmat(0),M1=cmat(1),M2=cmat(2);
+  for(const list of cells.values()){const geo=cellGeo(list),bs=geo.boundingSphere,solid=new THREE.Mesh(geo,M0),fade=[1,2].map(k=>{const sm=new THREE.Mesh(geo,k===1?M1:M2);sm.renderOrder=4+k;sm.visible=false;return sm;});
+    cloudGroup.add(solid,...fade);CLOUD_CELLS.push({x:bs.center.x,z:bs.center.z,r:bs.radius,solid,fade});}
 })();
+/* draw only the clouds that matter: a cell's solid pass when it's within sight, its two fade passes only when you're
+   close enough to be flying into one of its clouds (the shader discards everything else anyway) */
+function cullClouds(p){const gx=cloudGroup.position.x,gz=cloudGroup.position.z;for(const c of CLOUD_CELLS){const d=Math.hypot(c.x+gx-p.x,c.z+gz-p.z)-c.r;c.solid.visible=d<9000;const near=d<700;c.fade[0].visible=c.fade[1].visible=near;}}
 /* how deep in a cloud the camera is (0 clear .. 1 in the middle): drives a soft white-out in the post pass */
 function cloudMist(p){let m=0;const gx=cloudGroup.position.x,gz=cloudGroup.position.z;for(const c of CLOUDS){const dy=p.y-c.y;if(Math.abs(dy)>c.r)continue;
   const d=Math.hypot(p.x-c.x-gx,dy*1.4,p.z-c.z-gz)/c.r;if(d<.9)m=Math.max(m,1-smooth(.3,.9,d));}return m;}
@@ -3133,7 +3141,7 @@ function settingsCard(){
   const mv=[['OFF',0],['SOFT',.5],['ON',1]].map(([n,v])=>`<button data-mv="${v}" class="${(settings.music??.5)==v?'primary':''}">${n}</button>`).join('');
   const st=STATIONS.map(S=>`<button data-st="${S.id}" class="${settings.station===S.id?'primary':''}">${S.fq} ${S.name.toUpperCase()}</button>`).join('');
   const lt=Object.keys(TOD).map(k=>`<button data-lt="${k}" class="${settings.light===k?'primary':''}">${TOD[k].name.toUpperCase()}</button>`).join('');
-  showCard(`<h2>Settings</h2><div class="sub">ASSISTS · TURN THEM OFF ONE AT A TIME AS YOU IMPROVE</div>${rows}<h3>ENGINE VOLUME</h3><div class="btns">${ev}</div><h3>RADIO VOLUME</h3><div class="btns">${mv}</div><h3>RADIO STATION · OR TAP THE DIAL UP TOP WHILE FLYING</h3><div class="btns">${st}</div><h3>TIME OF DAY</h3><div class="btns">${lt}</div><h3>WEATHER · TRYING IT OUT</h3><div class="btns">${Object.entries(WX).map(([k,W])=>`<button data-wx="${k}" class="${settings.weather===k?'primary':''}">${W.name.toUpperCase()}</button>`).join('')}</div><h3>PIXELS</h3><div class="btns">${px}</div><div class="sub" style="margin-top:14px">BUILD 7aea00e</div>`,[['Back',back,true]]);
+  showCard(`<h2>Settings</h2><div class="sub">ASSISTS · TURN THEM OFF ONE AT A TIME AS YOU IMPROVE</div>${rows}<h3>ENGINE VOLUME</h3><div class="btns">${ev}</div><h3>RADIO VOLUME</h3><div class="btns">${mv}</div><h3>RADIO STATION · OR TAP THE DIAL UP TOP WHILE FLYING</h3><div class="btns">${st}</div><h3>TIME OF DAY</h3><div class="btns">${lt}</div><h3>WEATHER · TRYING IT OUT</h3><div class="btns">${Object.entries(WX).map(([k,W])=>`<button data-wx="${k}" class="${settings.weather===k?'primary':''}">${W.name.toUpperCase()}</button>`).join('')}</div><h3>PIXELS</h3><div class="btns">${px}</div><div class="sub" style="margin-top:14px">BUILD e583a60</div>`,[['Back',back,true]]);
   const cb=$('cardBody');
   cb.querySelectorAll('[data-k]').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.k;if(k==='tilt'){if(!settings.tilt){settings.tilt=true;saveS();enableTilt().then(()=>{updTiltUI();settingsCard();});}else{settings.tilt=false;saveS();disableTilt();updTiltUI();settingsCard();}return;}settings[k]=!settings[k];saveS();if(k==='sound')snd.setOn(settings.sound);if(k==='fps'){$('fps').hidden=!settings.fps;$('fps').textContent='FPS: measuring…';fpsN=fpsT=0;fpsLast=0;}if(k==='sound')music.setVol();settingsCard();}));
   cb.querySelectorAll('[data-px]').forEach(b=>b.addEventListener('click',()=>{settings.pixels=b.dataset.px;pixMode=settings.pixels;saveS();resize();settingsCard();}));
@@ -3784,7 +3792,7 @@ function updSmoke(dt){
   for(let i=0;i<SMOKE_N;i++){const q=SMK[i];if(q.t<0)continue;any=true;q.t+=dt;if(q.t>SMOKE_LIFE){q.t=-1;smokeTrail.setMatrixAt(i,_tm.makeScale(0,0,0));continue;}
     q.p.addScaledVector(q.v,dt);const u=q.t/SMOKE_LIFE,sc=(1.7+Math.min(Math.sqrt(q.t)*1.5,9))*(u>.88?(1-u)/.12:1);
     _tq.setFromAxisAngle(_wy,q.r+q.t*.1);smokeTrail.setMatrixAt(i,_tm.compose(q.p,_tq,_ts.setScalar(sc)));}
-  if(any)smokeTrail.instanceMatrix.needsUpdate=true;
+  smokeTrail.visible=any;if(any)smokeTrail.instanceMatrix.needsUpdate=true;
   const T=TOD[tod],U=smokeMat.uniforms;U.uTint.value=clamp(T.sunI*.55+T.hemiI*.55,.3,1.05);U.fogNear.value=scene.fog.near;U.fogFar.value=scene.fog.far;}
 
 /* ---- searchlight ----
