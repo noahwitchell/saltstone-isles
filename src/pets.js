@@ -21,54 +21,75 @@ const petCry=()=>PET_SOUNDS[petSnd()][0]+'!';
 const petLook=()=>petName()+"'s "+PET_SPECIES[settings.pet.sp].look;
 const petIdle=()=>petName()+' '+PET_SPECIES[settings.pet.sp].idle;
 const hx=s=>parseInt(s.slice(1),16);
-/* shapes per species. Head faces -z. Ears pivot where they join the head. Empty parts get a speck */
+/* shapes per species. Head faces -z. Ears pivot where they join the head. Empty parts get a speck.
+   Built from smooth rounded forms (ellipsoids and tapered limbs) so each reads as its animal, not a stack of boxes.
+   foot = the lowest point (sits it on the seat); collar = [radius, y, z] or none; scarf = [y, z, scale] on the head */
 const SPECK=[{geo:BOX(.001,.001,.001),m:M([0,0,0]),color:0}];
-function petParts(sp,f,l,d){const dk=0x2c2833,pink=0xe86a7a;
-  if(sp==='dog')return {head:[{geo:BOX(.34,.3,.4),m:M([0,0,0]),color:f},{geo:BOX(.22,.17,.24),m:M([0,-.05,-.28]),color:l},{geo:BOX(.1,.08,.06),m:M([0,.02,-.41]),color:dk},{geo:BOX(.06,.06,.02),m:M([-.09,.07,-.205]),color:dk},{geo:BOX(.06,.06,.02),m:M([.09,.07,-.205]),color:dk},{geo:BOX(.2,.1,.12),m:M([0,.16,.02]),color:l},{geo:BOX(.3,.24,.3),m:M([-.06,-.1,.28]),color:f}],
-    ear:[{geo:BOX(.07,.26,.16).translate(0,-.13,0),m:M([0,0,0]),color:d}],earR:null,tongue:true,
-    chest:[{geo:BOX(.3,.44,.3),m:M([0,-.3,.12]),color:f},{geo:BOX(.2,.3,.04),m:M([0,-.33,-.04]),color:l}],
-    rest:[{geo:BOX(.34,.32,.5),m:M([0,-.55,.42],[-.35,0,0]),color:f},{geo:BOX(.42,.32,.36),m:M([0,-.68,.62]),color:f},...[-1,1].map(e=>({geo:BOX(.09,.38,.09),m:M([e*.09,-.62,-.02]),color:f})),...[-1,1].map(e=>({geo:BOX(.11,.07,.15),m:M([e*.09,-.82,-.07]),color:l})),...[-1,1].map(e=>({geo:BOX(.12,.14,.24),m:M([e*.2,-.78,.55]),color:f}))],
-    tail:[{geo:BOX(.07,.07,.3).translate(0,0,.15),m:M([0,0,0]),color:f},{geo:BOX(.08,.08,.08),m:M([0,0,.32]),color:l}],earY:.12};
-  /* everyone else gets a body of their own: a slim upright cat with a question-mark tail, a squat frog with no neck
-     and folded legs, a round parrot on a perch, an axolotl peeking out of a jar of water, a round bunny loaf */
-  const O=(p,s,color,r)=>({geo:new THREE.IcosahedronGeometry(1,1),m:M(p,r||[0,0,0],s),color});
-  if(sp==='cat')return {head:[O([0,0,0],[.17,.15,.16],f),...[-1,1].map(e=>O([e*.1,-.07,-.03],[.09,.07,.09],l)),{geo:BOX(.11,.06,.06),m:M([0,-.07,-.14]),color:l},{geo:BOX(.04,.03,.02),m:M([0,-.04,-.175]),color:pink},
-      ...[-1,1].map(e=>({geo:BOX(.065,.05,.02),m:M([e*.07,.03,-.152],[0,-e*.25,0]),color:0x6ac850})),...[-1,1].map(e=>({geo:BOX(.018,.045,.022),m:M([e*.07,.03,-.156],[0,-e*.25,0]),color:dk})),
-      ...[-1,1].flatMap(e=>[-.08,.08].map(r=>({geo:BOX(.16,.008,.008),m:M([e*.13,-.07,-.13],[0,0,e*r]),color:0xf4f0ea})))],
-    ear:[{geo:new THREE.ConeGeometry(.065,.17,4).translate(0,.085,0),m:M([0,0,0],[0,Math.PI/4,0]),color:f},{geo:new THREE.ConeGeometry(.035,.1,4).translate(0,.055,-.02),m:M([0,0,0],[0,Math.PI/4,0]),color:l}],earR:null,tongue:false,
-    chest:[{geo:BOX(.2,.44,.2),m:M([0,-.34,.07]),color:f},{geo:BOX(.13,.3,.04),m:M([0,-.33,-.04]),color:l}],
-    rest:[O([0,-.66,.24],[.19,.16,.27],f),...[-1,1].map(e=>({geo:BOX(.055,.42,.055),m:M([e*.055,-.6,-.01]),color:f})),...[-1,1].map(e=>({geo:BOX(.075,.045,.09),m:M([e*.055,-.81,-.04]),color:l})),...[-1,1].map(e=>({geo:BOX(.08,.045,.17),m:M([e*.15,-.81,.16]),color:l}))],
-    tail:[{geo:BOX(.05,.05,.24).translate(0,0,.12),m:M([0,0,0]),color:f},{geo:BOX(.05,.34,.05),m:M([0,.15,.24]),color:f},{geo:BOX(.05,.05,.13),m:M([0,.32,.19]),color:d}],tailPos:[0,-.74,.44],tailRx:0,earY:.11,earX:.085,stiff:true,collar:[.23,-.15,.08,.23]};
-  if(sp==='frog')return {head:[{geo:BOX(.46,.15,.36),m:M([0,-.02,0]),color:f},{geo:BOX(.42,.05,.32),m:M([0,-.1,-.01]),color:l},{geo:BOX(.4,.014,.02),m:M([0,-.07,-.18]),color:dk},
-      ...[-1,1].map(e=>({geo:BOX(.03,.02,.02),m:M([e*.06,.01,-.185]),color:dk})),...[-1,1].map(e=>O([e*.17,-.05,-.12],[.05,.035,.04],0xe86a7a))],
-    ear:[{geo:new THREE.SphereGeometry(.09,8,6).translate(0,.04,0),m:M([0,0,0]),color:f},{geo:new THREE.SphereGeometry(.065,8,6).translate(0,.06,-.05),m:M([0,0,0]),color:0xf4f0e0},{geo:BOX(.06,.03,.02),m:M([0,.065,-.112]),color:dk}],earR:null,tongue:'frog',
-    chest:[O([0,-.13,-.09],[.15,.06,.11],l)],
-    rest:[O([0,-.2,.2],[.27,.19,.3],f),O([0,-.17,.32],[.18,.12,.16],d),...[-1,1].map(e=>({geo:BOX(.06,.22,.06),m:M([e*.17,-.28,-.1],[0,0,e*.35]),color:f})),...[-1,1].map(e=>({geo:BOX(.13,.03,.11),m:M([e*.23,-.39,-.15]),color:l})),
-      ...[-1,1].map(e=>O([e*.25,-.26,.3],[.1,.1,.2],f)),...[-1,1].map(e=>({geo:BOX(.08,.06,.26),m:M([e*.3,-.36,.22]),color:d})),...[-1,1].map(e=>({geo:BOX(.17,.03,.14),m:M([e*.31,-.4,.06]),color:l}))],
-    tail:SPECK,earY:.07,earX:.13,stiff:true,dy:-.22,collar:null};
-  if(sp==='bird')return {head:[O([0,0,0],[.13,.13,.13],f),O([0,-.03,-.07],[.09,.08,.07],l),{geo:BOX(.07,.08,.08),m:M([0,-.03,-.15]),color:0xf0c040},{geo:BOX(.05,.035,.05),m:M([0,-.08,-.13]),color:0x3a3036},
-      ...[-1,1].map(e=>({geo:BOX(.02,.055,.055),m:M([e*.122,.03,-.04]),color:0xfafaf0})),...[-1,1].map(e=>({geo:BOX(.024,.032,.032),m:M([e*.125,.03,-.045]),color:dk}))],
-    ear:[{geo:BOX(.035,.15,.05).translate(0,.075,0),m:M([0,0,0],[-.45,0,0]),color:d},{geo:BOX(.03,.12,.045).translate(0,.06,.05),m:M([0,0,0],[-.8,0,0]),color:l}],earR:SPECK,tongue:false,
-    chest:[O([0,-.31,.06],[.16,.25,.16],f),O([0,-.34,-.04],[.11,.17,.09],l)],
-    rest:[...[-1,1].map(e=>({geo:BOX(.05,.3,.22),m:M([e*.15,-.33,.1],[.25,0,0]),color:d})),...[-1,1].map(e=>({geo:BOX(.04,.13,.13),m:M([e*.14,-.52,.22],[.5,0,0]),color:d})),
-      ...[-1,1].map(e=>({geo:BOX(.03,.12,.03),m:M([e*.05,-.6,.04]),color:0x8a8890})),...[-1,1].map(e=>({geo:BOX(.07,.02,.06),m:M([e*.05,-.655,.03]),color:0x8a8890})),
-      {geo:BOX(.56,.045,.045),m:M([0,-.68,.03]),color:0x8a6a48},...[-1,1].map(e=>({geo:BOX(.045,.16,.045),m:M([e*.24,-.76,.03]),color:0x7a5a3c})),{geo:BOX(.6,.03,.14),m:M([0,-.84,.03]),color:0x6a4a30}],
-    tail:[{geo:BOX(.11,.03,.42).translate(0,0,.21),m:M([0,0,0]),color:d},{geo:BOX(.06,.025,.34).translate(0,0,.17),m:M([0,.02,.04]),color:l}],tailPos:[0,-.5,.2],tailRx:1.05,earY:.11,earX:0,stiff:true,k:.85,collar:null};
-  if(sp==='axolotl')return {head:[{geo:BOX(.42,.2,.32),m:M([0,-.02,0]),color:f},{geo:BOX(.38,.05,.28),m:M([0,-.11,-.01]),color:l},{geo:BOX(.3,.014,.02),m:M([0,-.07,-.165]),color:dk},...[-1,1].map(e=>({geo:BOX(.04,.025,.02),m:M([e*.14,-.06,-.162]),color:dk})),
-      ...[-1,1].map(e=>({geo:BOX(.045,.045,.02),m:M([e*.12,.04,-.162]),color:dk})),...[-1,1].map(e=>({geo:BOX(.015,.015,.021),m:M([e*.11,.05,-.165]),color:0xffffff}))],
-    ear:[0,1,2].map(k=>({geo:BOX(.03,.2,.05).translate(0,.1,0),m:M([0,-.02+k*.035,.06-k*.06],[-.5-k*.35,0,0]),color:d})).concat([0,1,2].map(k=>({geo:BOX(.034,.06,.06),m:M([0,.16-k*.02,-.02-k*.1],[-.5-k*.35,0,0]),color:d}))),earR:null,tongue:false,
-    chest:[O([0,-.2,.06],[.14,.12,.15],f)],
-    rest:[O([0,-.44,.08],[.13,.12,.21],f),...[-1,1].map(e=>({geo:BOX(.06,.14,.06),m:M([e*.15,-.48,-.06],[0,0,e*.4]),color:f})),
-      {geo:new THREE.TorusGeometry(.31,.03,4,16).rotateX(Math.PI/2),m:M([0,-.14,.08]),color:0xd8eef4},{geo:new THREE.CylinderGeometry(.31,.3,.06,16),m:M([0,-.81,.08]),color:0x9ab8c8},
-      {geo:new THREE.CylinderGeometry(.33,.33,.05,16),m:M([0,-.88,.08]),color:0x6a5a52}],
-    tail:[{geo:BOX(.07,.12,.34).translate(0,0,.17),m:M([0,0,0]),color:f},{geo:BOX(.025,.24,.32).translate(0,0,.17),m:M([0,0,.03]),color:l}],tailPos:[0,-.56,.2],tailRx:-.5,earY:.0,earX:.2,stiff:true,jar:true,collar:null};
-  /* bunny */
-  return {head:[O([0,0,0],[.15,.14,.16],f),O([0,-.05,-.1],[.1,.07,.07],l),{geo:BOX(.045,.035,.03),m:M([0,-.03,-.17]),color:pink},{geo:BOX(.05,.04,.012),m:M([0,-.105,-.15]),color:0xffffff},
-      ...[-1,1].map(e=>({geo:BOX(.045,.06,.02),m:M([e*.09,.03,-.13],[0,-e*.5,0]),color:dk})),...[-1,1].map(e=>({geo:BOX(.016,.016,.021),m:M([e*.085,.045,-.136],[0,-e*.5,0]),color:0xffffff}))],
-    ear:[{geo:BOX(.075,.38,.05).translate(0,.19,0),m:M([0,0,0]),color:f},{geo:BOX(.04,.3,.02).translate(0,.17,-.026),m:M([0,0,0]),color:d}],earR:null,tongue:false,
-    chest:[O([0,-.25,.02],[.14,.14,.13],f),O([0,-.26,-.07],[.09,.1,.06],l)],
-    rest:[O([0,-.56,.22],[.25,.24,.3],f),...[-1,1].map(e=>({geo:BOX(.09,.06,.3),m:M([e*.15,-.8,.18]),color:l})),...[-1,1].map(e=>({geo:BOX(.06,.16,.06),m:M([e*.07,-.7,-.07]),color:f})),...[-1,1].map(e=>({geo:BOX(.065,.04,.08),m:M([e*.07,-.8,-.09]),color:l}))],
-    tail:[O([0,0,0],[.09,.09,.09],l)],tailPos:[0,-.55,.52],tailRx:0,earY:.11,earX:.065,stiff:true,collar:[.2,-.15,.02,.2]};}
+const _SG=new THREE.SphereGeometry(1,14,10),_UP=new V3(0,1,0);
+const PE=(p,s,color,r)=>({geo:_SG,m:M(p,r||[0,0,0],s),color});
+/* a tapered limb from a to b, rounded at both ends (r0 at a, r1 at b) */
+function PL(a,b,r0,r1,color,caps=true){const A=new V3(...a),B=new V3(...b),d=B.clone().sub(A),len=d.length();
+  const m=new THREE.Matrix4().compose(A.clone().add(B).multiplyScalar(.5),new Q().setFromUnitVectors(_UP,d.normalize()),new V3(1,1,1));
+  const out=[{geo:new THREE.CylinderGeometry(r1,r0,len,12,1,true),m,color}];if(caps)out.push(PE(a,[r0,r0,r0],color),PE(b,[r1,r1,r1],color));return out;}
+/* a shiny eye: dark ball with a little white glint */
+const PEYE=(x,y,z,r,col)=>[PE([x,y,z],[r,r*1.1,r*.8],col||0x241c2a),PE([x+(x<0?-.25:.25)*r*.2-r*.25,y+r*.45,z-r*.7],[r*.32,r*.32,r*.2],0xffffff)];
+const sym=f=>[-1,1].flatMap(f);
+function petParts(sp,f,l,d){const dk=0x2c2833,pink=0xe88a9a;
+  if(sp==='dog')return {   // a golden pup sitting up: round head, proper muzzle, floppy ears, sitting haunches
+    head:[PE([0,.02,.03],[.165,.15,.17],f),PE([0,-.06,-.15],[.095,.075,.12],l),PE([0,-.02,-.12],[.08,.06,.1],f),...sym(e=>[PE([e*.075,-.07,-.12],[.065,.055,.07],l)]),
+      PE([0,-.025,-.265],[.04,.03,.028],dk),PE([0,-.115,-.18],[.055,.025,.06],l),...sym(e=>PEYE(e*.075,.035,-.115,.026)),...sym(e=>[PE([e*.072,.075,-.11],[.03,.01,.012],d)])],
+    ear:[PE([0,-.1,.0],[.035,.12,.075],d,[0,0,.15]),PE([0,-.02,0],[.04,.04,.07],d)],earR:null,earX:.14,earY:.07,tongue:true,tonguePos:[.015,-.12,-.2],
+    chest:[...PL([0,-.06,.04],[0,-.22,.06],.12,.13,f),PE([0,-.3,.06],[.15,.2,.15],f),PE([0,-.28,-.035],[.1,.15,.08],l)],
+    rest:[PE([0,-.44,.2],[.155,.18,.24],f,[.75,0,0]),PE([0,-.56,.34],[.18,.16,.17],f),...sym(e=>[PE([e*.12,-.58,.3],[.08,.13,.17],f,[.3,0,0]),PE([e*.12,-.715,.18],[.06,.04,.11],l)]),
+      ...sym(e=>[PE([e*.08,-.36,.02],[.075,.13,.1],f),...PL([e*.08,-.4,-.0],[e*.075,-.68,-.03],.058,.046,f),PE([e*.075,-.705,-.075],[.055,.037,.07],l)])],
+    tail:[...PL([0,0,0],[0,.04,.2],.045,.04,f),...PL([0,.04,.2],[0,.1,.33],.04,.03,f),PE([0,.11,.35],[.04,.04,.05],l)],tailPos:[0,-.62,.47],tailRx:.6,
+    foot:-.745,collar:[.125,-.15,.05],scarf:[-.17,.07,.85]};
+  if(sp==='cat')return {   // slim and upright, tall pointed ears, short muzzle, tail curled round the feet
+    head:[PE([0,0,0],[.15,.125,.13],f),...sym(e=>[PE([e*.06,-.045,-.07],[.075,.06,.065],l)]),PE([0,-.04,-.115],[.045,.035,.03],l),PE([0,-.02,-.135],[.02,.013,.01],pink),
+      PE([0,-.075,-.1],[.03,.018,.02],l),...sym(e=>[PE([e*.062,.015,-.112],[.033,.03,.015],0x9ad04a),PE([e*.062,.015,-.124],[.009,.026,.006],dk),PE([e*.056,.03,-.127],[.007,.007,.004],0xffffff)]),
+      ...sym(e=>[-.1,.1].map(r=>({geo:BOX(.15,.006,.006),m:M([e*.12,-.05,-.11],[0,0,e*r]),color:0xf4f0ea})))],
+    ear:[{geo:new THREE.ConeGeometry(.06,.14,10).translate(0,.06,0),m:M([0,0,0],[0,0,0],[1,1,.55]),color:f},{geo:new THREE.ConeGeometry(.035,.09,10).translate(0,.05,0),m:M([0,0,-.016],[0,0,0],[1,1,.4]),color:pink}],earR:null,earX:.085,earY:.085,tongue:false,
+    chest:[...PL([0,-.06,.03],[0,-.2,.05],.075,.085,f),PE([0,-.32,.04],[.1,.17,.1],f),PE([0,-.29,-.035],[.06,.12,.05],l)],
+    rest:[PE([0,-.44,.12],[.11,.15,.15],f,[.6,0,0]),PE([0,-.57,.18],[.14,.14,.16],f),...sym(e=>[PE([e*.09,-.6,.17],[.06,.11,.13],f,[.3,0,0]),PE([e*.095,-.715,.07],[.04,.022,.08],l)]),
+      ...sym(e=>[PE([e*.05,-.37,.02],[.05,.1,.065],f),...PL([e*.048,-.4,-.0],[e*.045,-.7,-.03],.036,.029,f),PE([e*.045,-.715,-.06],[.034,.022,.045],l)])],
+    tail:[...PL([0,0,0],[.06,0,.14],.032,.03,f),...PL([.06,0,.14],[.2,0,.12],.03,.028,f),...PL([.2,0,.12],[.26,0,0],.028,.025,f),PE([.26,0,-.02],[.027,.027,.035],d)],tailPos:[0,-.71,.28],tailRx:0,
+    stiff:true,foot:-.737,collar:[.08,-.13,.04],scarf:[-.13,.035,.6]};
+  if(sp==='frog')return {   // squat and wide: flat head straight into the body, big eyes on top, folded back legs
+    head:[PE([0,0,0],[.21,.1,.17],f),PE([0,-.045,-.01],[.19,.06,.15],l),PE([0,-.025,-.004],[.212,.009,.172],dk),...sym(e=>[PE([e*.035,.03,-.16],[.01,.008,.008],dk)]),
+      ...sym(e=>[PE([e*.15,-.035,-.1],[.035,.02,.025],pink)])],
+    ear:[PE([0,.035,0],[.07,.065,.07],f),PE([0,.05,-.025],[.052,.05,.045],0xf6f2e2),PE([0,.055,-.066],[.036,.016,.01],dk),PE([-.012,.066,-.07],[.009,.006,.004],0xffffff)],earR:null,earX:.11,earY:.05,tongue:'frog',tonguePos:[0,-.06,-.16],
+    chest:[PE([0,-.11,-.04],[.15,.07,.11],l)],
+    rest:[PE([0,-.18,.12],[.2,.13,.22],f,[-.2,0,0]),PE([0,-.21,.1],[.15,.08,.16],l),...[[-.07,.2],[.08,.14],[.02,.28]].map(([x,z])=>PE([x,-.07,z],[.035,.012,.03],d)),
+      ...sym(e=>[...PL([e*.14,-.17,-.06],[e*.2,-.32,-.1],.042,.03,f),PE([e*.205,-.34,-.125],[.042,.013,.036],l)]),
+      ...sym(e=>[PE([e*.18,-.24,.22],[.08,.09,.16],f,[.2,0,0]),PE([e*.24,-.3,.15],[.045,.045,.13],f),PE([e*.25,-.345,.03],[.048,.013,.085],l)])],
+    tail:SPECK,stiff:true,foot:-.36,collar:null,scarf:[-.09,.04,1.05]};
+  if(sp==='bird'){const beak=0xe8dcc0,leg=0x8a8890,wood=0x8a6a48,wood2=0x6a4a30;return {   // a parrot on a perch: round head, hooked beak, folded wings, long tail
+    head:[PE([0,0,0],[.12,.12,.12],f),...sym(e=>[PE([e*.06,-.015,-.06],[.06,.065,.06],l)]),PE([0,-.02,-.115],[.04,.05,.045],beak),PE([0,-.065,-.13],[.022,.035,.022],beak,[.5,0,0]),PE([0,-.06,-.1],[.03,.022,.028],dk),
+      ...sym(e=>[PE([e*.085,.025,-.06],[.03,.032,.024],0xfafaf0),...PEYE(e*.09,.025,-.075,.018)])],
+    ear:[...PL([0,0,0],[0,.08,.07],.022,.01,d),...PL([0,0,.03],[0,.06,.1],.018,.008,l)],earR:SPECK,earX:0,earY:.1,tongue:false,
+    chest:[PE([0,-.25,.04],[.125,.2,.13],f,[.2,0,0]),PE([0,-.28,-.035],[.09,.15,.08],l,[.2,0,0])],
+    rest:[...sym(e=>[PE([e*.105,-.3,.1],[.04,.19,.095],d,[.42,0,-e*.06])]),
+      ...sym(e=>[...PL([e*.045,-.42,.04],[e*.045,-.5,.02],.018,.014,leg),PE([e*.045,-.515,-.005],[.022,.016,.04],leg),PE([e*.045,-.515,.05],[.018,.014,.025],leg)]),
+      ...PL([-.3,-.545,.02],[.3,-.545,.02],.028,.028,wood),...sym(e=>PL([e*.26,-.56,.02],[e*.26,-.83,.02],.024,.024,wood2,false)),PE([0,-.84,.02],[.33,.025,.09],wood2)],
+    tail:[PE([0,0,.2],[.055,.016,.22],d),PE([0,.012,.17],[.035,.012,.18],l)],tailPos:[0,-.43,.15],tailRx:1.05,stiff:true,k:.85,foot:-.865,collar:null,scarf:[-.12,.03,.7]};}
+  if(sp==='axolotl')return {   // peeking out of its jar: wide flat smiley head, beady eyes, feathery gills
+    head:[PE([0,0,0],[.18,.105,.15],f),PE([0,-.04,-.01],[.165,.06,.13],l),PE([0,-.03,-.004],[.181,.008,.152],d),...sym(e=>PEYE(e*.115,.025,-.11,.02)),...sym(e=>[PE([e*.13,-.035,-.1],[.03,.018,.02],pink)])],
+    ear:[0,1,2].flatMap(k=>{const a=.35+k*.45,tip=[0,Math.cos(a)*.15,Math.sin(a)*.15];return [...PL([0,0,0],tip,.018,.012,d),PE([0,tip[1]*.55,tip[2]*.55],[.022,.03,.03],d),PE([0,tip[1]*.85,tip[2]*.85],[.02,.025,.025],d)];}),earR:null,earX:.16,earY:0,tongue:false,
+    chest:[PE([0,-.16,.06],[.12,.09,.13],f)],
+    rest:[PE([0,-.33,.1],[.1,.2,.11],f,[.25,0,0]),PE([0,-.33,.05],[.07,.15,.07],l,[.25,0,0]),...sym(e=>[...PL([e*.09,-.2,-.03],[e*.13,-.15,-.17],.028,.022,f),PE([e*.135,-.14,-.19],[.03,.014,.03],f)]),
+      {geo:new THREE.TorusGeometry(.31,.03,6,24).rotateX(Math.PI/2),m:M([0,-.14,.08]),color:0xd8eef4},{geo:new THREE.CylinderGeometry(.3,.29,.06,20),m:M([0,-.81,.08]),color:0xc8b898},
+      ...[[-.15,0,0x8a8a92],[.12,.15,0x6a7a6a],[.02,.22,0x9a8a7a],[.18,-.05,0x7a7a82],[-.08,.2,0x8a9a8a]].map(([x,z,c])=>PE([x,-.77,.08+z],[.05,.03,.045],c)),
+      ...PL([-.16,-.78,.18],[-.2,-.5,.2],.012,.008,0x4a9a5a,false),PE([-.19,-.58,.2],[.02,.07,.01],0x5aaa6a,[0,0,.4]),PE([-.17,-.68,.2],[.02,.06,.01],0x4a9a5a,[0,0,-.5]),
+      {geo:new THREE.CylinderGeometry(.33,.33,.05,20),m:M([0,-.88,.08]),color:0x6a5a52}],
+    tail:[PE([0,0,.12],[.04,.06,.14],f),PE([0,0,.13],[.01,.1,.16],l)],tailPos:[0,-.5,.07],tailRx:.55,stiff:true,jar:true,foot:-.905,collar:null,scarf:[-.11,.04,.9]};
+  /* bunny: a round loaf with long ears, puffy cheeks, big hind feet and a cotton tail */
+  return {head:[PE([0,0,0],[.13,.125,.14],f),...sym(e=>[PE([e*.06,-.05,-.07],[.07,.06,.07],f)]),PE([0,-.04,-.12],[.045,.035,.035],l),PE([0,-.02,-.148],[.017,.012,.008],pink),
+      PE([0,-.085,-.12],[.018,.018,.008],0xffffff),...sym(e=>PEYE(e*.08,.025,-.095,.028))],
+    ear:[PE([0,.15,0],[.042,.16,.024],f,[0,0,0]),PE([0,.15,-.014],[.024,.12,.012],d)],earR:null,earX:.05,earY:.09,tongue:false,
+    chest:[PE([0,-.16,.02],[.13,.12,.12],f),PE([0,-.2,-.06],[.08,.09,.06],l)],
+    rest:[PE([0,-.4,.15],[.21,.26,.26],f),...sym(e=>[PE([e*.13,-.48,.21],[.1,.17,.19],f),PE([e*.12,-.645,.05],[.055,.035,.15],l)]),PE([0,-.36,-.05],[.12,.14,.08],l),
+      ...sym(e=>[...PL([e*.065,-.5,-.1],[e*.065,-.63,-.13],.042,.036,f),PE([e*.065,-.645,-.15],[.04,.026,.045],l)])],
+    tail:[PE([0,0,0],[.075,.075,.075],l)],tailPos:[0,-.47,.4],tailRx:0,stiff:true,foot:-.68,collar:[.11,-.12,.01],scarf:[-.13,.01,.75]};}
 /* the axolotl's jar: see-through glass and water (keeps the sea marker in alpha, like the foam) */
 const petJar=(()=>{const m=new THREE.MeshBasicMaterial({color:0xbfe6f2,transparent:true,opacity:.3,depthWrite:false,blending:THREE.CustomBlending,blendSrc:THREE.SrcAlphaFactor,blendDst:THREE.OneMinusSrcAlphaFactor,blendSrcAlpha:THREE.ZeroFactor,blendDstAlpha:THREE.OneFactor});
   const j=new THREE.Mesh(new THREE.CylinderGeometry(.3,.3,.66,16).translate(0,-.47,.08),m);j.renderOrder=6;j.visible=false;dog.body.add(j);return j;})();
@@ -77,13 +98,17 @@ function applyPet(){const P=settings.pet,S=PET_SPECIES[P.sp],c=S.cols[P.col]||S.
   const set=(mesh,items)=>{mesh.geometry.dispose();mesh.geometry=merge(items);};
   set(dog.g.children[0],parts.head);set(dog.eL,parts.ear);set(dog.eR,parts.earR||parts.ear);
   const ex=parts.earX??.18,ey=parts.earY??.12;dog.eL.position.set(-ex,ey,.03);dog.eR.position.set(ex,ey,.03);
-  const cl=parts.collar===undefined?[.33,-.14,.12,.33]:parts.collar;   // [width, height, depth offset, depth], or none
-  dog.chest.geometry.dispose();dog.chest.geometry=merge([...parts.chest,...(cl?[{geo:BOX(cl[0],.06,cl[3]),m:M([0,cl[1],cl[2]]),color:0xd2493c},{geo:BOX(.06,.06,.03),m:M([0,cl[1]-.07,cl[2]-cl[3]/2-.01]),color:0xf1c84a}]:[])]);
-  const rest=dog.body.children.find(o=>o!==dog.chest&&o!==dog.tail);if(rest){rest.geometry.dispose();rest.geometry=merge(parts.rest);}
+  const cl=parts.collar;   // a round collar with a gold tag: [radius, height, depth], or none
+  set(dog.chest,[...parts.chest,...(cl?[{geo:new THREE.TorusGeometry(cl[0],.022,6,20).rotateX(Math.PI/2),m:M([0,cl[1],cl[2]]),color:0xd2493c},PE([0,cl[1]-.04,cl[2]-cl[0]-.015],[.026,.026,.012],0xf1c84a)]:[])]);
+  const rest=dog.body.children.find(o=>o!==dog.chest&&o!==dog.tail);if(rest)set(rest,parts.rest);
   set(dog.tail.children[0],parts.tail);dog.tail.position.set(...(parts.tailPos||[0,-.62,.8]));dog.tail.rotation.x=parts.tailRx??.7;
-  dog.k=parts.k||1;dog.dy=parts.dy||0;petJar.visible=!!parts.jar;
+  dog.k=parts.k||1;dog.dy=-.85-(parts.foot??-.85);petJar.visible=!!parts.jar;dog.tongue.position.set(...(parts.tonguePos||[.03,-.14,-.34]));
+  if(typeof DM!=='undefined'&&DM.scarf){const [y,z,k]=parts.scarf||[-.17,.07,.85],r=.17*k,red=0xd2493c;   // a knitted wrap with one end hanging down the front
+    set(DM.scarf,[{geo:new THREE.TorusGeometry(r,.032*k,8,22).rotateX(Math.PI/2),m:M([0,y,z]),color:red},{geo:new THREE.TorusGeometry(r*1.02,.02*k,6,22).rotateX(Math.PI/2),m:M([0,y+.03*k,z]),color:0xf4f0e6},
+      ...PL([r*.5,y-.02*k,z-r*.85],[r*.62,y-.2*k,z-r*.95],.04*k,.035*k,red),PE([r*.62,y-.22*k,z-r*.95],[.045*k,.02*k,.03*k],0xf4f0e6)]);}
   _petDef.tongue=parts.tongue;_petDef.stiff=!!parts.stiff;dog.tongue.visible=parts.tongue===true;
-  if(parts.tongue==='frog'){dog.tongue.material.color.setHex(0xf07a90);}
+  if(!dog.tongue.userData.round){dog.tongue.geometry.dispose();dog.tongue.geometry=new THREE.SphereGeometry(1,10,6).scale(.038,.05,.012).translate(0,-.035,0);dog.tongue.userData.round=1;}
+  dog.tongue.material.color.setHex(parts.tongue==='frog'?0xf07a90:0xe86a7a);
   const pic=petPic();for(const im of document.querySelectorAll('#dogBtn img,#dogpop img'))im.src=pic;
   const pb_=$('dogpop');if(pb_)pb_.querySelector('b').textContent=PET_SOUNDS[S.snd][1];const bt=$('dogBtn');if(bt)bt.setAttribute('aria-label','Ask '+petName()+' for a clue');}
 /* little per-frame tweaks on top of the shared animation: stiff ears don't flop like a dog's, the frog's tongue only
