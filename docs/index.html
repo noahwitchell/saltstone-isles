@@ -2799,8 +2799,12 @@ function offerDay(after){
 function meetBea(){if(mode!=='fly'||log.met.bea)return;log.met.bea=1;saveL();mode='card';
   showCard(`<div class="who"><img src="${portrait('bea')}" alt=""><div><b>Bea Hollis</b><span>RETIRED MAIL PILOT · HARBOR FIELD</span></div></div><p class="say">“${MEET.bea}”</p><p>Bea's logbook is in the pause menu whenever you want it.</p>`,[['Thanks, Bea',()=>{hideModal();mode='fly';},true],['Open the logbook',()=>bea(-1)]]);}
 function endDay(){const day=DAYS[mail.day-1];mail.active=false;mail.bag=[];clearDrops();addCoins(40);mail.day++;stamp(2);if(mail.day>6)goal('week',true);if(mail.day>12)goal('week2',true);if(mail.day>18)goal('week3',true);saveL();refreshBag();
-  showCard(`<div class="who"><img src="${portrait('mabel')}" alt=""><div><b>Mabel Ostrander</b><span>END OF DAY · +2 STAMPS</span></div></div><p class="say">“${day?day.outro:'Good flying.'}”</p><div class="got">${log.stamps} STAMPS ON YOUR ROUTE CARD · +40 COINS</div>`,
-    [[mail.day<=DAYS.length?'Start the next day':'Keep flying',()=>{if(mail.day<=DAYS.length)offerDay(()=>spawnField(STRIPS[0]));else{hideModal();mode='fly';}},true],['Free flight',()=>{hideModal();mode='fly';pickDest('harbor');}]]);}
+  showCard(`<div class="who"><img src="${portrait('mabel')}" alt=""><div><b>Mabel Ostrander</b><span>END OF DAY · +2 STAMPS</span></div></div><p class="say">“${day?day.outro:'Good flying.'}”</p><div class="got">${log.stamps} STAMPS ON YOUR ROUTE CARD · +40 COINS</div>`,dayDoneBtns());}
+/* what next after handing in: the next day, a stop at Gus's garage (spend the day's coins), or free flight */
+function dayDoneBtns(){const harbor=stripById('harbor');
+  return [[mail.day<=DAYS.length?'Start the next day':'Keep flying',()=>{if(mail.day<=DAYS.length)offerDay(()=>spawnField(STRIPS[0]));else{hideModal();mode='fly';}},true],
+    ["Gus's garage",()=>shopCard(harbor,()=>showCard(`<h2>${harbor.name}</h2><p>All fixed up. What next?</p>`,dayDoneBtns()))],
+    ['Free flight',()=>{hideModal();mode='fly';pickDest('harbor');}]];}
 function goal(id,quiet){if(log.goals[id])return false;log.goals[id]=Date.now();saveL();if(!quiet){const g=GOALS.find(x=>x.id===id);toast('Logbook: '+g.name,2.5);}return true;}
 
 /* ---------- tips & toast ---------- */
@@ -3244,7 +3248,7 @@ function settingsCard(){
   const mv=[['OFF',0],['SOFT',.5],['ON',1]].map(([n,v])=>`<button data-mv="${v}" class="${(settings.music??.5)==v?'primary':''}">${n}</button>`).join('');
   const st=STATIONS.map(S=>`<button data-st="${S.id}" class="${settings.station===S.id?'primary':''}">${S.fq} ${S.name.toUpperCase()}</button>`).join('');
   const lt=Object.keys(TOD).map(k=>`<button data-lt="${k}" class="${settings.light===k?'primary':''}">${TOD[k].name.toUpperCase()}</button>`).join('');
-  showCard(`<h2>Settings</h2><div class="sub">ASSISTS · TURN THEM OFF ONE AT A TIME AS YOU IMPROVE</div>${rows}<h3>ENGINE VOLUME</h3><div class="btns">${ev}</div><h3>RADIO VOLUME</h3><div class="btns">${mv}</div><h3>RADIO STATION · OR TAP THE DIAL UP TOP WHILE FLYING</h3><div class="btns">${st}</div><h3>TIME OF DAY</h3><div class="btns">${lt}</div><h3>WEATHER · TRYING IT OUT</h3><div class="btns">${Object.entries(WX).map(([k,W])=>`<button data-wx="${k}" class="${settings.weather===k?'primary':''}">${W.name.toUpperCase()}</button>`).join('')}</div><h3>PIXELS</h3><div class="btns">${px}</div><div class="sub" style="margin-top:14px">BUILD 3457025</div>`,[['Back',back,true]]);
+  showCard(`<h2>Settings</h2><div class="sub">ASSISTS · TURN THEM OFF ONE AT A TIME AS YOU IMPROVE</div>${rows}<h3>ENGINE VOLUME</h3><div class="btns">${ev}</div><h3>RADIO VOLUME</h3><div class="btns">${mv}</div><h3>RADIO STATION · OR TAP THE DIAL UP TOP WHILE FLYING</h3><div class="btns">${st}</div><h3>TIME OF DAY</h3><div class="btns">${lt}</div><h3>WEATHER · TRYING IT OUT</h3><div class="btns">${Object.entries(WX).map(([k,W])=>`<button data-wx="${k}" class="${settings.weather===k?'primary':''}">${W.name.toUpperCase()}</button>`).join('')}</div><h3>PIXELS</h3><div class="btns">${px}</div><div class="sub" style="margin-top:14px">BUILD a30c674</div>`,[['Back',back,true]]);
   const cb=$('cardBody');
   cb.querySelectorAll('[data-k]').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.k;if(k==='tilt'){if(!settings.tilt){settings.tilt=true;saveS();enableTilt().then(()=>{updTiltUI();settingsCard();});}else{settings.tilt=false;saveS();disableTilt();updTiltUI();settingsCard();}return;}settings[k]=!settings[k];saveS();if(k==='sound')snd.setOn(settings.sound);if(k==='fps'){$('fps').hidden=!settings.fps;$('fps').textContent='FPS: measuring…';fpsN=fpsT=0;fpsLast=0;}if(k==='sound')music.setVol();settingsCard();}));
   cb.querySelectorAll('[data-px]').forEach(b=>b.addEventListener('click',()=>{settings.pixels=b.dataset.px;pixMode=settings.pixels;saveS();resize();settingsCard();}));
@@ -3657,7 +3661,7 @@ const streaks=(()=>{const SRC=[[-5.2,.8,.3,1],[5.2,.8,.3,1],[-5.2,.95,.3,1],[5.2
    new version. When the game comes back to the front (and every ten minutes), check the build number on the site; if
    it's changed, reload straight away from the title screen, or offer a one-tap update in flight (the flight is saved
    first, so "Pick up where you left off" puts you right back) */
-const BUILD_ID='3457025';let updOffered=false;
+const BUILD_ID='a30c674';let updOffered=false;
 function checkUpdate(){if(!/^https?:/.test(location.protocol)||/claude/.test(location.hostname))return;
   fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.text():null).then(v=>{v=v&&v.trim();if(!v||v===BUILD_ID||v.length>12)return;
     if(mode==='title'){location.reload();return;}if(updOffered)return;updOffered=true;
@@ -4320,7 +4324,7 @@ function stepGuard(dt){if(!SH.guard||ac.ground||mode!=='fly')return;const sp=ac.
 const _gR=new THREE.Vector3(),_gF=new THREE.Vector3(),_gA=new THREE.Vector3(),_gQ=new THREE.Quaternion();
 /* the thin-air nudge: a hint the first time you reach the ceiling on a flight */
 let ceilWarn=false;anims.push(()=>{if(mode!=='fly')return;if(ac.pos.y>CEIL+60&&!ceilWarn){ceilWarn=true;toast(SH.ceiling<3?'The air\'s too thin up here for the engine.\nGus\'s supercharger would take you higher.':'Thin air. This is as high as she goes.',2.6);}if(ac.pos.y<CEIL-300)ceilWarn=false;});
-function shopCard(s){const meet=!log.met.gus;if(meet){log.met.gus=1;saveL();}
+function shopCard(s,onBack){const meet=!log.met.gus;if(meet){log.met.gus=1;saveL();}
   const row=(name,desc,btn)=>`<div class="tog"><div><b>${name}</b><span>${desc}</span></div>${btn}</div>`;
   const buy=(attr,cost,label)=>`<button ${attr} ${log.coins<cost?'disabled style="opacity:.45"':''}>${label||'BUY'} · ${coinTag(cost)}</button>`;
   const ups=UPG.map(u=>{const lv=SH[u.id];return row(`${u.name} <span style="display:inline;font-family:var(--mono);font-size:13px;color:var(--ink2)">${'■'.repeat(lv)+'□'.repeat(u.max-lv)}</span>`,u.desc+(u.note?' '+u.note():''),lv>=u.max?'<button disabled style="opacity:.55">MAXED</button>':buy(`data-up="${u.id}"`,u.cost[lv]));}).join('');
@@ -4335,14 +4339,14 @@ function shopCard(s){const meet=!log.met.gus;if(meet){log.met.gus=1;saveL();}
     <div class="sub" style="font-size:16px">YOU HAVE ${coinTag(log.coins)} COINS</div>
     <h3>PLANES</h3>${planes}<h3>PARTS AND UPGRADES</h3>${ups}<h3>PAINT</h3><div class="btns">${sw(PAINTS,'paint')}</div><h3>SMOKE COLOR</h3><div class="btns">${sw(SMOKES,'smoke')}</div>
     <p style="font-size:13px;color:var(--ink2)">Coins come from delivering mail, air drops, errands, new landmarks and good landings.</p>`,
-    [['Back',()=>{if(s)showCard(`<h2>${s.name}</h2><p>All fixed up.</p>`,[['Take off',()=>spawnField(s),true],['Look around first',()=>{hideModal();mode='fly';}]]);else back();},true]]);
+    [['Back',()=>{if(onBack)onBack();else if(s)showCard(`<h2>${s.name}</h2><p>All fixed up.</p>`,[['Take off',()=>spawnField(s),true],['Look around first',()=>{hideModal();mode='fly';}]]);else back();},true]]);
   const B=$('cardBody'),pay=c=>{if(log.coins<c){toast('Not enough coins yet.',1.4);return false;}log.coins-=c;saveL();updScore();snd.beep(1320);setTimeout(()=>snd.beep(1760),90);return true;};
   B.querySelectorAll('[data-up]').forEach(b=>b.addEventListener('click',()=>{const u=UPG.find(q=>q.id===b.dataset.up),lv=SH[u.id];if(lv>=u.max||!pay(u.cost[lv]))return;SH[u.id]++;saveL();applyUpgrades();
-    if(u.id==='wind')windCharges=WIND_N;if(u.id==='up')upCharges=UP_N;toast(`${u.name}: fitted.`,1.6);shopCard(s);}));
+    if(u.id==='wind')windCharges=WIND_N;if(u.id==='up')upCharges=UP_N;toast(`${u.name}: fitted.`,1.6);shopCard(s,onBack);}));
   B.querySelectorAll('[data-plane]').forEach(b=>b.addEventListener('click',()=>{const p=PLANES.find(q=>q.id===b.dataset.plane);if(!SH.plane.owned.includes(p.id)){if(!pay(p.cost))return;SH.plane.owned.push(p.id);toast(`The ${p.name} is yours!`,1.8);}
-    SH.plane.sel=p.id;saveL();applyUpgrades();snd.click();shopCard(s);}));
+    SH.plane.sel=p.id;saveL();applyUpgrades();snd.click();shopCard(s,onBack);}));
   for(const [kind,list] of [['paint',PAINTS],['smoke',SMOKES]])B.querySelectorAll(`[data-${kind}]`).forEach(b=>b.addEventListener('click',()=>{const it=list.find(q=>q[0]===b.dataset[kind]),own=SH[kind].owned.includes(it[0]),price=kind==='paint'?it[4]:it[3];
-    if(!own){if(!pay(price))return;SH[kind].owned.push(it[0]);}SH[kind].sel=it[0];saveL();applyUpgrades();snd.click();shopCard(s);}));}
+    if(!own){if(!pay(price))return;SH[kind].owned.push(it[0]);}SH[kind].sel=it[0];saveL();applyUpgrades();snd.click();shopCard(s,onBack);}));}
 applyUpgrades();window.__shopReady=true;updScore();
 
 /* ---------- portrait wallpapers ----------

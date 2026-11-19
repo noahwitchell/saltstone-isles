@@ -588,8 +588,12 @@ function offerDay(after){
 function meetBea(){if(mode!=='fly'||log.met.bea)return;log.met.bea=1;saveL();mode='card';
   showCard(`<div class="who"><img src="${portrait('bea')}" alt=""><div><b>Bea Hollis</b><span>RETIRED MAIL PILOT · HARBOR FIELD</span></div></div><p class="say">“${MEET.bea}”</p><p>Bea's logbook is in the pause menu whenever you want it.</p>`,[['Thanks, Bea',()=>{hideModal();mode='fly';},true],['Open the logbook',()=>bea(-1)]]);}
 function endDay(){const day=DAYS[mail.day-1];mail.active=false;mail.bag=[];clearDrops();addCoins(40);mail.day++;stamp(2);if(mail.day>6)goal('week',true);if(mail.day>12)goal('week2',true);if(mail.day>18)goal('week3',true);saveL();refreshBag();
-  showCard(`<div class="who"><img src="${portrait('mabel')}" alt=""><div><b>Mabel Ostrander</b><span>END OF DAY · +2 STAMPS</span></div></div><p class="say">“${day?day.outro:'Good flying.'}”</p><div class="got">${log.stamps} STAMPS ON YOUR ROUTE CARD · +40 COINS</div>`,
-    [[mail.day<=DAYS.length?'Start the next day':'Keep flying',()=>{if(mail.day<=DAYS.length)offerDay(()=>spawnField(STRIPS[0]));else{hideModal();mode='fly';}},true],['Free flight',()=>{hideModal();mode='fly';pickDest('harbor');}]]);}
+  showCard(`<div class="who"><img src="${portrait('mabel')}" alt=""><div><b>Mabel Ostrander</b><span>END OF DAY · +2 STAMPS</span></div></div><p class="say">“${day?day.outro:'Good flying.'}”</p><div class="got">${log.stamps} STAMPS ON YOUR ROUTE CARD · +40 COINS</div>`,dayDoneBtns());}
+/* what next after handing in: the next day, a stop at Gus's garage (spend the day's coins), or free flight */
+function dayDoneBtns(){const harbor=stripById('harbor');
+  return [[mail.day<=DAYS.length?'Start the next day':'Keep flying',()=>{if(mail.day<=DAYS.length)offerDay(()=>spawnField(STRIPS[0]));else{hideModal();mode='fly';}},true],
+    ["Gus's garage",()=>shopCard(harbor,()=>showCard(`<h2>${harbor.name}</h2><p>All fixed up. What next?</p>`,dayDoneBtns()))],
+    ['Free flight',()=>{hideModal();mode='fly';pickDest('harbor');}]];}
 function goal(id,quiet){if(log.goals[id])return false;log.goals[id]=Date.now();saveL();if(!quiet){const g=GOALS.find(x=>x.id===id);toast('Logbook: '+g.name,2.5);}return true;}
 
 /* ---------- tips & toast ---------- */

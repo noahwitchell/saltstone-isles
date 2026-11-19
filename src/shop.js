@@ -67,7 +67,7 @@ function stepGuard(dt){if(!SH.guard||ac.ground||mode!=='fly')return;const sp=ac.
 const _gR=new THREE.Vector3(),_gF=new THREE.Vector3(),_gA=new THREE.Vector3(),_gQ=new THREE.Quaternion();
 /* the thin-air nudge: a hint the first time you reach the ceiling on a flight */
 let ceilWarn=false;anims.push(()=>{if(mode!=='fly')return;if(ac.pos.y>CEIL+60&&!ceilWarn){ceilWarn=true;toast(SH.ceiling<3?'The air\'s too thin up here for the engine.\nGus\'s supercharger would take you higher.':'Thin air. This is as high as she goes.',2.6);}if(ac.pos.y<CEIL-300)ceilWarn=false;});
-function shopCard(s){const meet=!log.met.gus;if(meet){log.met.gus=1;saveL();}
+function shopCard(s,onBack){const meet=!log.met.gus;if(meet){log.met.gus=1;saveL();}
   const row=(name,desc,btn)=>`<div class="tog"><div><b>${name}</b><span>${desc}</span></div>${btn}</div>`;
   const buy=(attr,cost,label)=>`<button ${attr} ${log.coins<cost?'disabled style="opacity:.45"':''}>${label||'BUY'} · ${coinTag(cost)}</button>`;
   const ups=UPG.map(u=>{const lv=SH[u.id];return row(`${u.name} <span style="display:inline;font-family:var(--mono);font-size:13px;color:var(--ink2)">${'■'.repeat(lv)+'□'.repeat(u.max-lv)}</span>`,u.desc+(u.note?' '+u.note():''),lv>=u.max?'<button disabled style="opacity:.55">MAXED</button>':buy(`data-up="${u.id}"`,u.cost[lv]));}).join('');
@@ -82,12 +82,12 @@ function shopCard(s){const meet=!log.met.gus;if(meet){log.met.gus=1;saveL();}
     <div class="sub" style="font-size:16px">YOU HAVE ${coinTag(log.coins)} COINS</div>
     <h3>PLANES</h3>${planes}<h3>PARTS AND UPGRADES</h3>${ups}<h3>PAINT</h3><div class="btns">${sw(PAINTS,'paint')}</div><h3>SMOKE COLOR</h3><div class="btns">${sw(SMOKES,'smoke')}</div>
     <p style="font-size:13px;color:var(--ink2)">Coins come from delivering mail, air drops, errands, new landmarks and good landings.</p>`,
-    [['Back',()=>{if(s)showCard(`<h2>${s.name}</h2><p>All fixed up.</p>`,[['Take off',()=>spawnField(s),true],['Look around first',()=>{hideModal();mode='fly';}]]);else back();},true]]);
+    [['Back',()=>{if(onBack)onBack();else if(s)showCard(`<h2>${s.name}</h2><p>All fixed up.</p>`,[['Take off',()=>spawnField(s),true],['Look around first',()=>{hideModal();mode='fly';}]]);else back();},true]]);
   const B=$('cardBody'),pay=c=>{if(log.coins<c){toast('Not enough coins yet.',1.4);return false;}log.coins-=c;saveL();updScore();snd.beep(1320);setTimeout(()=>snd.beep(1760),90);return true;};
   B.querySelectorAll('[data-up]').forEach(b=>b.addEventListener('click',()=>{const u=UPG.find(q=>q.id===b.dataset.up),lv=SH[u.id];if(lv>=u.max||!pay(u.cost[lv]))return;SH[u.id]++;saveL();applyUpgrades();
-    if(u.id==='wind')windCharges=WIND_N;if(u.id==='up')upCharges=UP_N;toast(`${u.name}: fitted.`,1.6);shopCard(s);}));
+    if(u.id==='wind')windCharges=WIND_N;if(u.id==='up')upCharges=UP_N;toast(`${u.name}: fitted.`,1.6);shopCard(s,onBack);}));
   B.querySelectorAll('[data-plane]').forEach(b=>b.addEventListener('click',()=>{const p=PLANES.find(q=>q.id===b.dataset.plane);if(!SH.plane.owned.includes(p.id)){if(!pay(p.cost))return;SH.plane.owned.push(p.id);toast(`The ${p.name} is yours!`,1.8);}
-    SH.plane.sel=p.id;saveL();applyUpgrades();snd.click();shopCard(s);}));
+    SH.plane.sel=p.id;saveL();applyUpgrades();snd.click();shopCard(s,onBack);}));
   for(const [kind,list] of [['paint',PAINTS],['smoke',SMOKES]])B.querySelectorAll(`[data-${kind}]`).forEach(b=>b.addEventListener('click',()=>{const it=list.find(q=>q[0]===b.dataset[kind]),own=SH[kind].owned.includes(it[0]),price=kind==='paint'?it[4]:it[3];
-    if(!own){if(!pay(price))return;SH[kind].owned.push(it[0]);}SH[kind].sel=it[0];saveL();applyUpgrades();snd.click();shopCard(s);}));}
+    if(!own){if(!pay(price))return;SH[kind].owned.push(it[0]);}SH[kind].sel=it[0];saveL();applyUpgrades();snd.click();shopCard(s,onBack);}));}
 applyUpgrades();window.__shopReady=true;updScore();
