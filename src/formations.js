@@ -142,7 +142,7 @@ const FORMS=[];
     gate('h_gaunt2','Out of the Gauntlet',190,0,-1,30,12,'Eight leaning slabs, left, right, left. Zigzag all the way through.');shoal(180);}
   NEAR=null;
 
-  scene.add(shadowy(new THREE.Mesh(merge(it),toon())));if(grass.length)scene.add(shadowy(new THREE.Mesh(merge(grass),toon())));
-  if(foamIt.length){const fm=new THREE.Mesh(merge(foamIt),new THREE.MeshBasicMaterial({color:0xf6f1e4,transparent:true,opacity:.55,depthWrite:false}));fm.renderOrder=2;scene.add(fm);
-    anims.push(t=>{fm.material.opacity=.42+Math.sin(t*1.7)*.13;});}
+  addCells(it,toon(),2500,shadowy);if(grass.length)addCells(grass,toon(),2500,shadowy);
+  if(foamIt.length){const fmM=new THREE.MeshBasicMaterial({color:0xf6f1e4,transparent:true,opacity:.55,depthWrite:false});addCells(foamIt,fmM,2500,m=>{m.renderOrder=2;return m;});
+    anims.push(t=>{fmM.opacity=.42+Math.sin(t*1.7)*.13;});}
 })();

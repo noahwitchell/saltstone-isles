@@ -201,6 +201,10 @@ const shadowy=(m,cast=true)=>{m.castShadow=cast;m.receiveShadow=true;return m;};
    off screen or beyond the haze instead of drawing the whole archipelago every frame */
 const CHUNK=4000,CHUNKS=[];const chunkKey=(x,z)=>Math.floor((x+HALFX)/CHUNK)+','+Math.floor((z+HALFZ)/CHUNK);
 function addChunk(m,cx,cy,cz,r){m.geometry.boundingSphere=new THREE.Sphere(new V3(cx,cy,cz),r);m.frustumCulled=true;CHUNKS.push({m,x:cx,z:cz,r});return m;}
+/* split a long list of static props into map cells, one mesh per cell, so a cell is skipped when it's off-screen
+   (frustum culling) or far away (cullChunks), instead of the whole world's rocks being drawn every frame */
+function addCells(items,mat,cell=2500,wrap=m=>m){const g=new Map();for(const it of items){const e=it.m.elements,k=Math.floor(e[12]/cell)+','+Math.floor(e[14]/cell);if(!g.has(k))g.set(k,[]);g.get(k).push(it);}
+  for(const list of g.values()){const m=wrap(new THREE.Mesh(merge(list),mat));m.geometry.computeBoundingSphere();const s=m.geometry.boundingSphere;scene.add(m);addChunk(m,s.center.x,s.center.y,s.center.z,s.radius);}}
 function cullChunks(p){for(const c of CHUNKS)c.m.visible=Math.hypot(c.x-p.x,c.z-p.z)<c.r+7500;}
 function byChunk(list){const g=new Map();for(const t of list){const k=chunkKey(t.x,t.z);if(!g.has(k))g.set(k,[]);g.get(k).push(t);}return [...g.values()];}
 function boundsOf(list,pad){let x=0,y=0,z=0;for(const t of list){x+=t.x;y+=t.h||0;z+=t.z;}x/=list.length;y/=list.length;z/=list.length;let r=0;for(const t of list)r=Math.max(r,Math.hypot(t.x-x,(t.h||0)-y,t.z-z));return [x,y,z,r+pad];}

@@ -614,6 +614,10 @@ const shadowy=(m,cast=true)=>{m.castShadow=cast;m.receiveShadow=true;return m;};
    off screen or beyond the haze instead of drawing the whole archipelago every frame */
 const CHUNK=4000,CHUNKS=[];const chunkKey=(x,z)=>Math.floor((x+HALFX)/CHUNK)+','+Math.floor((z+HALFZ)/CHUNK);
 function addChunk(m,cx,cy,cz,r){m.geometry.boundingSphere=new THREE.Sphere(new V3(cx,cy,cz),r);m.frustumCulled=true;CHUNKS.push({m,x:cx,z:cz,r});return m;}
+/* split a long list of static props into map cells, one mesh per cell, so a cell is skipped when it's off-screen
+   (frustum culling) or far away (cullChunks), instead of the whole world's rocks being drawn every frame */
+function addCells(items,mat,cell=2500,wrap=m=>m){const g=new Map();for(const it of items){const e=it.m.elements,k=Math.floor(e[12]/cell)+','+Math.floor(e[14]/cell);if(!g.has(k))g.set(k,[]);g.get(k).push(it);}
+  for(const list of g.values()){const m=wrap(new THREE.Mesh(merge(list),mat));m.geometry.computeBoundingSphere();const s=m.geometry.boundingSphere;scene.add(m);addChunk(m,s.center.x,s.center.y,s.center.z,s.radius);}}
 function cullChunks(p){for(const c of CHUNKS)c.m.visible=Math.hypot(c.x-p.x,c.z-p.z)<c.r+7500;}
 function byChunk(list){const g=new Map();for(const t of list){const k=chunkKey(t.x,t.z);if(!g.has(k))g.set(k,[]);g.get(k).push(t);}return [...g.values()];}
 function boundsOf(list,pad){let x=0,y=0,z=0;for(const t of list){x+=t.x;y+=t.h||0;z+=t.z;}x/=list.length;y/=list.length;z/=list.length;let r=0;for(const t of list)r=Math.max(r,Math.hypot(t.x-x,(t.h||0)-y,t.z-z));return [x,y,z,r+pad];}
@@ -1318,9 +1322,15 @@ function mark(id,x,z,y,name,desc){sights[id]={x,z,y,name,desc};farmSpots.push({x
 const SOLIDS=[];   // simple collision shapes for rock spires, arches and bridges: c = tapered cylinder, s = sphere
 const FLYGATES=[]; // natural gaps worth flying through: a vertical window with a normal (nx,nz) and half-width w
 const FINDS={};    // errand items: set id -> [{x,y,z}]
-const solidCyl=(x,z,y0,y1,r0,r1)=>SOLIDS.push({k:'c',x,z,y0,y1,r0,r1});
-const solidSph=(x,y,z,r)=>SOLIDS.push({k:'s',x,y,z,r});
-function propHit(x,y,z,pad=1.2){for(const o of SOLIDS){if(o.k==='c'){if(y<o.y0||y>o.y1)continue;const r=lerp(o.r0,o.r1,(y-o.y0)/(o.y1-o.y0))+pad;if((x-o.x)**2+(z-o.z)**2<r*r)return true;}
+/* collision shapes live in a 250 m grid, so a check only looks at the rocks in the plane's own cell instead of every
+   rock in the world. The grid is (re)built the first time it's needed after shapes are added. Padding up to 8 m is covered. */
+const SG=250;let SGRID=null;
+const solidCyl=(x,z,y0,y1,r0,r1)=>{SOLIDS.push({k:'c',x,z,y0,y1,r0,r1});SGRID=null;};
+const solidSph=(x,y,z,r)=>{SOLIDS.push({k:'s',x,y,z,r});SGRID=null;};
+const sgKey=(ix,iz)=>(ix+4096)*8192+(iz+4096);
+function buildSGrid(){SGRID=new Map();for(const o of SOLIDS){const R=(o.k==='c'?Math.max(o.r0,o.r1):o.r)+8;
+  for(let ix=Math.floor((o.x-R)/SG);ix<=Math.floor((o.x+R)/SG);ix++)for(let iz=Math.floor((o.z-R)/SG);iz<=Math.floor((o.z+R)/SG);iz++){const k=sgKey(ix,iz);let L=SGRID.get(k);if(!L)SGRID.set(k,L=[]);L.push(o);}}}
+function propHit(x,y,z,pad=1.2){if(!SGRID)buildSGrid();const L=SGRID.get(sgKey(Math.floor(x/SG),Math.floor(z/SG)));if(!L)return false;for(const o of L){if(o.k==='c'){if(y<o.y0||y>o.y1)continue;const r=lerp(o.r0,o.r1,(y-o.y0)/(o.y1-o.y0))+pad;if((x-o.x)**2+(z-o.z)**2<r*r)return true;}
   else if((x-o.x)**2+(y-o.y)**2+(z-o.z)**2<(o.r+pad)**2)return true;}return false;}
 function flyGate(id,name,x,z,y0,y1,yaw,w,desc){FLYGATES.push({id,name,x,z,y0,y1,nx:Math.cos(yaw),nz:Math.sin(yaw),w,desc});}
 const onIsle=(id,ok,score,n=500)=>{const I=ISLES[id];return findSpot(I.x,I.z,I.r,(x,z,h)=>isleAt(x,z)===id&&ok(x,z,h),score,n);};
@@ -1478,7 +1488,7 @@ function spireAt(it,x,z,y0,top,r0,r1,seed){const n=7;let px=x,pz=z;
      FINDS.nests.push({x:p.x,y:p.h+30,z:p.z,obj:os,wL,wR,kind:'fly',home:new V3(p.x+.6,p.h+40,p.z+.3)});}}
   /* a hut and windsock-side shed for each new airstrip */
   for(const s of ARCH_STRIPS){if(['sisters','cleft','cascade'].includes(s.id))continue;const S=stripOf(s.id),p=toWorld(S,S.len/2-60,-(S.wid/2+22));if(groundH(p.x,p.z)<2)continue;hutAt(it,rf,p.x,p.z,-S.hdg*DEG,6,5,3,0xe8dcc8,0x3f6f8f,1);}
-  scene.add(shadowy(new THREE.Mesh(merge(it),toon())));scene.add(shadowy(new THREE.Mesh(merge(rf),toon())));for(const [x,y,z,c] of lit)addLight(x,y,z,c);
+  addCells(it,toon(),2500,shadowy);addCells(rf,toon(),2500,shadowy);for(const [x,y,z,c] of lit)addLight(x,y,z,c);
 })();
 /* trees for the new islands: [island, how many, rule] — a rule returns a tree or null */
 const _orch=new Set();
@@ -1556,7 +1566,7 @@ const ARCH_TREES=[
      for(let s=0;s<8;s++){const a0=s/8*Math.PI,a1=(s+1)/8*Math.PI,[nx,nz]=[-Math.sin(I.rot),Math.cos(I.rot)];
        beam(it,new V3(p.x+nx*Math.cos(a0)*w,h+Math.sin(a0)*w*.9,p.z+nz*Math.cos(a0)*w),new V3(p.x+nx*Math.cos(a1)*w,h+Math.sin(a1)*w*.9,p.z+nz*Math.cos(a1)*w),.8,0xf2ead8);}}
    mark('whale',c.x,c.z,c.h,'Whalebone Isle','A whale washed up here long ago. Now its ribs are an archway, and the kids play hide and seek in it.');}
-  scene.add(shadowy(new THREE.Mesh(merge(it),toon())));if(rf.length)scene.add(shadowy(new THREE.Mesh(merge(rf),toon())));for(const [x,y,z,c] of lit)addLight(x,y,z,c);
+  addCells(it,toon(),2500,shadowy);if(rf.length)addCells(rf,toon(),2500,shadowy);for(const [x,y,z,c] of lit)addLight(x,y,z,c);
 })();
 ARCH_TREES.push(
   ['hollow',1100,(x,z,h)=>h>6&&h<300&&!nearStrip(x,z,55)&&slopeAt(x,z)<.5?{x,z,h,pine:h>120?rnd()<.85:rnd()<.3,s:.7+rnd()*.6}:null],
@@ -1715,9 +1725,9 @@ const FORMS=[];
     gate('h_gaunt2','Out of the Gauntlet',190,0,-1,30,12,'Eight leaning slabs, left, right, left. Zigzag all the way through.');shoal(180);}
   NEAR=null;
 
-  scene.add(shadowy(new THREE.Mesh(merge(it),toon())));if(grass.length)scene.add(shadowy(new THREE.Mesh(merge(grass),toon())));
-  if(foamIt.length){const fm=new THREE.Mesh(merge(foamIt),new THREE.MeshBasicMaterial({color:0xf6f1e4,transparent:true,opacity:.55,depthWrite:false}));fm.renderOrder=2;scene.add(fm);
-    anims.push(t=>{fm.material.opacity=.42+Math.sin(t*1.7)*.13;});}
+  addCells(it,toon(),2500,shadowy);if(grass.length)addCells(grass,toon(),2500,shadowy);
+  if(foamIt.length){const fmM=new THREE.MeshBasicMaterial({color:0xf6f1e4,transparent:true,opacity:.55,depthWrite:false});addCells(foamIt,fmM,2500,m=>{m.renderOrder=2;return m;});
+    anims.push(t=>{fmM.opacity=.42+Math.sin(t*1.7)*.13;});}
 })();
 
 /* ---------------- night finds: things that only glow after dark ----------------
@@ -3108,7 +3118,7 @@ function settingsCard(){
   const mv=[['OFF',0],['SOFT',.5],['ON',1]].map(([n,v])=>`<button data-mv="${v}" class="${(settings.music??.5)==v?'primary':''}">${n}</button>`).join('');
   const st=STATIONS.map(S=>`<button data-st="${S.id}" class="${settings.station===S.id?'primary':''}">${S.fq} ${S.name.toUpperCase()}</button>`).join('');
   const lt=Object.keys(TOD).map(k=>`<button data-lt="${k}" class="${settings.light===k?'primary':''}">${TOD[k].name.toUpperCase()}</button>`).join('');
-  showCard(`<h2>Settings</h2><div class="sub">ASSISTS · TURN THEM OFF ONE AT A TIME AS YOU IMPROVE</div>${rows}<h3>ENGINE VOLUME</h3><div class="btns">${ev}</div><h3>RADIO VOLUME</h3><div class="btns">${mv}</div><h3>RADIO STATION · OR TAP THE DIAL UP TOP WHILE FLYING</h3><div class="btns">${st}</div><h3>TIME OF DAY</h3><div class="btns">${lt}</div><h3>WEATHER · TRYING IT OUT</h3><div class="btns">${Object.entries(WX).map(([k,W])=>`<button data-wx="${k}" class="${settings.weather===k?'primary':''}">${W.name.toUpperCase()}</button>`).join('')}</div><h3>PIXELS</h3><div class="btns">${px}</div><div class="sub" style="margin-top:14px">BUILD 942b27c</div>`,[['Back',back,true]]);
+  showCard(`<h2>Settings</h2><div class="sub">ASSISTS · TURN THEM OFF ONE AT A TIME AS YOU IMPROVE</div>${rows}<h3>ENGINE VOLUME</h3><div class="btns">${ev}</div><h3>RADIO VOLUME</h3><div class="btns">${mv}</div><h3>RADIO STATION · OR TAP THE DIAL UP TOP WHILE FLYING</h3><div class="btns">${st}</div><h3>TIME OF DAY</h3><div class="btns">${lt}</div><h3>WEATHER · TRYING IT OUT</h3><div class="btns">${Object.entries(WX).map(([k,W])=>`<button data-wx="${k}" class="${settings.weather===k?'primary':''}">${W.name.toUpperCase()}</button>`).join('')}</div><h3>PIXELS</h3><div class="btns">${px}</div><div class="sub" style="margin-top:14px">BUILD 7aea00e</div>`,[['Back',back,true]]);
   const cb=$('cardBody');
   cb.querySelectorAll('[data-k]').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.k;if(k==='tilt'){if(!settings.tilt){settings.tilt=true;saveS();enableTilt().then(()=>{updTiltUI();settingsCard();});}else{settings.tilt=false;saveS();disableTilt();updTiltUI();settingsCard();}return;}settings[k]=!settings[k];saveS();if(k==='sound')snd.setOn(settings.sound);if(k==='fps'){$('fps').hidden=!settings.fps;$('fps').textContent='FPS: measuring…';fpsN=fpsT=0;fpsLast=0;}if(k==='sound')music.setVol();settingsCard();}));
   cb.querySelectorAll('[data-px]').forEach(b=>b.addEventListener('click',()=>{settings.pixels=b.dataset.px;pixMode=settings.pixels;saveS();resize();settingsCard();}));

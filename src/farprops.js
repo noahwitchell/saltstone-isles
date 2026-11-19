@@ -56,7 +56,7 @@
      for(let s=0;s<8;s++){const a0=s/8*Math.PI,a1=(s+1)/8*Math.PI,[nx,nz]=[-Math.sin(I.rot),Math.cos(I.rot)];
        beam(it,new V3(p.x+nx*Math.cos(a0)*w,h+Math.sin(a0)*w*.9,p.z+nz*Math.cos(a0)*w),new V3(p.x+nx*Math.cos(a1)*w,h+Math.sin(a1)*w*.9,p.z+nz*Math.cos(a1)*w),.8,0xf2ead8);}}
    mark('whale',c.x,c.z,c.h,'Whalebone Isle','A whale washed up here long ago. Now its ribs are an archway, and the kids play hide and seek in it.');}
-  scene.add(shadowy(new THREE.Mesh(merge(it),toon())));if(rf.length)scene.add(shadowy(new THREE.Mesh(merge(rf),toon())));for(const [x,y,z,c] of lit)addLight(x,y,z,c);
+  addCells(it,toon(),2500,shadowy);if(rf.length)addCells(rf,toon(),2500,shadowy);for(const [x,y,z,c] of lit)addLight(x,y,z,c);
 })();
 ARCH_TREES.push(
   ['hollow',1100,(x,z,h)=>h>6&&h<300&&!nearStrip(x,z,55)&&slopeAt(x,z)<.5?{x,z,h,pine:h>120?rnd()<.85:rnd()<.3,s:.7+rnd()*.6}:null],

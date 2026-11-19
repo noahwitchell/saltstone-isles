@@ -2,9 +2,15 @@
 const SOLIDS=[];   // simple collision shapes for rock spires, arches and bridges: c = tapered cylinder, s = sphere
 const FLYGATES=[]; // natural gaps worth flying through: a vertical window with a normal (nx,nz) and half-width w
 const FINDS={};    // errand items: set id -> [{x,y,z}]
-const solidCyl=(x,z,y0,y1,r0,r1)=>SOLIDS.push({k:'c',x,z,y0,y1,r0,r1});
-const solidSph=(x,y,z,r)=>SOLIDS.push({k:'s',x,y,z,r});
-function propHit(x,y,z,pad=1.2){for(const o of SOLIDS){if(o.k==='c'){if(y<o.y0||y>o.y1)continue;const r=lerp(o.r0,o.r1,(y-o.y0)/(o.y1-o.y0))+pad;if((x-o.x)**2+(z-o.z)**2<r*r)return true;}
+/* collision shapes live in a 250 m grid, so a check only looks at the rocks in the plane's own cell instead of every
+   rock in the world. The grid is (re)built the first time it's needed after shapes are added. Padding up to 8 m is covered. */
+const SG=250;let SGRID=null;
+const solidCyl=(x,z,y0,y1,r0,r1)=>{SOLIDS.push({k:'c',x,z,y0,y1,r0,r1});SGRID=null;};
+const solidSph=(x,y,z,r)=>{SOLIDS.push({k:'s',x,y,z,r});SGRID=null;};
+const sgKey=(ix,iz)=>(ix+4096)*8192+(iz+4096);
+function buildSGrid(){SGRID=new Map();for(const o of SOLIDS){const R=(o.k==='c'?Math.max(o.r0,o.r1):o.r)+8;
+  for(let ix=Math.floor((o.x-R)/SG);ix<=Math.floor((o.x+R)/SG);ix++)for(let iz=Math.floor((o.z-R)/SG);iz<=Math.floor((o.z+R)/SG);iz++){const k=sgKey(ix,iz);let L=SGRID.get(k);if(!L)SGRID.set(k,L=[]);L.push(o);}}}
+function propHit(x,y,z,pad=1.2){if(!SGRID)buildSGrid();const L=SGRID.get(sgKey(Math.floor(x/SG),Math.floor(z/SG)));if(!L)return false;for(const o of L){if(o.k==='c'){if(y<o.y0||y>o.y1)continue;const r=lerp(o.r0,o.r1,(y-o.y0)/(o.y1-o.y0))+pad;if((x-o.x)**2+(z-o.z)**2<r*r)return true;}
   else if((x-o.x)**2+(y-o.y)**2+(z-o.z)**2<(o.r+pad)**2)return true;}return false;}
 function flyGate(id,name,x,z,y0,y1,yaw,w,desc){FLYGATES.push({id,name,x,z,y0,y1,nx:Math.cos(yaw),nz:Math.sin(yaw),w,desc});}
 const onIsle=(id,ok,score,n=500)=>{const I=ISLES[id];return findSpot(I.x,I.z,I.r,(x,z,h)=>isleAt(x,z)===id&&ok(x,z,h),score,n);};
@@ -162,7 +168,7 @@ function spireAt(it,x,z,y0,top,r0,r1,seed){const n=7;let px=x,pz=z;
      FINDS.nests.push({x:p.x,y:p.h+30,z:p.z,obj:os,wL,wR,kind:'fly',home:new V3(p.x+.6,p.h+40,p.z+.3)});}}
   /* a hut and windsock-side shed for each new airstrip */
   for(const s of ARCH_STRIPS){if(['sisters','cleft','cascade'].includes(s.id))continue;const S=stripOf(s.id),p=toWorld(S,S.len/2-60,-(S.wid/2+22));if(groundH(p.x,p.z)<2)continue;hutAt(it,rf,p.x,p.z,-S.hdg*DEG,6,5,3,0xe8dcc8,0x3f6f8f,1);}
-  scene.add(shadowy(new THREE.Mesh(merge(it),toon())));scene.add(shadowy(new THREE.Mesh(merge(rf),toon())));for(const [x,y,z,c] of lit)addLight(x,y,z,c);
+  addCells(it,toon(),2500,shadowy);addCells(rf,toon(),2500,shadowy);for(const [x,y,z,c] of lit)addLight(x,y,z,c);
 })();
 /* trees for the new islands: [island, how many, rule] — a rule returns a tree or null */
 const _orch=new Set();
