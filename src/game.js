@@ -1189,7 +1189,7 @@ function updateVisuals(dt,t){
   litT-=dt;if(litT<=0){litT=.15;planeTarget=sunBlocked(ac.pos)?0:1;}planeLit.value=lerp(planeLit.value,planeTarget,1-Math.exp(-dt*6));
   const outside=camMode==='chase'||(mode!=='fly'&&mode!=='paused');
   const U=plane.userData;U.bodyM.visible=outside;U.blades.visible=outside;
-  COCK.visible=!outside&&!lookDown;if(COCK.visible)COCK.userData.throttle.position.z=lerp(COCK.userData.throttle.position.z,COCK_PZ+.06-ac.throttle*.07,1-Math.exp(-dt*12));
+  COCK.visible=!outside&&!lookDown;if(COCK.visible&&typeof SH!=='undefined'){const md=(SH.plane||{}).sel||'cub',P=PAINTS.find(p=>p[0]===(SH.paint||{}).sel)||PAINTS[0];COCK.userData.hi.visible=md!=='bi'&&md!=='racer';COCK.userData.bi.visible=md==='bi';COCK.userData.wingMat.color.setHex(P[2]);}if(COCK.visible)COCK.userData.throttle.position.z=lerp(COCK.userData.throttle.position.z,COCK_PZ+.06-ac.throttle*.07,1-Math.exp(-dt*12));
   const running=mode!=='crashed';ac.rpm=lerp(ac.rpm,running?.22+ac.throttle*ac.pf*.78+Math.min(ac.ias/60,.3):0,1-Math.exp(-dt*3));
   ac.prop+=ac.rpm*60*dt;U.blades.rotation.z=ac.prop;U.disc.material.opacity=running?.06+ac.rpm*.2:0;
   const gh=surfH(ac.pos.x,ac.pos.z),agl=ac.pos.y-AC.gearH-gh;

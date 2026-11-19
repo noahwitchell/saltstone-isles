@@ -943,7 +943,7 @@ function buildFrame(){frameLayer=new Uint32Array(LW*LH);}
    a six-pack of dials, clock, switches, fuel gauges, radio and throttle; the glare shield with its compass; windshield
    posts; the door sill on the left; and the right-hand seat where your co-pilot sits. Toon-shaded like the world, so
    it takes the sun and shade as you turn. */
-const COCK_PZ=-.78,COCK_DIALS=[{x:-.22,y:-.4,r:.08},{x:0,y:-.4,r:.08},{x:.22,y:-.4,r:.08},{x:-.22,y:-.585,r:.075},{x:0,y:-.585,r:.075},{x:.22,y:-.585,r:.075}],COCK_TACH={x:.445,y:-.41,r:.065};
+const COCK_PZ=-.78,COCK_DIALS=[{x:-.22,y:-.4,r:.08},{x:0,y:-.4,r:.08},{x:.22,y:-.4,r:.08},{x:-.22,y:-.585,r:.075},{x:0,y:-.585,r:.075},{x:.22,y:-.585,r:.075}],COCK_TACH={x:-.45,y:-.41,r:.065};
 const COCK=(()=>{const g=new THREE.Group();g.rotation.x=12*DEG;g.visible=false;const PZ=COCK_PZ,it=[],HP=Math.PI/2;
   const B=(w,h,d,p,c,r)=>it.push({geo:BOX(w,h,d),m:M(p,r),color:c}),CY=(rt,rb,h,p,c,r,n=14)=>it.push({geo:new THREE.CylinderGeometry(rt,rb,h,n),m:M(p,r),color:c});
   const pan=0x4e4654,panD=0x3c3542,panL=0x5e5664,blk=0x221d27,trim=0x9a92a0,chrome=0xc8c2cc,cream=0xeee2c4,red=0xd2493c,lea=0x8a5434,leaD=0x5e3622,leaL=0xa66a44;
@@ -958,7 +958,7 @@ const COCK=(()=>{const g=new THREE.Group();g.rotation.x=12*DEG;g.visible=false;c
   // a little cream placard under each dial row, and one under the six-pack
   for(const d of COCK_DIALS)B(.07,.014,.004,[d.x,d.y-d.r-.026,PZ+.012],cream);
   // the clock, top left: cream face, two hands
-  {const x=-.45,y=-.41;CY(.056,.058,.03,[x,y,PZ+.02],chrome,[HP,0,0],16);CY(.048,.048,.034,[x,y,PZ+.022],cream,[HP,0,0],16);B(.006,.034,.004,[x,y+.014,PZ+.04],blk);B(.026,.006,.004,[x+.011,y,PZ+.04],blk);B(.008,.008,.006,[x,y,PZ+.042],red);}
+  {const x=.43,y=-.41;CY(.056,.058,.03,[x,y,PZ+.02],chrome,[HP,0,0],16);CY(.048,.048,.034,[x,y,PZ+.022],cream,[HP,0,0],16);B(.006,.034,.004,[x,y+.014,PZ+.04],blk);B(.026,.006,.004,[x+.011,y,PZ+.04],blk);B(.008,.008,.006,[x,y,PZ+.042],red);}
   // switches: four toggles with labels, a red master switch and the key
   for(let k=0;k<4;k++){const x=-.55+k*.065,y=-.565;B(.034,.03,.012,[x,y,PZ+.006],chrome);B(.012,.012,.05,[x,y+.008,PZ+.03],blk,[-.5,0,0]);B(.04,.012,.004,[x,y-.03,PZ+.004],cream);}
   B(.05,.05,.02,[-.32,-.565,PZ+.01],red);B(.03,.018,.03,[-.32,-.555,PZ+.03],0xf0e4d0);
@@ -972,15 +972,18 @@ const COCK=(()=>{const g=new THREE.Group();g.rotation.x=12*DEG;g.visible=false;c
   // windshield posts, leaning in toward the wing, and the brace at the top
   const post=(ax,ay,bx,by,z,th)=>{const dx=bx-ax,dy=by-ay,L=Math.hypot(dx,dy);B(th,L,th,[(ax+bx)/2,(ay+by)/2,z],0x2e2834,[0,0,Math.atan2(-dx,dy)]);B(th*.4,L,th*1.02,[(ax+bx)/2+th*.3,(ay+by)/2,z],0x4a4252,[0,0,Math.atan2(-dx,dy)]);};
   post(-.8,-.26,-.6,.7,PZ+.06,.034);post(.8,-.26,.6,.7,PZ+.06,.034);
-  // the door on the left: wall, sill cap, handle and a map pocket
-  B(.05,.8,1.1,[-.68,-.68,-.3],panD);B(.1,.04,1.1,[-.65,-.28,-.3],trim);B(.1,.012,1.1,[-.65,-.302,-.3],blk);B(.03,.022,.14,[-.64,-.4,-.48],chrome);B(.02,.16,.3,[-.645,-.56,-.36],0x2e2834);B(.022,.02,.3,[-.64,-.48,-.36],trim);
-  // the right seat: set back beside you, so you look down onto its tufted cushion (where your co-pilot sits) with the
-  // edge of the seat back just showing at the right
-  {const x=.71,z=-.3;B(.46,.46,.09,[x,-.4,z],lea);CY(.05,.05,.46,[x,-.17,z],leaL,[0,0,HP],10);for(const k of [-1,0,1])B(.006,.38,.094,[x+k*.12,-.42,z],leaD);
-    B(.48,.1,.52,[x,-.63,z-.3],lea);CY(.052,.052,.48,[x,-.63,z-.56],leaL,[0,0,HP],10);B(.48,.012,.012,[x,-.578,z-.05],leaD);
-    for(const k of [-1,0,1])B(.006,.006,.44,[x+k*.12,-.579,z-.3],leaD);for(const k of [-1,1])B(.006,.006,.48,[x,-.579,z-.3+k*.13],leaD,[0,HP,0]);
-    for(const k of [-1,1])for(const j of [-1,1])B(.014,.008,.014,[x+k*.12,-.577,z-.3+j*.13],leaL);}
+  // the door on the left: upholstered panel, a padded armrest and the door lever up front
+  B(.05,.8,1.1,[-.68,-.68,-.3],panD);B(.07,.03,1.1,[-.66,-.29,-.3],0x2e2834);B(.012,.3,.78,[-.652,-.5,-.34],leaD);for(const k of [-1,0,1])B(.014,.3,.006,[-.65,-.5,-.34+k*.24],0x4a2a1a);
+  B(.08,.06,.46,[-.62,-.4,-.4],lea);CY(.03,.03,.46,[-.62,-.37,-.4],leaL,[HP,0,0],8);
+  CY(.02,.02,.02,[-.655,-.33,-.66],chrome,[0,0,HP],8);B(.014,.014,.11,[-.64,-.33,-.61],chrome);B(.02,.02,.03,[-.64,-.33,-.555],blk);
+  // the right seat: just its bottom, running off the bottom-right corner, with your co-pilot sitting on it
+  {const x=.74,z=-.34;B(.52,.1,.58,[x,-.57,z],lea);CY(.05,.05,.52,[x,-.57,z-.29],leaL,[0,0,HP],10);B(.52,.01,.01,[x,-.519,z-.25],leaD);B(.54,.06,.6,[x,-.65,z],0x2e2834);}
   const m=new THREE.Mesh(merge(it),litify(toon({},false)));g.add(m);
+  const hi=new THREE.Group(),bi=new THREE.Group(),wingMat=litify(toon({vertexColors:false,color:0xf3e7cf},false));
+  hi.add(new THREE.Mesh(merge([{geo:BOX(2.6,.05,.08),m:M([0,.245,PZ+.06]),color:0x2e2834},{geo:BOX(2.6,.012,.08),m:M([0,.222,PZ+.06]),color:0x4a4252}]),litify(toon({},false))));
+  {const w=new THREE.Mesh(BOX(2.6,.14,.5),wingMat);w.position.set(0,.34,PZ+.2);hi.add(w);}
+  for(const sx of [-1,1]){const st=new THREE.Mesh(merge([{geo:BOX(.03,1.2,.03),m:M([sx*.62,.45,PZ+.02],[0,0,-sx*.45]),color:0x2c2833}]),litify(toon({},false)));bi.add(st);}
+  g.add(hi,bi);g.userData.hi=hi;g.userData.bi=bi;g.userData.wingMat=wingMat;
   // the throttle: a black knob on a chrome shaft, in and out with the power
   const th=new THREE.Group();th.add(new THREE.Mesh(merge([{geo:new THREE.CylinderGeometry(.008,.008,.16,6),m:M([0,0,.08],[HP,0,0]),color:chrome},{geo:new THREE.SphereGeometry(.028,10,8),m:M([0,0,.16]),color:blk}]),litify(toon({},false))));
   th.position.set(.3,-.66,PZ);g.add(th);g.userData.throttle=th;
