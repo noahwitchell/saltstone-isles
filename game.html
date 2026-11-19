@@ -2130,9 +2130,12 @@ const COCK=(()=>{const g=new THREE.Group();g.rotation.x=12*DEG;g.visible=false;c
   post(-.8,-.26,-.6,.7,PZ+.06,.034);post(.8,-.26,.6,.7,PZ+.06,.034);
   // the door on the left: wall, sill cap, handle and a map pocket
   B(.05,.8,1.1,[-.68,-.68,-.3],panD);B(.1,.04,1.1,[-.65,-.28,-.3],trim);B(.1,.012,1.1,[-.65,-.302,-.3],blk);B(.03,.022,.14,[-.64,-.4,-.48],chrome);B(.02,.16,.3,[-.645,-.56,-.36],0x2e2834);B(.022,.02,.3,[-.64,-.48,-.36],trim);
-  // the right seat: tucked leather back with a roll on top, and its cushion
-  {const x=.68,z=-.36;B(.46,.6,.1,[x,-.4,z],lea);CY(.055,.055,.46,[x,-.09,z],leaL,[0,0,HP],10);for(const k of [-1,0,1])B(.006,.5,.104,[x+k*.12,-.42,z],leaD);B(.46,.012,.104,[x,-.68,z],leaD);
-    B(.48,.12,.5,[x,-.8,z-.25],lea);CY(.06,.06,.48,[x,-.8,z-.5],leaL,[0,0,HP],10);}
+  // the right seat: set back beside you, so you look down onto its tufted cushion (where your co-pilot sits) with the
+  // edge of the seat back just showing at the right
+  {const x=.71,z=-.3;B(.46,.46,.09,[x,-.4,z],lea);CY(.05,.05,.46,[x,-.17,z],leaL,[0,0,HP],10);for(const k of [-1,0,1])B(.006,.38,.094,[x+k*.12,-.42,z],leaD);
+    B(.48,.1,.52,[x,-.63,z-.3],lea);CY(.052,.052,.48,[x,-.63,z-.56],leaL,[0,0,HP],10);B(.48,.012,.012,[x,-.578,z-.05],leaD);
+    for(const k of [-1,0,1])B(.006,.006,.44,[x+k*.12,-.579,z-.3],leaD);for(const k of [-1,1])B(.006,.006,.48,[x,-.579,z-.3+k*.13],leaD,[0,HP,0]);
+    for(const k of [-1,1])for(const j of [-1,1])B(.014,.008,.014,[x+k*.12,-.577,z-.3+j*.13],leaL);}
   const m=new THREE.Mesh(merge(it),litify(toon({},false)));g.add(m);
   // the throttle: a black knob on a chrome shaft, in and out with the power
   const th=new THREE.Group();th.add(new THREE.Mesh(merge([{geo:new THREE.CylinderGeometry(.008,.008,.16,6),m:M([0,0,.08],[HP,0,0]),color:chrome},{geo:new THREE.SphereGeometry(.028,10,8),m:M([0,0,.16]),color:blk}]),litify(toon({},false))));
@@ -3223,7 +3226,7 @@ function settingsCard(){
   const mv=[['OFF',0],['SOFT',.5],['ON',1]].map(([n,v])=>`<button data-mv="${v}" class="${(settings.music??.5)==v?'primary':''}">${n}</button>`).join('');
   const st=STATIONS.map(S=>`<button data-st="${S.id}" class="${settings.station===S.id?'primary':''}">${S.fq} ${S.name.toUpperCase()}</button>`).join('');
   const lt=Object.keys(TOD).map(k=>`<button data-lt="${k}" class="${settings.light===k?'primary':''}">${TOD[k].name.toUpperCase()}</button>`).join('');
-  showCard(`<h2>Settings</h2><div class="sub">ASSISTS · TURN THEM OFF ONE AT A TIME AS YOU IMPROVE</div>${rows}<h3>ENGINE VOLUME</h3><div class="btns">${ev}</div><h3>RADIO VOLUME</h3><div class="btns">${mv}</div><h3>RADIO STATION · OR TAP THE DIAL UP TOP WHILE FLYING</h3><div class="btns">${st}</div><h3>TIME OF DAY</h3><div class="btns">${lt}</div><h3>WEATHER · TRYING IT OUT</h3><div class="btns">${Object.entries(WX).map(([k,W])=>`<button data-wx="${k}" class="${settings.weather===k?'primary':''}">${W.name.toUpperCase()}</button>`).join('')}</div><h3>PIXELS</h3><div class="btns">${px}</div><div class="sub" style="margin-top:14px">BUILD edbaf3b</div>`,[['Back',back,true]]);
+  showCard(`<h2>Settings</h2><div class="sub">ASSISTS · TURN THEM OFF ONE AT A TIME AS YOU IMPROVE</div>${rows}<h3>ENGINE VOLUME</h3><div class="btns">${ev}</div><h3>RADIO VOLUME</h3><div class="btns">${mv}</div><h3>RADIO STATION · OR TAP THE DIAL UP TOP WHILE FLYING</h3><div class="btns">${st}</div><h3>TIME OF DAY</h3><div class="btns">${lt}</div><h3>WEATHER · TRYING IT OUT</h3><div class="btns">${Object.entries(WX).map(([k,W])=>`<button data-wx="${k}" class="${settings.weather===k?'primary':''}">${W.name.toUpperCase()}</button>`).join('')}</div><h3>PIXELS</h3><div class="btns">${px}</div><div class="sub" style="margin-top:14px">BUILD 538693f</div>`,[['Back',back,true]]);
   const cb=$('cardBody');
   cb.querySelectorAll('[data-k]').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.k;if(k==='tilt'){if(!settings.tilt){settings.tilt=true;saveS();enableTilt().then(()=>{updTiltUI();settingsCard();});}else{settings.tilt=false;saveS();disableTilt();updTiltUI();settingsCard();}return;}settings[k]=!settings[k];saveS();if(k==='sound')snd.setOn(settings.sound);if(k==='fps'){$('fps').hidden=!settings.fps;$('fps').textContent='FPS: measuring…';fpsN=fpsT=0;fpsLast=0;}if(k==='sound')music.setVol();settingsCard();}));
   cb.querySelectorAll('[data-px]').forEach(b=>b.addEventListener('click',()=>{settings.pixels=b.dataset.px;pixMode=settings.pixels;saveS();resize();settingsCard();}));
@@ -3636,7 +3639,7 @@ const streaks=(()=>{const SRC=[[-5.2,.8,.3,1],[5.2,.8,.3,1],[-5.2,.95,.3,1],[5.2
    new version. When the game comes back to the front (and every ten minutes), check the build number on the site; if
    it's changed, reload straight away from the title screen, or offer a one-tap update in flight (the flight is saved
    first, so "Pick up where you left off" puts you right back) */
-const BUILD_ID='edbaf3b';let updOffered=false;
+const BUILD_ID='538693f';let updOffered=false;
 function checkUpdate(){if(!/^https?:/.test(location.protocol)||/claude/.test(location.hostname))return;
   fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.text():null).then(v=>{v=v&&v.trim();if(!v||v===BUILD_ID||v.length>12)return;
     if(mode==='title'){location.reload();return;}if(updOffered)return;updOffered=true;

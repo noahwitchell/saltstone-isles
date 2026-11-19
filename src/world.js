@@ -974,9 +974,12 @@ const COCK=(()=>{const g=new THREE.Group();g.rotation.x=12*DEG;g.visible=false;c
   post(-.8,-.26,-.6,.7,PZ+.06,.034);post(.8,-.26,.6,.7,PZ+.06,.034);
   // the door on the left: wall, sill cap, handle and a map pocket
   B(.05,.8,1.1,[-.68,-.68,-.3],panD);B(.1,.04,1.1,[-.65,-.28,-.3],trim);B(.1,.012,1.1,[-.65,-.302,-.3],blk);B(.03,.022,.14,[-.64,-.4,-.48],chrome);B(.02,.16,.3,[-.645,-.56,-.36],0x2e2834);B(.022,.02,.3,[-.64,-.48,-.36],trim);
-  // the right seat: tucked leather back with a roll on top, and its cushion
-  {const x=.68,z=-.36;B(.46,.6,.1,[x,-.4,z],lea);CY(.055,.055,.46,[x,-.09,z],leaL,[0,0,HP],10);for(const k of [-1,0,1])B(.006,.5,.104,[x+k*.12,-.42,z],leaD);B(.46,.012,.104,[x,-.68,z],leaD);
-    B(.48,.12,.5,[x,-.8,z-.25],lea);CY(.06,.06,.48,[x,-.8,z-.5],leaL,[0,0,HP],10);}
+  // the right seat: set back beside you, so you look down onto its tufted cushion (where your co-pilot sits) with the
+  // edge of the seat back just showing at the right
+  {const x=.71,z=-.3;B(.46,.46,.09,[x,-.4,z],lea);CY(.05,.05,.46,[x,-.17,z],leaL,[0,0,HP],10);for(const k of [-1,0,1])B(.006,.38,.094,[x+k*.12,-.42,z],leaD);
+    B(.48,.1,.52,[x,-.63,z-.3],lea);CY(.052,.052,.48,[x,-.63,z-.56],leaL,[0,0,HP],10);B(.48,.012,.012,[x,-.578,z-.05],leaD);
+    for(const k of [-1,0,1])B(.006,.006,.44,[x+k*.12,-.579,z-.3],leaD);for(const k of [-1,1])B(.006,.006,.48,[x,-.579,z-.3+k*.13],leaD,[0,HP,0]);
+    for(const k of [-1,1])for(const j of [-1,1])B(.014,.008,.014,[x+k*.12,-.577,z-.3+j*.13],leaL);}
   const m=new THREE.Mesh(merge(it),litify(toon({},false)));g.add(m);
   // the throttle: a black knob on a chrome shaft, in and out with the power
   const th=new THREE.Group();th.add(new THREE.Mesh(merge([{geo:new THREE.CylinderGeometry(.008,.008,.16,6),m:M([0,0,.08],[HP,0,0]),color:chrome},{geo:new THREE.SphereGeometry(.028,10,8),m:M([0,0,.16]),color:blk}]),litify(toon({},false))));
