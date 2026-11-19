@@ -43,7 +43,7 @@ button:focus-visible{outline:2px solid #fff;outline-offset:2px}
 #todBtn,#radioBtn{pointer-events:auto;padding:3px 5px;line-height:0}#todBtn img,#radioBtn img{width:32px;height:32px;image-rendering:pixelated;display:block}
 #view,#pause,#center{pointer-events:auto;font-family:var(--mono);font-size:15px;padding:8px 10px}
 #stallBan{z-index:5;position:fixed;left:50%;top:calc(var(--st) + 44px);transform:translateX(-50%);font-family:var(--mono);font-size:20px;background:var(--bad);color:#fff;padding:5px 12px;letter-spacing:.1em;pointer-events:none}
-#toast{z-index:26;white-space:pre-line;position:fixed;left:50%;bottom:calc(var(--sb) + 10px);transform:translateX(-50%);max-width:min(520px,52vw);background:var(--paper) var(--paperTex);background-size:192px 192px;box-shadow:inset 0 0 16px rgba(140,95,40,.2);color:var(--ink);padding:9px 13px;font-size:15px;line-height:1.3;
+#toast{z-index:26;white-space:pre-line;position:fixed;left:50%;bottom:calc(var(--sb) + 10px);transform:translateX(-50%);max-width:min(520px,52vw);background:var(--paper) var(--paperTex);background-size:192px 192px;box-shadow:inset 0 0 7px rgba(110,62,18,.36),inset 0 0 22px rgba(130,82,30,.22);color:var(--ink);padding:9px 13px;font-size:15px;line-height:1.3;
   box-shadow:4px 4px 0 #0008;pointer-events:none;text-align:center;text-wrap:balance}
 
 
@@ -149,7 +149,7 @@ button:focus-visible{outline:2px solid #fff;outline-offset:2px}
 #bigmap{width:100%;height:auto;image-rendering:pixelated;border:3px solid var(--ink);display:block;margin:4px 0 10px;background:#1d2a44}
 .card.wide{width:min(760px,100%)}
 .ov{position:fixed;inset:0;z-index:30;display:grid;place-items:center;padding:calc(12px + env(safe-area-inset-top,0px)) var(--sr) calc(12px + env(safe-area-inset-bottom,0px)) var(--sl);background:rgba(28,22,38,.35);overflow:auto}
-.card{background:var(--paper) var(--paperTex);background-size:192px 192px;image-rendering:auto;color:var(--ink);width:min(520px,100%);max-height:100%;overflow:auto;padding:18px 20px;box-shadow:6px 6px 0 #000a,inset 0 0 28px rgba(140,95,40,.22);border:3px solid var(--ink);box-sizing:border-box}
+.card{background:var(--paper) var(--paperTex);background-size:192px 192px;image-rendering:auto;color:var(--ink);width:min(520px,100%);max-height:100%;overflow:auto;padding:18px 20px;box-shadow:6px 6px 0 #000a,inset 0 0 10px rgba(110,62,18,.38),inset 0 0 34px rgba(130,82,30,.26),inset 0 0 80px rgba(150,105,45,.14);border:3px solid var(--ink);box-sizing:border-box}
 .card .topbar{display:flex;gap:8px;margin:-6px 0 10px;position:sticky;top:-18px;z-index:2;background:var(--paper);padding:6px 0 4px}
 .card .backbtn{font-family:var(--mono);font-size:17px;padding:6px 12px}
 .card h2{margin:0 0 4px;font-size:26px;line-height:1.05;font-weight:700;text-wrap:balance}
@@ -2082,11 +2082,11 @@ const lightPts=(function(){const g=new THREE.BufferGeometry();g.setAttribute('po
 const $=id=>document.getElementById(id);
 /* paper: a small generated scrap-of-paper texture (fibers, flecks, a few soft stains) used behind every card, menu and toast */
 (function paperTexture(){const N=96,c=document.createElement('canvas');c.width=c.height=N;const x=c.getContext('2d');let sd=7;const r=()=>{sd=(Math.imul(sd,1664525)+1013904223)>>>0;return sd/4294967296;};
-  for(let k=0;k<14;k++){const cx=r()*N,cy=r()*N,rr=8+r()*22,g=x.createRadialGradient(cx,cy,0,cx,cy,rr);g.addColorStop(0,`rgba(${r()<.5?'150,110,60':'255,250,235'},${.05+r()*.06})`);g.addColorStop(1,'rgba(0,0,0,0)');
+  for(let k=0;k<14;k++){const cx=r()*N,cy=r()*N,rr=8+r()*22,g=x.createRadialGradient(cx,cy,0,cx,cy,rr);g.addColorStop(0,`rgba(${r()<.6?'150,105,50':'255,250,235'},${.07+r()*.09})`);g.addColorStop(1,'rgba(0,0,0,0)');
     for(const ox of [-N,0,N])for(const oy of [-N,0,N]){x.save();x.translate(ox,oy);x.fillStyle=g;x.fillRect(cx-rr,cy-rr,rr*2,rr*2);x.restore();}}
   for(let k=0;k<220;k++){const px=Math.floor(r()*N),py=Math.floor(r()*N),len=1+Math.floor(r()*4),dark=r()<.6;x.fillStyle=dark?`rgba(120,90,50,${.06+r()*.08})`:`rgba(255,252,240,${.18+r()*.2})`;
     if(r()<.5)x.fillRect(px,py,len,1);else x.fillRect(px,py,1,len);}
-  for(let k=0;k<60;k++){x.fillStyle=`rgba(90,60,30,${.1+r()*.15})`;x.fillRect(Math.floor(r()*N),Math.floor(r()*N),1,1);}
+  for(let k=0;k<90;k++){x.fillStyle=`rgba(90,60,30,${.12+r()*.18})`;x.fillRect(Math.floor(r()*N),Math.floor(r()*N),1,1);}
   document.documentElement.style.setProperty('--paperTex',`url(${c.toDataURL()})`);})();
 let tod='golden';
 function setTOD(k){tod=k;const T=TOD[k];
@@ -3107,7 +3107,7 @@ function settingsCard(){
   const mv=[['OFF',0],['SOFT',.5],['ON',1]].map(([n,v])=>`<button data-mv="${v}" class="${(settings.music??.5)==v?'primary':''}">${n}</button>`).join('');
   const st=STATIONS.map(S=>`<button data-st="${S.id}" class="${settings.station===S.id?'primary':''}">${S.fq} ${S.name.toUpperCase()}</button>`).join('');
   const lt=Object.keys(TOD).map(k=>`<button data-lt="${k}" class="${settings.light===k?'primary':''}">${TOD[k].name.toUpperCase()}</button>`).join('');
-  showCard(`<h2>Settings</h2><div class="sub">ASSISTS · TURN THEM OFF ONE AT A TIME AS YOU IMPROVE</div>${rows}<h3>ENGINE VOLUME</h3><div class="btns">${ev}</div><h3>RADIO VOLUME</h3><div class="btns">${mv}</div><h3>RADIO STATION · OR TAP THE DIAL UP TOP WHILE FLYING</h3><div class="btns">${st}</div><h3>TIME OF DAY</h3><div class="btns">${lt}</div><h3>WEATHER · TRYING IT OUT</h3><div class="btns">${Object.entries(WX).map(([k,W])=>`<button data-wx="${k}" class="${settings.weather===k?'primary':''}">${W.name.toUpperCase()}</button>`).join('')}</div><h3>PIXELS</h3><div class="btns">${px}</div><div class="sub" style="margin-top:14px">BUILD ff6aa71</div>`,[['Back',back,true]]);
+  showCard(`<h2>Settings</h2><div class="sub">ASSISTS · TURN THEM OFF ONE AT A TIME AS YOU IMPROVE</div>${rows}<h3>ENGINE VOLUME</h3><div class="btns">${ev}</div><h3>RADIO VOLUME</h3><div class="btns">${mv}</div><h3>RADIO STATION · OR TAP THE DIAL UP TOP WHILE FLYING</h3><div class="btns">${st}</div><h3>TIME OF DAY</h3><div class="btns">${lt}</div><h3>WEATHER · TRYING IT OUT</h3><div class="btns">${Object.entries(WX).map(([k,W])=>`<button data-wx="${k}" class="${settings.weather===k?'primary':''}">${W.name.toUpperCase()}</button>`).join('')}</div><h3>PIXELS</h3><div class="btns">${px}</div><div class="sub" style="margin-top:14px">BUILD d4bf9cb</div>`,[['Back',back,true]]);
   const cb=$('cardBody');
   cb.querySelectorAll('[data-k]').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.k;if(k==='tilt'){if(!settings.tilt){settings.tilt=true;saveS();enableTilt().then(()=>{updTiltUI();settingsCard();});}else{settings.tilt=false;saveS();disableTilt();updTiltUI();settingsCard();}return;}settings[k]=!settings[k];saveS();if(k==='sound')snd.setOn(settings.sound);if(k==='fps'){$('fps').hidden=!settings.fps;$('fps').textContent='FPS: measuring…';fpsN=fpsT=0;fpsLast=0;}if(k==='sound')music.setVol();settingsCard();}));
   cb.querySelectorAll('[data-px]').forEach(b=>b.addEventListener('click',()=>{settings.pixels=b.dataset.px;pixMode=settings.pixels;saveS();resize();settingsCard();}));
