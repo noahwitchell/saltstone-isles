@@ -838,7 +838,9 @@ const cloudGroup=new THREE.Group();scene.add(cloudGroup);const CLOUDS=[],CLOUD_C
 function cullClouds(p){const gx=cloudGroup.position.x,gz=cloudGroup.position.z;for(const c of CLOUD_CELLS){const d=Math.hypot(c.x+gx-p.x,c.z+gz-p.z)-c.r;c.solid.visible=d<9000;const near=d<700;c.fade[0].visible=c.fade[1].visible=near;}}
 /* how deep in a cloud the camera is (0 clear .. 1 in the middle): drives a soft white-out in the post pass */
 function cloudMist(p){let m=0;const gx=cloudGroup.position.x,gz=cloudGroup.position.z;for(const c of CLOUDS){const dy=p.y-c.y;if(Math.abs(dy)>c.r)continue;
-  const d=Math.hypot(p.x-c.x-gx,dy*1.4,p.z-c.z-gz)/c.r;if(d<.9)m=Math.max(m,1-smooth(.3,.9,d));}return m;}
+  const d=Math.hypot(p.x-c.x-gx,dy,p.z-c.z-gz)/c.r;if(d<1.7)m=Math.max(m,1-smooth(.6,1.7,d));}return m;}
+/* the white-out is measured the same way as the cloud's fade (distance to its centre over its size) and overlaps it:
+   as the cloud thins round you the mist thickens, so flying in reads as one thing, not a fade and then fog */
 
 /* ---------------- life: boats, birds, smoke ---------------- */
 (function boats(){
@@ -890,7 +892,7 @@ const postMat=new THREE.ShaderMaterial({
       float dn=max(max(lin(texture2D(tDepth,vUv+vec2(px.x,0.)).r),lin(texture2D(tDepth,vUv-vec2(px.x,0.)).r)),max(lin(texture2D(tDepth,vUv+vec2(0.,px.y)).r),lin(texture2D(tDepth,vUv-vec2(0.,px.y)).r)));
       float e=step(dc*.07+1.2,dn-dc)*(1.-smoothstep(250.,2600.,dc));
       c=mix(c,c*vec3(.45,.38,.52),e*.85*c4.a);}
-    c=mix(c,mistC,mist*(.5+.25*smoothstep(.2,.9,vUv.y)));
+    c=mix(c,mistC,mist*(.5+.25*smoothstep(.2,.9,vUv.y))*smoothstep(1.5,4.,lin(texture2D(tDepth,vUv).r)));   // the cockpit stays clear in a cloud
     float l=dot(c,vec3(.299,.587,.114));c=mix(vec3(l),c,sat);c=(c-.5)*con+.5;
     vec2 vv=vUv-.5;c*=1.-vig*dot(vv,vv)*1.6;
     float b=dither>.5?b4(gl_FragCoord.xy)-.5:0.;
@@ -933,35 +935,65 @@ let pb, frameLayer=null, gaugeLayout=[], panelLayout=[];
 const C={bezel:rgba(0x1b1720),face:rgba(0x2b2734),tick:rgba(0xeae2cf),dim:rgba(0x8d8597),needle:rgba(0xfff6e2),orange:rgba(0xffb02e),
   white:rgba(0xf3f0e6),green:rgba(0x5fbf5a),yellow:rgba(0xf1c84a),red:rgba(0xe5483b),sky:rgba(0x6fb2e6),gnd:rgba(0xa8743f),panel:rgba(0x3b3442),panelHi:rgba(0x5a5262),panelLo:rgba(0x27222d),post:rgba(0x2a2531),cyan:rgba(0x6fe0e0),
   gPanel:rgba(0x3b3442,46),gHi:rgba(0xd8cfe0,150),gLo:rgba(0x1b1720,70),gPost:rgba(0x2a2531,40)};
-function buildFrame(){
-  // Two low dash pods in the bottom corners, one row of three gauges each, thin windshield posts leaning in. Middle stays open.
-  const w=LW,h=LH,f=new PixBuf(w,h),k=(window.devicePixelRatio||1)/PS;
-  const lp=Math.round(205*k);
-  const R=Math.max(11,Math.min(Math.floor(h*.1),Math.floor((w*.5-lp)/7.2)));
-  const rs=[Math.round(R*.9),R,Math.round(R*.76)],gp=4,cy=h-R-5;
-  // left pod: SPEED, ATTITUDE, HEADING (small, inner)
-  let x=lp+rs[0]+4;const L=[];for(let i=0;i<3;i++){if(i)x+=rs[i-1]+rs[i]+gp;L.push({x,y:cy,r:rs[i]});}
-  // right pod mirrored: ALTITUDE (big, inner), CLIMB, RPM (small, outer)
-  const rr=[R,Math.round(R*.9),Math.round(R*.76)];let xr=w-6-rr[2];const Rt=[];for(let i=2;i>=0;i--){if(i<2)xr-=rr[i+1]+rr[i]+gp;Rt[i]={x:xr,y:cy,r:rr[i]};}
-  gaugeLayout=[L[0],L[1],Rt[0],null,L[2],Rt[1]];tachCock=Rt[2];glideCock=null;
-  const y0=cy-R-8,sl=.42,le=L[2].x+L[2].r+7,rsx=Rt[0].x-Rt[0].r-7,rad=6;
-  for(let y=y0;y<h;y++){const dy=y-y0;let ins=0;if(dy<rad){const q=rad-dy;ins=Math.round(rad-Math.sqrt(Math.max(0,rad*rad-q*q)));}
-    const c=dy<2?C.gHi:C.gPanel,ex=Math.round(dy*sl)-ins;
-    f.rect(0,y,le+ex,1,c);f.rect(rsx-ex,y,w-(rsx-ex),1,c);}
-  f.rect(0,y0+2,le-rad,1,C.gLo);f.rect(rsx+rad,y0+2,w-rsx-rad,1,C.gLo);
-  // windshield posts: from the pod top near the outer edge, leaning in toward the top of the screen
-  const pw=Math.max(2,Math.round(w*.006));
-  const post=(xb,xt)=>{for(let y=0;y<=y0;y++){const t=y/y0,xx=Math.round(lerp(xt,xb,t));f.rect(xx-pw,y,1,1,C.gHi);f.rect(xx-pw+1,y,pw*2-2,1,C.gPost);f.rect(xx+pw-1,y,1,1,C.gHi);}};
-  post(Math.round(w*.075),Math.round(w*.17));post(Math.round(w*.925),Math.round(w*.83));
-  frameLayer=f.d.slice();
-}
+/* the pixel layer no longer draws a panel of its own: the 3D cockpit (below) has the panel, and the needles are drawn
+   into its dials. buildFrame just clears the layer; layoutGauges finds where each dial is on screen */
+function buildFrame(){frameLayer=new Uint32Array(LW*LH);}
+/* ---------------- the cockpit: a real 3D cabin round the view ----------------
+   Built in the plane's frame with the eye at the origin (the group undoes the camera's 12° look-down): the panel with
+   a six-pack of dials, clock, switches, fuel gauges, radio and throttle; the glare shield with its compass; windshield
+   posts; the door sill on the left; and the right-hand seat where your co-pilot sits. Toon-shaded like the world, so
+   it takes the sun and shade as you turn. */
+const COCK_PZ=-.78,COCK_DIALS=[{x:-.22,y:-.4,r:.08},{x:0,y:-.4,r:.08},{x:.22,y:-.4,r:.08},{x:-.22,y:-.585,r:.075},{x:0,y:-.585,r:.075},{x:.22,y:-.585,r:.075}],COCK_TACH={x:.445,y:-.41,r:.065};
+const COCK=(()=>{const g=new THREE.Group();g.rotation.x=12*DEG;g.visible=false;const PZ=COCK_PZ,it=[],HP=Math.PI/2;
+  const B=(w,h,d,p,c,r)=>it.push({geo:BOX(w,h,d),m:M(p,r),color:c}),CY=(rt,rb,h,p,c,r,n=14)=>it.push({geo:new THREE.CylinderGeometry(rt,rb,h,n),m:M(p,r),color:c});
+  const pan=0x4e4654,panD=0x3c3542,panL=0x5e5664,blk=0x221d27,trim=0x9a92a0,chrome=0xc8c2cc,cream=0xeee2c4,red=0xd2493c,lea=0x8a5434,leaD=0x5e3622,leaL=0xa66a44;
+  // the panel: a face in two tones with a bright top seam, rivets along the top and a darker kick panel below
+  B(2.6,.36,.06,[0,-.48,PZ-.03],pan);B(2.6,.5,.06,[0,-.91,PZ-.03],panD);B(2.6,.018,.064,[0,-.302,PZ-.03],panL);B(2.6,.012,.064,[0,-.662,PZ-.03],blk);
+  for(let k=-14;k<=14;k++)B(.012,.012,.008,[k*.085,-.322,PZ+.002],trim);
+  // a raised plate behind the six-pack, with a screw in each corner
+  B(.7,.42,.012,[0,-.495,PZ+.004],panL);B(.68,.4,.014,[0,-.495,PZ+.006],0x463e4c);for(const sx of [-1,1])for(const sy of [-1,1])B(.014,.014,.01,[sx*.32,-.495+sy*.18,PZ+.014],chrome);
+  // dial sockets: chrome ring, black well, four screws
+  for(const d of [...COCK_DIALS,COCK_TACH]){CY(d.r*1.2,d.r*1.24,.03,[d.x,d.y,PZ+.02],chrome,[HP,0,0],18);CY(d.r*1.06,d.r*1.06,.034,[d.x,d.y,PZ+.022],blk,[HP,0,0],18);
+    for(const a of [.785,2.356,3.927,5.498])B(.01,.01,.01,[d.x+Math.cos(a)*d.r*1.42,d.y+Math.sin(a)*d.r*1.42,PZ+.008],trim);}
+  // a little cream placard under each dial row, and one under the six-pack
+  for(const d of COCK_DIALS)B(.07,.014,.004,[d.x,d.y-d.r-.026,PZ+.012],cream);
+  // the clock, top left: cream face, two hands
+  {const x=-.45,y=-.41;CY(.056,.058,.03,[x,y,PZ+.02],chrome,[HP,0,0],16);CY(.048,.048,.034,[x,y,PZ+.022],cream,[HP,0,0],16);B(.006,.034,.004,[x,y+.014,PZ+.04],blk);B(.026,.006,.004,[x+.011,y,PZ+.04],blk);B(.008,.008,.006,[x,y,PZ+.042],red);}
+  // switches: four toggles with labels, a red master switch and the key
+  for(let k=0;k<4;k++){const x=-.55+k*.065,y=-.565;B(.034,.03,.012,[x,y,PZ+.006],chrome);B(.012,.012,.05,[x,y+.008,PZ+.03],blk,[-.5,0,0]);B(.04,.012,.004,[x,y-.03,PZ+.004],cream);}
+  B(.05,.05,.02,[-.32,-.565,PZ+.01],red);B(.03,.018,.03,[-.32,-.555,PZ+.03],0xf0e4d0);
+  CY(.028,.03,.02,[-.45,-.665,PZ+.01],chrome,[HP,0,0],12);B(.008,.03,.03,[-.45,-.665,PZ+.03],0xd8a43a);
+  // two little fuel gauges and the radio, right
+  for(const x of [.4,.49]){CY(.038,.04,.02,[x,-.565,PZ+.012],chrome,[HP,0,0],14);CY(.032,.032,.024,[x,-.565,PZ+.014],cream,[HP,0,0],14);B(.004,.026,.004,[x+.006,-.56,PZ+.028],red,[0,0,-.6]);}
+  B(.27,.085,.05,[.46,-.68,PZ+.022],blk);B(.25,.07,.004,[.46,-.68,PZ+.048],0x2e2834);B(.1,.026,.004,[.43,-.68,PZ+.051],0x6fe08a);for(const x of [.53,.57])CY(.014,.016,.03,[x,-.68,PZ+.06],trim,[HP,0,0],8);
+  // glare shield: a padded black lip over the panel, the compass on top
+  B(2.6,.035,.17,[0,-.27,PZ+.055],blk);CY(.032,.032,2.6,[0,-.29,PZ+.14],0x2a2430,[0,0,HP],8);
+  B(.1,.072,.085,[0,-.215,PZ+.08],blk);B(.074,.042,.004,[0,-.212,PZ+.124],cream);B(.004,.044,.006,[0,-.212,PZ+.127],red);for(let k=-2;k<=2;k++)if(k)B(.003,.012,.006,[k*.014,-.204,PZ+.127],blk);B(.02,.04,.02,[0,-.27,PZ+.08],blk);
+  // windshield posts, leaning in toward the wing, and the brace at the top
+  const post=(ax,ay,bx,by,z,th)=>{const dx=bx-ax,dy=by-ay,L=Math.hypot(dx,dy);B(th,L,th,[(ax+bx)/2,(ay+by)/2,z],0x2e2834,[0,0,Math.atan2(-dx,dy)]);B(th*.4,L,th*1.02,[(ax+bx)/2+th*.3,(ay+by)/2,z],0x4a4252,[0,0,Math.atan2(-dx,dy)]);};
+  post(-.78,-.26,-.56,.7,PZ+.06,.05);post(.78,-.26,.56,.7,PZ+.06,.05);
+  // the door on the left: wall, sill cap, handle and a map pocket
+  B(.05,.8,1.1,[-.68,-.68,-.3],panD);B(.1,.04,1.1,[-.65,-.28,-.3],trim);B(.1,.012,1.1,[-.65,-.302,-.3],blk);B(.03,.022,.14,[-.64,-.4,-.48],chrome);B(.02,.16,.3,[-.645,-.56,-.36],0x2e2834);B(.022,.02,.3,[-.64,-.48,-.36],trim);
+  // the right seat: tucked leather back with a roll on top, and its cushion
+  {const x=.68,z=-.36;B(.46,.6,.1,[x,-.4,z],lea);CY(.055,.055,.46,[x,-.09,z],leaL,[0,0,HP],10);for(const k of [-1,0,1])B(.006,.5,.104,[x+k*.12,-.42,z],leaD);B(.46,.012,.104,[x,-.68,z],leaD);
+    B(.48,.12,.5,[x,-.8,z-.25],lea);CY(.06,.06,.48,[x,-.8,z-.5],leaL,[0,0,HP],10);}
+  const m=new THREE.Mesh(merge(it),litify(toon({},false)));g.add(m);
+  // the throttle: a black knob on a chrome shaft, in and out with the power
+  const th=new THREE.Group();th.add(new THREE.Mesh(merge([{geo:new THREE.CylinderGeometry(.008,.008,.16,6),m:M([0,0,.08],[HP,0,0]),color:chrome},{geo:new THREE.SphereGeometry(.028,10,8),m:M([0,0,.16]),color:blk}]),litify(toon({},false))));
+  th.position.set(.3,-.66,PZ);g.add(th);g.userData.throttle=th;
+  if(!camera.parent)scene.add(camera);camera.add(g);return g;})();
+/* where each dial sits on screen this frame (it moves with the field of view), for the pixel needles */
+const _gv=new V3(),_ge=new THREE.Euler(12*DEG,0,0);
+function cockXY(x,y,z){_gv.set(x,y,z).applyEuler(_ge).applyMatrix4(camera.projectionMatrix);return [(_gv.x+1)/2*LW,(1-_gv.y)/2*LH];}
+function layoutGauges(){const z=COCK_PZ+.04,one=d=>{const [x,y]=cockXY(d.x,d.y,z),[x2]=cockXY(d.x+d.r,d.y,z);return {x:Math.round(x),y:Math.round(y),r:Math.max(5,Math.round(x2-x)-2)};};
+  gaugeLayout=COCK_DIALS.map(one);tachCock=one(COCK_TACH);glideCock=null;}
 function gaugeBase(g){pb.disc(g.x,g.y,g.r+2,C.bezel);pb.disc(g.x,g.y,g.r,C.face);}
 const pt=(g,a,rr)=>[g.x+Math.sin(a)*rr,g.y-Math.cos(a)*rr];
 function ticks(g,a0,a1,n,major,c){for(let i=0;i<=n;i++){const a=lerp(a0,a1,i/n),L=i%major===0?4:2;const [x0,y0]=pt(g,a,g.r-1),[x1,y1]=pt(g,a,g.r-L);pb.line(x0,y0,x1,y1,c);}}
 function needle(g,a,len,c){const [x,y]=pt(g,a,len);pb.line(g.x,g.y,x,y,c);const [x2,y2]=pt(g,a+.06,len*.7);pb.line(g.x,g.y,x2,y2,c);pb.disc(g.x,g.y,1,c);}
 function band(g,a0,a1,c){for(let a=a0;a<=a1;a+=.02){const [x,y]=pt(g,a,g.r-2);pb.px(x,y,c);const [x2,y2]=pt(g,a,g.r-3);pb.px(x2,y2,c);}}
 function drawCockpit(st){
-  pb.d.set(frameLayer);
+  layoutGauges();pb.d.set(frameLayer);
   const [g1,g2,g3,g4,g5,g6]=gaugeLayout;
   // airspeed
   gaugeBase(g1);const asA=k=>(-150+clamp(k,0,160)/160*300)*DEG;band(g1,asA(33),asA(85),C.white);band(g1,asA(40),asA(110),C.green);band(g1,asA(110),asA(135),C.yellow);

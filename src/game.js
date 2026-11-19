@@ -691,7 +691,7 @@ function updPanels(){const ad=activeDrops().length>0,air=mode==='fly'&&!ac.groun
 for(const [k,[b]] of Object.entries(PANELS)){$(b).innerHTML=`<img src="${RICON[k]}" alt="">`;$(b).addEventListener('click',e=>{e.stopPropagation();settings.panels[k]=!settings.panels[k];saveS();applyPanels();snd.click();});}
 const VIEWS=['chase','cockpit'],VNAME={chase:'CHASE',cockpit:'COCKPIT'};
 function setView(v){camMode=v;$('view').textContent=VNAME[v];snapCam=true;camera.fov=v==='chase'?58:70;camera.near=v==='chase'?.4:.15;camera.updateProjectionMatrix();postMat.uniforms.cNear.value=camera.near;
-  if(v==='cockpit')tip('cockpit','Cockpit view. Left: speed, attitude, heading. Right: altitude, climb, engine RPM. The line-up meter appears up top on approach.');}
+  if(v==='cockpit')tip('cockpit','Cockpit view. Top row: speed, attitude, altitude. Bottom row: turn, heading, climb. Engine RPM to the right. The line-up meter appears up top on approach.');}
 $('view').addEventListener('click',()=>setView(VIEWS[(VIEWS.indexOf(camMode)+1)%VIEWS.length]));
 $('pause').addEventListener('click',()=>{if(mode==='fly')openMenu();});
 $('job').addEventListener('click',()=>{if(mode!=='fly')return;if(mail.active)mailCard();else{mode='paused';bigMap();}});
@@ -748,8 +748,8 @@ const snd={ctx:null,
     for(let k=0;k<2;k++){const t=t0+(k?.29:0),D=k?.62:.18,ws=c.createWaveShaper(),pk=c.createBiquadFilter(),lp=c.createBiquadFilter(),g=c.createGain();ws.curve=cv;
       pk.type='peaking';pk.frequency.value=1150;pk.Q.value=1.1;pk.gain.value=7;lp.type='lowpass';lp.frequency.value=3600;ws.connect(pk);pk.connect(lp);
       g.gain.value=0;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.1,t+.03);g.gain.setValueAtTime(.095,t+D-.06);g.gain.linearRampToValueAtTime(0,t+D);lp.connect(g);g.connect(this.master);
-      const pre=c.createGain();pre.gain.value=.55;pre.connect(ws);
-      for(const f of [277,349]){const o=c.createOscillator();o.type='sawtooth';o.frequency.setValueAtTime(f*.94,t);o.frequency.exponentialRampToValueAtTime(f,t+.06);o.frequency.setValueAtTime(f,t+D-.05);o.frequency.linearRampToValueAtTime(f*.97,t+D);o.connect(pre);o.start(t);o.stop(t+D+.02);}
+      const pre=c.createGain();pre.gain.value=.75;pre.connect(ws);
+      for(const f of [277]){const o=c.createOscillator();o.type='sawtooth';o.frequency.setValueAtTime(f*.94,t);o.frequency.exponentialRampToValueAtTime(f,t+.06);o.frequency.setValueAtTime(f,t+D-.05);o.frequency.linearRampToValueAtTime(f*.97,t+D);o.connect(pre);o.start(t);o.stop(t+D+.02);}
       const nb=c.createBuffer(1,Math.floor(c.sampleRate*.12),c.sampleRate),nd=nb.getChannelData(0);for(let i=0;i<nd.length;i++)nd[i]=(Math.random()*2-1)*(1-i/nd.length);
       const ns=c.createBufferSource(),nf=c.createBiquadFilter(),ng=c.createGain();ns.buffer=nb;nf.type='bandpass';nf.frequency.value=2400;nf.Q.value=.7;ng.gain.value=.12;ns.connect(nf);nf.connect(ng);ng.connect(this.master);ns.start(t);}},squelch(){this.burst(.3,5200,.07);setTimeout(()=>this.burst(.12,2600,.05),70);},hiss(v=1){this.burst(.45*v,3600,.9);setTimeout(()=>this.burst(.3*v,900,.15),650);},flick(){this.burst(.4,7000,.012);setTimeout(()=>this.burst(.22,2200,.025),22);},clunk(){this.burst(.35,1400,.05);setTimeout(()=>this.burst(.25,600,.08),40);},
   setOn(v){if(this.master)this.master.gain.value=v?.5:0;if(this.ctx&&this.ctx.state==='suspended')this.ctx.resume();}};
@@ -1024,7 +1024,7 @@ function logbook(){
   const done=GOALS.filter(g=>log.goals[g.id]).length;
   showCard(`<h2>Your logbook</h2><div class="sub">${log.flights} FLIGHTS · ${log.trips} TRIPS · ${log.stamps} STAMPS · ${done}/${GOALS.length} GOALS</div><h3>PEOPLE</h3><div class="list">${ppl}</div><h3>FIELDS</h3><div class="list">${f}</div><h3>SIGHTS</h3><div class="list">${si}</div><h3>GOALS</h3><div class="list">${go}</div>`,[['Back',back,true]]);}
 const SET=[['tilt','Tilt to steer','Turn the phone like a steering wheel to bank. Tip it toward you to raise the nose, away to lower it. CENTER resets the level point. The touch stick still works.'],['steady','Steady wings','Levels the wings when you let go, and handles the rudder.'],['stallGuard','Stall guard','Stops you pulling the nose up far enough to stall.'],
-  ['autoTrim','Auto-trim','Holds your current speed when you let go of the stick.'],['tips','Tips','Short pointers the first time things happen.'],['dog','Biscuit barks at landmarks','A call when you fly near a landmark or gap you haven\'t found. Never at errand items: tap the clue button up top for those.'],
+  ['autoTrim','Auto-trim','Holds your current speed when you let go of the stick.'],['tips','Tips','Short pointers the first time things happen.'],['dog','Biscuit calls out at landmarks','A call when you fly near a landmark or gap you haven\'t found. Never at errand items: tap the clue button up top for those.'],
   ['invert','Invert pitch','Drag up to raise the nose instead of down.'],['shadows','Shadows','Long shadows from the sun and moon. Turn off if your phone gets warm.'],['sound','Sound','Engine, wind, music and the stall horn.'],['fps','Frame rate','Shows frames per second, the slowest frame, triangles and draw calls in a strip at the top of the screen while you fly. For checking how your phone keeps up.']];
 function settingsCard(){
   const rows=SET.map(([k,n,d])=>`<div class="tog"><div><b>${n}</b><span>${d}</span></div><button data-k="${k}" class="${settings[k]?'on':''}">${settings[k]?'ON':'OFF'}</button></div>`).join('');
@@ -1189,6 +1189,7 @@ function updateVisuals(dt,t){
   litT-=dt;if(litT<=0){litT=.15;planeTarget=sunBlocked(ac.pos)?0:1;}planeLit.value=lerp(planeLit.value,planeTarget,1-Math.exp(-dt*6));
   const outside=camMode==='chase'||(mode!=='fly'&&mode!=='paused');
   const U=plane.userData;U.bodyM.visible=outside;U.blades.visible=outside;
+  COCK.visible=!outside&&!lookDown;if(COCK.visible)COCK.userData.throttle.position.z=lerp(COCK.userData.throttle.position.z,COCK_PZ+.06-ac.throttle*.07,1-Math.exp(-dt*12));
   const running=mode!=='crashed';ac.rpm=lerp(ac.rpm,running?.22+ac.throttle*ac.pf*.78+Math.min(ac.ias/60,.3):0,1-Math.exp(-dt*3));
   ac.prop+=ac.rpm*60*dt;U.blades.rotation.z=ac.prop;U.disc.material.opacity=running?.06+ac.rpm*.2:0;
   const gh=surfH(ac.pos.x,ac.pos.z),agl=ac.pos.y-AC.gearH-gh;
@@ -1213,7 +1214,7 @@ function loop(now){
   const dt=clamp((now-last)/1000,0,.05);last=now;const t=now/1000;
   skyMat.uniforms.uTime.value=t;waterMat.uniforms.uTime.value=t;for(const a of anims)a(t);
   cloudGroup.position.set((t*2.2)%4000,0,-(t*.8)%4000);
-  {const pu=postMat.uniforms;pu.mist.value=lerp(pu.mist.value,cloudMist(camera.position),1-Math.exp(-dt*5));pu.mistC.value.copy(scene.fog.color).lerp(_mistW,.3);}
+  {const pu=postMat.uniforms;pu.mist.value=lerp(pu.mist.value,cloudMist(camera.position),1-Math.exp(-dt*9));pu.mistC.value.copy(scene.fog.color).lerp(_mistW,.3);}
   if(mode==='fly'){readInput(dt);acc+=dt;const H_=1/120;let n=0;while(acc>=H_&&n<10){if(ac.ground)stepGround(H_);else{stepAir(H_);stepBoost(H_);stepUp(H_);stepBumps(H_);if(typeof stepWeather==='function')stepWeather(H_);if(typeof stepGuard==='function')stepGuard(H_);}simT+=H_;acc-=H_;n++;if(mode!=='fly')break;}if(n>=10)acc=0;
     if(!Number.isFinite(ac.pos.x+ac.pos.y+ac.pos.z+ac.vel.x+ac.vel.y+ac.vel.z+ac.q.x+ac.q.w)){console.warn('sim NaN, respawning');spawnField(stripById(ac.lastField)||STRIPS[0]);}
     if(mode==='fly'){gameChecks(dt);playChecks(dt);}runTips(dt);}
