@@ -878,7 +878,9 @@ rebuildChart();
 function chartIsle(id,lvl){if(!id||(log.chart[id]||0)>=lvl)return false;log.chart[id]=lvl;saveL();rebuildChart();return true;}
 let seenT=0;
 function updCharting(dt){seenT+=dt;if(seenT<.5||ac.ground)return;seenT=0;if(groundH(ac.pos.x,ac.pos.z)<1)return;const id=isleAt(ac.pos.x,ac.pos.z);
-  if(!log.chart[id]&&chartIsle(id,1))toast(`Land below! Its outline is on your chart now.\nLand on its runway to chart it properly.`,3);}
+  const hasRwy=STRIPS.some(st=>isleOfStrip(st)===id);
+  if(!hasRwy){if(chartIsle(id,2))toast(`${ISLES[id].name} is on your chart now.`,2.4);}
+  else if(!log.chart[id]&&chartIsle(id,1))toast(`Land below! Its outline is on your chart now.\nLand on its runway to chart it properly.`,3);}
 /* an X over the haze for a field you haven't charted */
 function drawX(x,px,pz,q,col){x.save();x.strokeStyle='#241c2e';x.lineWidth=q*.9;x.beginPath();x.moveTo(px-q,pz-q);x.lineTo(px+q,pz+q);x.moveTo(px+q,pz-q);x.lineTo(px-q,pz+q);x.stroke();
   x.strokeStyle=col;x.lineWidth=q*.45;x.beginPath();x.moveTo(px-q,pz-q);x.lineTo(px+q,pz+q);x.moveTo(px+q,pz-q);x.lineTo(px-q,pz+q);x.stroke();x.restore();}
@@ -1145,10 +1147,10 @@ function snapShadow(c){_lr.crossVectors(_wy,sunDir);if(_lr.lengthSq()<1e-5)_lr.s
   const tx=2*SHADOW_HALF/sunL.shadow.mapSize.x,a=c.dot(_lr),b=c.dot(_lu);c.addScaledVector(_lr,Math.round(a/tx)*tx-a).addScaledVector(_lu,Math.round(b/tx)*tx-b);}
 function sunBlocked(p){const hl=Math.hypot(sunDir.x,sunDir.z);if(sunDir.y<=0||hl<1e-3)return false;const ux=sunDir.x/hl,uz=sunDir.z/hl,tan=sunDir.y/hl;
   for(let k=1;k<110;k++){const d=k*30,ray=p.y+d*tan;if(ray>720)return false;if(groundH(p.x+ux*d,p.z+uz*d)>ray)return true;}return false;}
-let litT=0,planeTarget=1,fogK=-1;const _fc=new THREE.Color(),_fc2=new THREE.Color();
+let litT=0,planeTarget=1,fogK=-1;const WXF={on:false,col:new THREE.Color(),n:0,f:0};const _fc=new THREE.Color(),_fc2=new THREE.Color();
 function updFog(){const I=ISLES.farhold,p=camera.position,k=smooth(4200,1300,Math.hypot(p.x-I.x,p.z-I.z));if(Math.abs(k-fogK)<.003)return;fogK=k;const T=TOD[tod];
-  _fc.setHex(T.hor);const gy=(_fc.r+_fc.g+_fc.b)/3;_fc2.setRGB(gy,gy,gy*1.04).lerp(_fc,.35);const fc=_fc.clone().lerp(_fc2,k);
-  scene.fog.color.copy(fc);scene.fog.near=lerp(T.fogN,25,k);scene.fog.far=lerp(T.fogF,720,k);
+  if(WXF.on)_fc.copy(WXF.col);else _fc.setHex(T.hor);const gy=(_fc.r+_fc.g+_fc.b)/3;_fc2.setRGB(gy,gy,gy*1.04).lerp(_fc,.35);const fc=_fc.clone().lerp(_fc2,k);
+  scene.fog.color.copy(fc);scene.fog.near=lerp(WXF.on?WXF.n:T.fogN,25,k);scene.fog.far=lerp(WXF.on?WXF.f:T.fogF,720,k);
   const w=waterMat.uniforms;w.fogColor.value.copy(fc);w.fogNear.value=scene.fog.near;w.fogFar.value=scene.fog.far;
   const u=skyMat.uniforms;[['cZen',T.zen,.75],['cHigh',T.high,.9],['cHor',T.hor,1],['cHaze',T.haze,1],['cSun',T.sunc,.8]].forEach(([n,h,a])=>u[n].value.setHex(h).lerp(fc,k*a));u.uDisc.value=k>.6?2:T.disc;}
 function stepBumps(dt){const I=ISLES.kettle,d=Math.hypot(ac.pos.x-I.x,ac.pos.z-I.z);if(d>2300)return;const agl=ac.pos.y-AC.gearH-surfH(ac.pos.x,ac.pos.z);if(agl<12)return;

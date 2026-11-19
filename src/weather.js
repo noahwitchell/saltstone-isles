@@ -10,10 +10,10 @@ const _wc=new THREE.Color(),_wg=new THREE.Color();
 function greyed(c,o,dk){const l=c.r*.3+c.g*.59+c.b*.11;_wg.setRGB(l*.96,l*.99,l*1.04).multiplyScalar(1-dk);return c.lerp(_wg,o);}
 function applyWeather(){const W=WX[settings.weather]||WX.clear,o=W.o;WIND.copy(WIND0).multiplyScalar(W.wind);
   for(const m of cloudGroup.children)m.material.color&&m.material.color.setScalar(1-o*.32);
-  if(!o)return;const T=TOD[tod],dk=o*.22;
+  WXF.on=o>0;if(!o)return;const T=TOD[tod],dk=o*.22;
   sunL.intensity=T.sunI*(1-o*.65);hemi.intensity=T.hemiI*(1+o*.2);
   const u=skyMat.uniforms;for(const k of ['cZen','cHigh','cHor','cHaze'])greyed(u[k].value,o*.85,dk);u.cSun.value.lerp(u.cHor.value,o*.8);u.uDisc.value=T.disc*(1-o*.9);u.uStars.value=T.stars*(1-o);
-  scene.fog.color.copy(u.cHor.value);scene.fog.near=T.fogN*(1-o*.5);scene.fog.far=T.fogF*(1-o*.42);
+  scene.fog.color.copy(u.cHor.value);scene.fog.near=T.fogN*(1-o*.5);scene.fog.far=T.fogF*(1-o*.42);WXF.col.copy(u.cHor.value);WXF.n=scene.fog.near;WXF.f=scene.fog.far;
   const w=waterMat.uniforms;w.fogColor.value.copy(u.cHor.value);w.fogNear.value=scene.fog.near;w.fogFar.value=scene.fog.far;
   for(const k of ['cDeep','cMid','cShal'])greyed(w[k].value,o*.45,dk*.6);w.cGlint.value.multiplyScalar(1-o*.75);
   const pu=postMat.uniforms;pu.sat.value=T.sat*(1-o*.3);pu.con.value=T.con*(1-o*.06);fogK=-1;}
