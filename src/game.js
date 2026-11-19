@@ -77,7 +77,7 @@ const CHARS={
   otto:{name:'Otto Lind',role:'OBSERVATORY COOK · KETTLE ROCK',home:'kettle',sp:{bg:'#c8e0d8',skin:'#e8b896',hair:'#e8d8a0',style:'short',beard:'#e8d8a0',hat:'beanie',hatc:'#3a5a8c',shirt:'#eae2cf'}},
   fen:{name:'Fen Morrow',role:'FIELD KEEPER · FARHOLD',home:'farhold',sp:{bg:'#c0c8d0',skin:'#d9a07a',hair:'#5a4a40',style:'short',mustache:'#5a4a40',hat:'cap',hatc:'#4a4e5c',shirt:'#5b6e86',scarf:'#d8d2c8'}},
   ivy:{name:'Ivy Calder',role:'THE HOUSE WITH THE LAMP · FARHOLD',home:'farhold',sp:{bg:'#f0e0b0',skin:'#e2a982',hair:'#f1ece4',style:'long',shirt:'#6a5a8c',scarf:'#d2493c'}},
-  wren:{name:'Wren Okafor',role:'CLIMBER · TWIN SISTERS',home:'sisters',sp:{bg:'#c8e0f0',skin:'#6e4a33',hair:'#1c1616',style:'curly',shirt:'#e2703f',hat:'beanie',hatc:'#3f8fc0'}},
+  wren:{name:'Wren Okafor',role:'CLIMBER · TWIN SISTERS',home:'sisters',sp:{bg:'#c8e0f0',skin:'#4e3226',hair:'#1c1616',style:'curly',shirt:'#e2703f',hat:'beanie',hatc:'#3f8fc0'}},
   tam:{name:'Tam Marlow',role:'GOATHERD · CLEFT ISLE',home:'cleft',sp:{bg:'#e8d0b0',skin:'#e2a982',hair:'#8a5a30',style:'short',beard:'#8a5a30',shirt:'#6b7a3a',hat:'cap',hatc:'#8a5a3a'}},
   hattie:{name:'Hattie Bloom',role:'ORCHARD KEEPER · APPLECROSS',home:'apple',sp:{bg:'#f4d0d8',skin:'#e8b48e',hair:'#d8a050',style:'bun',shirt:'#d2493c'}},
   desmond:{name:'Desmond Achebe',role:'SALT RAKER · THE SALTPANS',home:'salt',sp:{bg:'#f0ece0',skin:'#5a3a28',hair:'#e8e4dc',style:'short',beard:'#e8e4dc',shirt:'#3f6f8f',hat:'ranger',hatc:'#e8dcc0'}},

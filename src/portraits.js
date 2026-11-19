@@ -72,18 +72,18 @@ function wallpaper(id,bg,hs,mixH){const L=shade(bg,.14),LL=shade(bg,.26),D=shade
 const FACES={
   mabel:{outfit:'postal',shirt:'#2f3f6a',w:10.6,top:12,bot:10.5,jaw:2.2,cheek:1.06,eye:'small',sep:4,brow:{a:-.6},nose:'button',nl:5,mouth:'smile',mw:3,age:2,chub:1,blush:1.3},
   bea:{under:'wisps',w:9.4,top:12.5,bot:12.4,jaw:2.6,eye:'narrow',tilt:-1,sep:4,brow:{t:2,a:.4},nose:'long',nl:6,mouth:'smirk',mw:3,age:3,bones:1},
-  gus:{fh:'boxed',under:'none',w:12,top:10.8,bot:11,jaw:2.2,cheek:1.14,sep:5,age:0,sh:1.2,nk:6,ears:1.3,chub:1},
+  gus:{outfit:'coveralls',shirt:'#4a5e7a',fh:'boxed',under:'none',w:12,top:10.8,bot:11,jaw:2.2,cheek:1.14,sep:5,age:0,sh:1.2,nk:6,ears:1.3,chub:1},
   tomas:{fh:'walrus',w:9.6,top:12.8,bot:12.6,jaw:2.4,eye:'heavy',sep:4,brow:{t:2,a:-.3},nose:'hook',nl:6,mouth:'flat',mw:3,age:1,bones:1},
   nell:{hair:'braids',w:9.8,top:12.4,bot:10.6,jaw:1.45,eye:'big',sep:4,tilt:1,brow:{a:-.5,y:-5},nose:'button',nl:4,mouth:'laugh',mw:3,blush:1.4},
   ada:{under:'curls',w:9.4,top:12.8,bot:11.8,jaw:1.35,sep:4,bones:1,earring:'#f1c84a'},
-  hank:{fh:'bushy',under:'shaggy',w:11.4,top:11,bot:11.8,jaw:3.6,eye:'small',sep:5,brow:{t:2,a:.2},nose:'broad',nl:6,mouth:'grin',mw:4,sh:1.16,nk:6,ears:1.2},
+  hank:{fh:'bushy',under:'shaggy',w:10,top:13.2,bot:13,jaw:3.2,cheek:1,sep:4,sh:1.22,nk:6,ears:1.05},
   ollie:{under:'curls',w:10.2,top:11.6,bot:11.2,jaw:2.1,cheek:1.04,eye:'open',sep:4,brow:{y:-4},nose:'button',nl:4,mouth:'laugh',mw:3,my:8,sh:.86,nk:3,ears:1.15,blush:1.4,dimple:1},
   rosa:{hair:'wavy',w:10.4,top:11.8,bot:11,jaw:2,cheek:1.05,eye:'happy',sep:4,brow:{a:-.4,y:-5},nose:'wide',nl:5,mouth:'laugh',mw:4,blush:1.3},
   ines:{hair:'pony',w:9,top:13,bot:12,jaw:1.6,eye:'almond',sep:4,brow:{raise:1,a:.2},nose:'pointed',nl:6,mouth:'pursed',age:1,bones:1},
   otto:{hat:null,hair:'bald',fh:'fluffy',w:11.4,top:11.2,bot:11.2,jaw:2.2,cheek:1.1,eye:'happy',sep:5,brow:{a:-.6},nose:'button',nl:4,mouth:'grin',mw:4,chub:1,age:1,blush:1.6,sh:1.12,nk:5},
   fen:{hat:'flat',fh:'pencil',w:9,top:13,bot:12.8,jaw:2.3,eye:'heavy',tilt:-1,sep:4,brow:{a:-.7},nose:'long',nl:7,mouth:'flat',mw:2,age:1,ears:1.2},
   ivy:{w:9.4,top:12.6,bot:11.2,jaw:1.6,eye:'happy',sep:4,brow:{a:-.5,y:-5},nose:'pointed',nl:5,mouth:'small',age:3,blush:1.2},
-  wren:{under:'locs',w:9.6,top:11.6,bot:11.8,jaw:2,eye:'open',sep:5,tilt:1,brow:{t:2,a:.2},nose:'wide',nl:5,mouth:'grin',mw:3,bones:1},
+  wren:{under:'locs',w:10.2,top:11.2,bot:11.4,jaw:2.8,cheek:1.02,sep:5},
   tam:{hat:null,hair:'tousled',fh:'goatee',w:9,top:12.6,bot:13.4,jaw:2.6,cheek:.95,sep:3,age:1,ears:1.35,bones:1,blush:1.9},
   hattie:{hair:'sidebraid',w:10.8,top:11.4,bot:10.4,jaw:2.2,cheek:1.1,sep:4,age:1,blush:1.5,dimple:1},
   desmond:{hat:'straw',fh:'trim',w:10.4,top:13,bot:12,jaw:2,cheek:1.02,sep:4,age:3,ears:1.2},
@@ -103,18 +103,18 @@ const FACES={
 const FEAT={
   mabel:{eye:{w:3,h:1,lid:'thin'},brow:{t:1,len:4,arch:1},nose:{k:'button',l:4},mouth:{k:'smile',w:3}},
   bea:{eye:{w:4,h:1,lid:'thick',tilt:-1,low:1},brow:{t:2,len:5,a:.4},nose:{k:'long',l:6},mouth:{k:'smirk',w:3}},
-  gus:{eye:{w:3,h:2,lid:'thick'},brow:{t:3,len:5,arch:0},nose:{k:'broad',l:4},mouth:{k:'grin',w:4}},
+  gus:{eye:{w:4,h:2,lid:'thick',low:1},brow:{t:3,len:5,arch:0},nose:{k:'broad',l:4},mouth:{k:'grin',w:4}},
   tomas:{eye:{w:4,h:2,lid:'hood',tilt:-1},brow:{t:2,len:6,arch:0,y:-5},nose:{k:'hook',l:6},mouth:{k:'flat',w:3}},
   nell:{eye:{w:4,h:3,lid:'lash',tilt:1},brow:{t:1,len:5,arch:2,y:-5},nose:{k:'upturned',l:4},mouth:{k:'soft',w:3}},
   ada:{eye:{w:5,h:2,lid:'wing',tilt:1},brow:{t:2,len:6,arch:1,a:.3},nose:{k:'straight',l:5},mouth:{k:'soft',w:4}},
-  hank:{eye:{w:3,h:2,lid:'thin',low:1},brow:{t:3,len:5,arch:0,a:.05},nose:{k:'round',l:6},mouth:{k:'beam',w:5}},
+  hank:{eye:{w:3,h:1,lid:'hood'},brow:{t:3,len:6,arch:1,a:0},nose:{k:'round',l:7},mouth:{k:'smile',w:4}},
   ollie:{eye:{w:4,h:2,lid:'lash'},brow:{t:1,len:4,arch:1,y:-5},nose:{k:'snub',l:3},mouth:{k:'gap',w:3}},
   rosa:{eye:{w:4,h:1,closed:'arc'},brow:{t:2,len:5,arch:2,y:-6},nose:{k:'wide',l:5},mouth:{k:'laugh',w:4}},
   ines:{eye:{w:4,h:1,lid:'crease',tilt:1},brow:{t:1,len:5,raise:1,a:.2},nose:{k:'pointed',l:6},mouth:{k:'pursed',w:1}},
   otto:{eye:{w:3,h:1,closed:'line'},brow:{t:2,len:4,arch:2,y:-5},nose:{k:'bulb',l:4},mouth:{k:'wide',w:3}},
   fen:{eye:{w:3,h:2,lid:'crease',tilt:-1},brow:{t:1,len:6,arch:0,y:-4},nose:{k:'roman',l:7},mouth:{k:'small',w:1}},
   ivy:{eye:{w:3,h:1,lid:'lash',low:1},brow:{t:1,len:4,arch:2,y:-5},nose:{k:'dainty',l:4},mouth:{k:'tongue',w:2}},
-  wren:{eye:{w:5,h:2,lid:'thin'},brow:{t:2,len:5,arch:1,a:.2},nose:{k:'flared',l:5},mouth:{k:'lopsided',w:3}},
+  wren:{eye:{w:4,h:3,lid:'hood'},brow:{t:2,len:5,arch:0,y:-5},nose:{k:'flared',l:5},mouth:{k:'lopsided',w:3}},
   tam:{eye:{w:4,h:1,lid:'thick'},brow:{t:1,len:6,arch:1},nose:{k:'roman',l:6},mouth:{k:'content',w:3}},
   hattie:{eye:{w:3,h:2,lid:'lash',tilt:1},brow:{t:2,len:5,arch:1,a:.1,y:-5},nose:{k:'button',l:3},mouth:{k:'cheer',w:3}},
   desmond:{eye:{w:4,h:1,lid:'hood',low:1},brow:{t:3,len:5,arch:1},nose:{k:'flared',l:7},mouth:{k:'beam',w:3}},
@@ -227,7 +227,18 @@ function portrait(id){if(PORT[id])return PORT[id];
   for(let k=0;k<5;k++){for(let x=CX-NK+k;x<=CX+NK-k;x++)put(x,CY+15+k,x>CX+1?sk(-.16):sk(-.06));}
   const col=shade(SHIRT,.28),colD=shade(SHIRT,-.1),cy0=CY+14;
   for(let k=0;k<5;k++){put(CX-NK-1-k,cy0+k,col);put(CX-NK-k,cy0+1+k,col);put(CX-NK-1+k,cy0+1+k,colD);put(CX+NK+1+k,cy0+k,colD);put(CX+NK+k,cy0+1+k,colD);put(CX+NK+1-k,cy0+1+k,col);}
-  if(fc.outfit==='postal'){/* postmaster's jacket: white shirt collar and a navy tie in the V, wide lapels, brass buttons, a post badge */
+  if(fc.outfit==='coveralls'){/* mechanic's coveralls: pointed collar, zip down the front, a name patch, a pen in the pocket, oil stains */
+    const cv=SHIRT,cvL=shade(cv,.22),cvD=shade(cv,-.2),oil='#2a2228',oilL='#4a3e44';
+    for(let k=0;k<5;k++){for(let x=CX-NK+k;x<=CX+NK-k;x++)put(x,cy0+k,x>CX+1?sk(-.16):sk(-.06));}
+    for(let k=0;k<5;k++){put(CX-NK-1-k,cy0+k,cvL);put(CX-NK-k,cy0+1+k,cvL);put(CX-NK+k-1,cy0+2+k,cvL);put(CX+NK+1+k,cy0+k,cv);put(CX+NK+k,cy0+1+k,cv);put(CX+NK-k+1,cy0+2+k,cv);}
+    for(let y=cy0+5;y<N;y++)put(CX,y,y%2?'#b8bcc4':'#8a8e98');put(CX,cy0+5,'#d8dce4');
+    for(let x=CX-10;x<=CX-4;x++)for(let y=cy0+7;y<=cy0+10;y++){const edge=x===CX-10||x===CX-4||y===cy0+7||y===cy0+10;put(x,y,edge?'#d8d2c6':'#f4f0e8');}
+    for(let x=CX-9;x<=CX-5;x++)put(x,cy0+8,'#c2453a');put(CX-9,cy0+9,'#c2453a');
+    for(let x=CX+4;x<=CX+9;x++)put(x,cy0+7,cvD);put(CX+6,cy0+5,'#e8e4dc');put(CX+6,cy0+6,'#c2453a');put(CX+7,cy0+6,'#e8e4dc');
+    for(const [ox,oy,r] of [[CX+11,cy0+11,2.2],[CX-14,cy0+13,1.6],[CX+5,cy0+15,1.4],[CX-3,cy0+12,1],[CX+15,cy0+6,1.2]])
+      for(let y=Math.floor(oy-r);y<=oy+r;y++)for(let x=Math.floor(ox-r);x<=ox+r;x++){const d=Math.hypot(x-ox,(y-oy)*1.2);if(d<r&&get(x,y))put(x,y,d<r*.5?oil:mixH(cv,oil,.55));else if(d<r+1&&(x+y+hs)%3===0&&get(x,y))put(x,y,mixH(cv,oilL,.35));}
+}
+  else   if(fc.outfit==='postal'){/* postmaster's jacket: white shirt collar and a navy tie in the V, wide lapels, brass buttons, a post badge */
     const wc='#f4f0e8',wcD='#d8d2c6',lap=shade(SHIRT,.16),lapD=shade(SHIRT,-.18),tie='#c2453a';
     for(let k=0;k<6;k++){for(let x=CX-NK+k;x<=CX+NK-k;x++)put(x,cy0+k,x<CX?wc:wcD);}
     for(let k=0;k<3;k++){put(CX-1-k,cy0+k,wc);put(CX+1+k,cy0+k,wcD);}
@@ -255,7 +266,9 @@ function portrait(id){if(PORT[id])return PORT[id];
     else if(EYE.closed==='line'){put(x0,EY,lidC);for(let i=1;i<ew-1;i++)put(x0+i,EY+1,lidC);put(x0+ew-1,EY,lidC);put(outer+s,EY-1,shade(lidC,.4));}
     else{rect(x0,EY,ew,eh,'#f6f2ee');
       for(let r=0;r<eh;r++)for(let k=0;k<iw;k++)put(ic+k,EY+r,r===2?eyeC:Ei);
-      put(ic,EY,iw>1?'#ffffff':Ei);if(iw===1&&eh>1)put(ic,EY,'#ffffff');
+      // solid pupils; a glint only where the iris is big enough (3x3) to keep a full pupil around it
+      if(iw===1)for(let r=0;r<eh;r++)put(ic,EY+r,'#1c1620');
+      else{for(let r=0;r<eh;r++)for(let k=0;k<iw;k++)put(ic+k,EY+r,r===0&&eh>1?shade(eyeC,-.15):shade(eyeC,-.42));if(iw===3&&eh===3)put(ic,EY,'#ffffff');}
       const lid=EYE.lid||'thin';
       if(lid==='hood')rect(x0,EY-2,ew,1,sk(-.15));
       if(lid==='crease')for(let i=1;i<ew-1;i++)put(x0+i,EY-3,sk(-.13));
@@ -296,6 +309,8 @@ function portrait(id){if(PORT[id])return PORT[id];
   for(const s of [-1,1]){const bx=s<0?EYX(s)-1:EYX(s)+ew-2;for(let i=0;i<3;i++){tint(bx+i,ch,blush,bk);tint(bx+i,ch+1,blush,bk*.6);}}
   if(sp.freckles)for(const [a,b] of [[-6,4],[-4,5],[-7,6],[3,4],[5,5],[6,4],[-2,3],[2,3],[4,6]])put(CX+a,EY+b,sk(-.24));
   if(fc.mole)put(CX+fc.mole[0],EY+fc.mole[1],sk(-.42));
+  if(fc.outfit==='coveralls'){tint(CX+fc.sep+3,EY+5,'#2a2228',.35);tint(CX+fc.sep+4,EY+5,'#2a2228',.25);tint(CX+fc.sep+4,EY+6,'#2a2228',.2);}
+  if(fc.nosering){put(CX-4,EY+fc.nl,'#f1c84a');}
   if(fc.dimple){const y=CY+Math.round(fc.bot)-2;put(CX,y,sk(-.16));}
   /* mouth */
   const lip=dark?mixH(skin,'#3a1418',.55):mixH(skin,'#8a2a30',.55),lipL=mixH(skin,'#c05a5a',.22),MY=EY+fc.my,mw=fc.mw,TE='#f4efe6',IN='#5a1a22';
