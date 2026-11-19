@@ -2,7 +2,7 @@ import os
 os.chdir(os.path.dirname(os.path.abspath(__file__))+'/..')
 head=open('src/head.html').read()
 world=open('src/world.js').read().replace('/*@ISLES@*/',open('src/isles.js').read()+'\n'+open('src/farisles.js').read()).replace('/*@ISLEPROPS@*/',open('src/isleprops.js').read()+'\n'+open('src/farprops.js').read()+'\n'+open('src/formations.js').read()+'\n'+open('src/nightglow.js').read()).replace('/*@TOWN@*/',open('src/town.js').read())
-game=open('src/game.js').read().replace('/*@PLAY@*/',open('src/play.js').read()+'\n'+open('src/drops.js').read()+'\n'+open('src/switches.js').read()+'\n'+open('src/decor.js').read()+'\n'+open('src/pets.js').read()+'\n'+open('src/shop.js').read()+'\n'+open('src/portraits.js').read()+'\n'+open('src/weather.js').read()+'\n'+open('src/caves.js').read())
+game=open('src/game.js').read().replace('/*@PLAY@*/',open('src/play.js').read()+'\n'+open('src/drops.js').read()+'\n'+open('src/switches.js').read()+'\n'+open('src/decor.js').read()+'\n'+open('src/pets.js').read()+'\n'+open('src/shop.js').read()+'\n'+open('src/portraits.js').read()+'\n'+open('src/weather.js').read()+'\n'+open('src/caves.js').read()+'\n'+open('src/savedev.js').read())
 out0=head+'\n<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>\n<script>\n'+world+'\n</script>\n<script>\n'+game+'\n</script>\n'
 import hashlib
 BUILD=hashlib.sha1(out0.encode()).hexdigest()[:7]
