@@ -12,10 +12,10 @@ function applyWeather(){const W=WX[wxKey()]||WX.clear,o=W.o;WIND.copy(WIND0).mul
   for(const m of cloudGroup.children)m.material.color&&m.material.color.setScalar(1-o*.32);
   WXF.on=o>0;if(!o)return;const T=TOD[tod],dk=o*.22;
   sunL.intensity=T.sunI*(1-o*.65);hemi.intensity=T.hemiI*(1+o*.2);
-  const u=skyMat.uniforms;for(const k of ['cZen','cHigh','cHor','cHaze'])greyed(u[k].value,o*.85,dk);u.cSun.value.lerp(u.cHor.value,o*.8);u.uDisc.value=T.disc*(1-o*.9);u.uStars.value=T.stars*(1-o);
+  const u=skyMat.uniforms;for(const k of ['cZen','cHigh','cHor','cHaze'])greyed(u[k].value,o*.85,dk);u.cSun.value.lerp(u.cHor.value,o*.8);u.uDisc.value=o>.5?2:T.disc;u.uStars.value=T.stars*(1-o);
   scene.fog.color.copy(u.cHor.value);scene.fog.near=T.fogN*(1-o*.5);scene.fog.far=T.fogF*(1-o*.42);WXF.col.copy(u.cHor.value);WXF.n=scene.fog.near;WXF.f=scene.fog.far;
   const w=waterMat.uniforms;w.fogColor.value.copy(u.cHor.value);w.fogNear.value=scene.fog.near;w.fogFar.value=scene.fog.far;
-  for(const k of ['cDeep','cMid','cShal'])greyed(w[k].value,o*.45,dk*.6);w.cGlint.value.multiplyScalar(1-o*.75);
+  for(const k of ['cDeep','cMid','cShal'])greyed(w[k].value,o*.45,dk*.6);w.cGlint.value.lerp(w.cMid.value,o>.9?1:o*.75);
   const pu=postMat.uniforms;pu.sat.value=T.sat*(1-o*.3);pu.con.value=T.con*(1-o*.06);fogK=-1;}
 /* rain: streaks in a box that follows the camera */
 const RAIN=(()=>{const N=2400,BX=150,BY=90,P=new Float32Array(N*6),seed=[];for(let i=0;i<N;i++)seed.push([Math.random()*BX,Math.random()*BY,Math.random()*BX,.8+Math.random()*.4]);
@@ -24,10 +24,12 @@ const RAIN=(()=>{const N=2400,BX=150,BY=90,P=new Float32Array(N*6),seed=[];for(l
   const L=new THREE.LineSegments(g,m);L.frustumCulled=false;L.visible=false;L.renderOrder=7;scene.add(L);
   let fall=0;
   return {update(dt){const W=WX[wxKey()]||WX.clear;L.visible=W.rain>0&&mode!=='title';if(!L.visible)return;
-    const n=Math.round(N*W.rain);g.setDrawRange(0,n*2);fall+=dt*38;const c=camera.position,wx=WIND.x*.25,wz=WIND.z*.25;
+    const n=Math.round(N*W.rain);g.setDrawRange(0,n*2);fall+=dt*38;const c=camera.position,wx=WIND.x*.02,wz=WIND.z*.02;
+    // each streak is the rain's motion as seen from the plane: straight down when you're parked, raking past when you fly
+    const v=ac.vel,sk=.045,ex=-(wx*38-v.x)*sk,ey=38*sk+v.y*sk,ez=-(wz*38-v.z)*sk,el=Math.hypot(ex,ey,ez),cap=el>6?6/el:1;
     for(let i=0;i<n;i++){const s=seed[i],y=((s[1]-fall*s[3])%BY+BY)%BY;
-      const x=c.x+(((s[0]-c.x+fall*wx)%BX+BX)%BX)-BX/2,z=c.z+(((s[2]-c.z+fall*wz)%BX+BX)%BX)-BX/2,yy=c.y-BY/2+y,len=1.6*s[3];
-      const k=i*6;P[k]=x;P[k+1]=yy;P[k+2]=z;P[k+3]=x+wx*.08;P[k+4]=yy+len;P[k+5]=z+wz*.08;}
+      const x=c.x+(((s[0]-c.x+fall*wx)%BX+BX)%BX)-BX/2,z=c.z+(((s[2]-c.z+fall*wz)%BX+BX)%BX)-BX/2,yy=c.y-BY/2+y;
+      const k=i*6,q=s[3]*cap;P[k]=x;P[k+1]=yy;P[k+2]=z;P[k+3]=x+ex*q;P[k+4]=yy+ey*q;P[k+5]=z+ez*q;}
     g.attributes.position.needsUpdate=true;m.opacity=.28+.18*W.rain;}};})();
 /* rain sound: soft filtered noise, louder in a storm */
 const rainSnd={g:null,start(){const c=snd.ctx;if(!c||this.g)return;const b=c.createBuffer(1,c.sampleRate*2,c.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;

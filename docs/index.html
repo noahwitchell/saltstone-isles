@@ -586,8 +586,8 @@ const TOD={
     deep:0x1d3560,mid:0x2a5580,shal:0x3f8a98,glint:0xffc8a8,con:1.1,sat:1.1,vig:.3,stars:.35,lights:1,disc:.9993,beam:.3},
   night:{name:'Night',sunAz:130,sunEl:34,sun:0x8ea4ff,sunI:.5,sky:0x34407a,gnd:0x16182a,hemiI:.6,zen:0x060918,high:0x121840,hor:0x283060,haze:0x3a4680,sunc:0xf4f0dc,fogN:450,fogF:4300,
     deep:0x0a1430,mid:0x122448,shal:0x1d3c58,glint:0xdfe6ff,con:1.1,sat:.85,vig:.35,stars:1,lights:1,disc:.99975,beam:.42},
-  storm:{name:'Stormy',sunAz:200,sunEl:40,sun:0xe4e8ee,sunI:.95,sky:0xa8b4c4,gnd:0x5a6250,hemiI:.62,zen:0x4a5a72,high:0x6c7c90,hor:0xa0aab6,haze:0xb4bcc4,sunc:0xeef0f2,fogN:800,fogF:5600,
-    deep:0x1f4462,mid:0x2f6282,shal:0x4f9090,glint:0xd8e0e8,con:1.06,sat:.95,vig:.3,stars:0,lights:.75,disc:.9993,beam:.3},
+  storm:{name:'Stormy',sunAz:200,sunEl:40,sun:0xc8ced8,sunI:.62,sky:0x7c8696,gnd:0x3a4038,hemiI:.5,zen:0x2a3240,high:0x404a5a,hor:0x6a7480,haze:0x76808a,sunc:0xa8b0b8,fogN:600,fogF:4600,
+    deep:0x142c44,mid:0x1f4560,shal:0x356a70,glint:0xa8b0b8,con:1.08,sat:.9,vig:.62,stars:0,lights:1,disc:2,beam:.4},
 };
 const hemi=new THREE.HemisphereLight(0xffffff,0x888888,.6); scene.add(hemi);
 const sunL=new THREE.DirectionalLight(0xffffff,1); scene.add(sunL); scene.add(sunL.target);
@@ -3256,7 +3256,7 @@ function settingsCard(){
   const mv=[['OFF',0],['SOFT',.5],['ON',1]].map(([n,v])=>`<button data-mv="${v}" class="${(settings.music??.5)==v?'primary':''}">${n}</button>`).join('');
   const st=STATIONS.map(S=>`<button data-st="${S.id}" class="${settings.station===S.id?'primary':''}">${S.fq} ${S.name.toUpperCase()}</button>`).join('');
   const lt=Object.keys(TOD).map(k=>`<button data-lt="${k}" class="${settings.light===k?'primary':''}">${TOD[k].name.toUpperCase()}</button>`).join('');
-  showCard(`<h2>Settings</h2><div class="sub">ASSISTS · TURN THEM OFF ONE AT A TIME AS YOU IMPROVE</div>${rows}<h3>ENGINE VOLUME</h3><div class="btns">${ev}</div><h3>RADIO VOLUME</h3><div class="btns">${mv}</div><h3>RADIO STATION · OR TAP THE DIAL UP TOP WHILE FLYING</h3><div class="btns">${st}</div><h3>SKY · OR TAP THE SUN BUTTON UP TOP</h3><div class="btns">${lt}</div><h3>PIXELS</h3><div class="btns">${px}</div><div class="sub" style="margin-top:14px">BUILD 435f6b3</div>`,[['Back',back,true]]);
+  showCard(`<h2>Settings</h2><div class="sub">ASSISTS · TURN THEM OFF ONE AT A TIME AS YOU IMPROVE</div>${rows}<h3>ENGINE VOLUME</h3><div class="btns">${ev}</div><h3>RADIO VOLUME</h3><div class="btns">${mv}</div><h3>RADIO STATION · OR TAP THE DIAL UP TOP WHILE FLYING</h3><div class="btns">${st}</div><h3>SKY · OR TAP THE SUN BUTTON UP TOP</h3><div class="btns">${lt}</div><h3>PIXELS</h3><div class="btns">${px}</div><div class="sub" style="margin-top:14px">BUILD f5b12e4</div>`,[['Back',back,true]]);
   const cb=$('cardBody');
   cb.querySelectorAll('[data-k]').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.k;if(k==='tilt'){if(!settings.tilt){settings.tilt=true;saveS();enableTilt().then(()=>{updTiltUI();settingsCard();});}else{settings.tilt=false;saveS();disableTilt();updTiltUI();settingsCard();}return;}settings[k]=!settings[k];saveS();if(k==='sound')snd.setOn(settings.sound);if(k==='fps'){$('fps').hidden=!settings.fps;$('fps').textContent='FPS: measuring…';fpsN=fpsT=0;fpsLast=0;}if(k==='sound')music.setVol();settingsCard();}));
   cb.querySelectorAll('[data-px]').forEach(b=>b.addEventListener('click',()=>{settings.pixels=b.dataset.px;pixMode=settings.pixels;saveS();resize();settingsCard();}));
@@ -3669,7 +3669,7 @@ const streaks=(()=>{const SRC=[[-5.2,.8,.3,1],[5.2,.8,.3,1],[-5.2,.95,.3,1],[5.2
    new version. When the game comes back to the front (and every ten minutes), check the build number on the site; if
    it's changed, reload straight away from the title screen, or offer a one-tap update in flight (the flight is saved
    first, so "Pick up where you left off" puts you right back) */
-const BUILD_ID='435f6b3';let updOffered=false;
+const BUILD_ID='f5b12e4';let updOffered=false;
 function checkUpdate(){if(!/^https?:/.test(location.protocol)||/claude/.test(location.hostname))return;
   fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.text():null).then(v=>{v=v&&v.trim();if(!v||v===BUILD_ID||v.length>12)return;
     if(mode==='title'){location.reload();return;}if(updOffered)return;updOffered=true;
@@ -4864,10 +4864,10 @@ function applyWeather(){const W=WX[wxKey()]||WX.clear,o=W.o;WIND.copy(WIND0).mul
   for(const m of cloudGroup.children)m.material.color&&m.material.color.setScalar(1-o*.32);
   WXF.on=o>0;if(!o)return;const T=TOD[tod],dk=o*.22;
   sunL.intensity=T.sunI*(1-o*.65);hemi.intensity=T.hemiI*(1+o*.2);
-  const u=skyMat.uniforms;for(const k of ['cZen','cHigh','cHor','cHaze'])greyed(u[k].value,o*.85,dk);u.cSun.value.lerp(u.cHor.value,o*.8);u.uDisc.value=T.disc*(1-o*.9);u.uStars.value=T.stars*(1-o);
+  const u=skyMat.uniforms;for(const k of ['cZen','cHigh','cHor','cHaze'])greyed(u[k].value,o*.85,dk);u.cSun.value.lerp(u.cHor.value,o*.8);u.uDisc.value=o>.5?2:T.disc;u.uStars.value=T.stars*(1-o);
   scene.fog.color.copy(u.cHor.value);scene.fog.near=T.fogN*(1-o*.5);scene.fog.far=T.fogF*(1-o*.42);WXF.col.copy(u.cHor.value);WXF.n=scene.fog.near;WXF.f=scene.fog.far;
   const w=waterMat.uniforms;w.fogColor.value.copy(u.cHor.value);w.fogNear.value=scene.fog.near;w.fogFar.value=scene.fog.far;
-  for(const k of ['cDeep','cMid','cShal'])greyed(w[k].value,o*.45,dk*.6);w.cGlint.value.multiplyScalar(1-o*.75);
+  for(const k of ['cDeep','cMid','cShal'])greyed(w[k].value,o*.45,dk*.6);w.cGlint.value.lerp(w.cMid.value,o>.9?1:o*.75);
   const pu=postMat.uniforms;pu.sat.value=T.sat*(1-o*.3);pu.con.value=T.con*(1-o*.06);fogK=-1;}
 /* rain: streaks in a box that follows the camera */
 const RAIN=(()=>{const N=2400,BX=150,BY=90,P=new Float32Array(N*6),seed=[];for(let i=0;i<N;i++)seed.push([Math.random()*BX,Math.random()*BY,Math.random()*BX,.8+Math.random()*.4]);
@@ -4876,10 +4876,12 @@ const RAIN=(()=>{const N=2400,BX=150,BY=90,P=new Float32Array(N*6),seed=[];for(l
   const L=new THREE.LineSegments(g,m);L.frustumCulled=false;L.visible=false;L.renderOrder=7;scene.add(L);
   let fall=0;
   return {update(dt){const W=WX[wxKey()]||WX.clear;L.visible=W.rain>0&&mode!=='title';if(!L.visible)return;
-    const n=Math.round(N*W.rain);g.setDrawRange(0,n*2);fall+=dt*38;const c=camera.position,wx=WIND.x*.25,wz=WIND.z*.25;
+    const n=Math.round(N*W.rain);g.setDrawRange(0,n*2);fall+=dt*38;const c=camera.position,wx=WIND.x*.02,wz=WIND.z*.02;
+    // each streak is the rain's motion as seen from the plane: straight down when you're parked, raking past when you fly
+    const v=ac.vel,sk=.045,ex=-(wx*38-v.x)*sk,ey=38*sk+v.y*sk,ez=-(wz*38-v.z)*sk,el=Math.hypot(ex,ey,ez),cap=el>6?6/el:1;
     for(let i=0;i<n;i++){const s=seed[i],y=((s[1]-fall*s[3])%BY+BY)%BY;
-      const x=c.x+(((s[0]-c.x+fall*wx)%BX+BX)%BX)-BX/2,z=c.z+(((s[2]-c.z+fall*wz)%BX+BX)%BX)-BX/2,yy=c.y-BY/2+y,len=1.6*s[3];
-      const k=i*6;P[k]=x;P[k+1]=yy;P[k+2]=z;P[k+3]=x+wx*.08;P[k+4]=yy+len;P[k+5]=z+wz*.08;}
+      const x=c.x+(((s[0]-c.x+fall*wx)%BX+BX)%BX)-BX/2,z=c.z+(((s[2]-c.z+fall*wz)%BX+BX)%BX)-BX/2,yy=c.y-BY/2+y;
+      const k=i*6,q=s[3]*cap;P[k]=x;P[k+1]=yy;P[k+2]=z;P[k+3]=x+ex*q;P[k+4]=yy+ey*q;P[k+5]=z+ez*q;}
     g.attributes.position.needsUpdate=true;m.opacity=.28+.18*W.rain;}};})();
 /* rain sound: soft filtered noise, louder in a storm */
 const rainSnd={g:null,start(){const c=snd.ctx;if(!c||this.g)return;const b=c.createBuffer(1,c.sampleRate*2,c.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;
