@@ -2982,7 +2982,7 @@ function settingsCard(){
   const mv=[['OFF',0],['SOFT',.5],['ON',1]].map(([n,v])=>`<button data-mv="${v}" class="${(settings.music??.5)==v?'primary':''}">${n}</button>`).join('');
   const st=STATIONS.map(S=>`<button data-st="${S.id}" class="${settings.station===S.id?'primary':''}">${S.fq} ${S.name.toUpperCase()}</button>`).join('');
   const lt=Object.keys(TOD).map(k=>`<button data-lt="${k}" class="${settings.light===k?'primary':''}">${TOD[k].name.toUpperCase()}</button>`).join('');
-  showCard(`<h2>Settings</h2><div class="sub">ASSISTS · TURN THEM OFF ONE AT A TIME AS YOU IMPROVE</div>${rows}<h3>ENGINE VOLUME</h3><div class="btns">${ev}</div><h3>RADIO VOLUME</h3><div class="btns">${mv}</div><h3>RADIO STATION · OR TAP THE DIAL UP TOP WHILE FLYING</h3><div class="btns">${st}</div><h3>TIME OF DAY</h3><div class="btns">${lt}</div><h3>WEATHER · TRYING IT OUT</h3><div class="btns">${Object.entries(WX).map(([k,W])=>`<button data-wx="${k}" class="${settings.weather===k?'primary':''}">${W.name.toUpperCase()}</button>`).join('')}</div><h3>PIXELS</h3><div class="btns">${px}</div><div class="sub" style="margin-top:14px">BUILD 7675ffd</div>`,[['Back',back,true]]);
+  showCard(`<h2>Settings</h2><div class="sub">ASSISTS · TURN THEM OFF ONE AT A TIME AS YOU IMPROVE</div>${rows}<h3>ENGINE VOLUME</h3><div class="btns">${ev}</div><h3>RADIO VOLUME</h3><div class="btns">${mv}</div><h3>RADIO STATION · OR TAP THE DIAL UP TOP WHILE FLYING</h3><div class="btns">${st}</div><h3>TIME OF DAY</h3><div class="btns">${lt}</div><h3>WEATHER · TRYING IT OUT</h3><div class="btns">${Object.entries(WX).map(([k,W])=>`<button data-wx="${k}" class="${settings.weather===k?'primary':''}">${W.name.toUpperCase()}</button>`).join('')}</div><h3>PIXELS</h3><div class="btns">${px}</div><div class="sub" style="margin-top:14px">BUILD 018fb8f</div>`,[['Back',back,true]]);
   const cb=$('cardBody');
   cb.querySelectorAll('[data-k]').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.k;if(k==='tilt'){if(!settings.tilt){settings.tilt=true;saveS();enableTilt().then(()=>{updTiltUI();settingsCard();});}else{settings.tilt=false;saveS();disableTilt();updTiltUI();settingsCard();}return;}settings[k]=!settings[k];saveS();if(k==='sound')snd.setOn(settings.sound);if(k==='fps'){$('fps').hidden=!settings.fps;$('fps').textContent='FPS: measuring…';fpsN=fpsT=0;fpsLast=0;}if(k==='sound')music.setVol();settingsCard();}));
   cb.querySelectorAll('[data-px]').forEach(b=>b.addEventListener('click',()=>{settings.pixels=b.dataset.px;pixMode=settings.pixels;saveS();resize();settingsCard();}));
@@ -4010,8 +4010,12 @@ function wallpaper(id,bg,hs,mixH){const L=shade(bg,.14),LL=shade(bg,.26),D=shade
     fen:(i,j)=>{if(j===34&&M(i,6)===2)return '#ffd36b';if((j===33||j===35)&&M(i,6)===2)return A('#ffd36b',.4);const f=Math.sin(j*.4+Math.sin(i*.1)*1.5);return f>.6&&(i+j)%2?L:(f>.85?L:null);},
     // the house with the lamp: old floral wallpaper
     ivy:(i,j)=>{const u=M(i+(Math.floor(j/10)%2)*5,10),v=M(j,10);if(Math.abs(u-5)+Math.abs(v-5)===1)return A('#c2456a',.4);if(u===5&&v===5)return A('#f1c84a',.5);if(u===0&&M(j,3)===0)return A('#4a7a4a',.3);return null;},
-    // climber: mountain peaks with snow caps
-    wren:(i,j)=>{for(const [cx,base,hgt] of [[8,20,12],[24,18,14],[40,22,12],[0,44,10],[16,46,14],[34,46,12],[48,44,11]]){const top=base-hgt,dx=Math.abs(i-cx);if(j>=top+dx&&j<=base)return j<top+4+dx*.2?LL:(i>cx?D:L);}return null;},
+    // climber: the Twin Sisters, two green island peaks over a band of mist
+    wren:(i,j)=>{const pk=(cx,top,w)=>top+Math.pow(Math.abs(i-cx)/w,1.5)*30;const a=pk(7,3,10),b=pk(41,5,10),far=24+Math.sin(i*.2)*2;
+      const g1=A('#4f8a4a',.75),g2=A('#3f7040',.8),g3=A('#6aa05a',.6);
+      if(j>=Math.min(a,b)){const onA=a<=b,hgt=j-(onA?a:b),cx=onA?7:41;let c=(i<cx)?g3:(onA?g1:g2);if(hgt<2.5)c=shade(c,.1);if((i*3+j*5)%11===0)c=shade(c,-.12);if(j>40)c=A('#2f5a36',.8);
+        if(Math.abs(j-34-Math.sin(i*.3))<1.5)c=mixH(c,'#f4f6f2',.55);return c;}
+      if(j>=far)return A('#9ac0a0',.35);return null;},
     // goatherd: rolling hills dotted with goats
     tam:(i,j)=>{const hills=[[16,3,.13,0,A('#9ab86a',.45)],[28,4,.09,2,A('#7a9a52',.55)],[40,3,.11,4,A('#5f7f42',.6)]];let col=null,hb=null;
       for(const H of hills){const h=H[0]+Math.sin(i*H[2]+H[3])*H[1];if(j>=h){col=Math.abs(j-h)<1?shade(H[4],.12):H[4];hb=H;}}
@@ -4059,7 +4063,7 @@ const FACES={
   otto:{hat:null,hair:'bald',fh:'fluffy',w:11.4,top:11.2,bot:11.2,jaw:2.2,cheek:1.1,eye:'happy',sep:5,brow:{a:-.6},nose:'button',nl:4,mouth:'grin',mw:4,chub:1,age:1,blush:1.6,sh:1.12,nk:5},
   fen:{hat:'flat',fh:'pencil',w:9,top:13,bot:12.8,jaw:2.3,eye:'heavy',tilt:-1,sep:4,brow:{a:-.7},nose:'long',nl:7,mouth:'flat',mw:2,age:1,ears:1.2},
   ivy:{w:9.4,top:12.6,bot:11.2,jaw:1.6,eye:'happy',sep:4,brow:{a:-.5,y:-5},nose:'pointed',nl:5,mouth:'small',age:3,blush:1.2},
-  wren:{under:'locs',w:10.2,top:11.2,bot:11.4,jaw:2.8,cheek:1.02,sep:5},
+  wren:{outfit:'climber',under:'locs',w:10.2,top:11.2,bot:11.4,jaw:2.8,cheek:1.02,sep:5},
   tam:{hat:null,hair:'tousled',fh:'goatee',w:9,top:12.6,bot:13.4,jaw:2.6,cheek:.95,sep:3,age:1,ears:1.35,bones:1,blush:1.9},
   hattie:{hair:'sidebraid',w:10.8,top:11.4,bot:10.4,jaw:2.2,cheek:1.1,sep:4,age:1,blush:1.5,dimple:1},
   desmond:{hat:'straw',fh:'trim',w:10.4,top:13,bot:12,jaw:2,cheek:1.02,sep:4,age:3,ears:1.2},
@@ -4090,7 +4094,7 @@ const FEAT={
   otto:{eye:{w:3,h:1,closed:'line'},brow:{t:2,len:4,arch:2,y:-5},nose:{k:'bulb',l:4},mouth:{k:'wide',w:3}},
   fen:{eye:{w:3,h:2,lid:'crease',tilt:-1},brow:{t:1,len:6,arch:0,y:-4},nose:{k:'roman',l:7},mouth:{k:'small',w:1}},
   ivy:{eye:{w:3,h:1,lid:'lash',low:1},brow:{t:1,len:4,arch:2,y:-5},nose:{k:'dainty',l:4},mouth:{k:'tongue',w:2}},
-  wren:{eye:{w:4,h:3,lid:'hood'},brow:{t:2,len:5,arch:0,y:-5},nose:{k:'flared',l:5},mouth:{k:'lopsided',w:3}},
+  wren:{eye:{w:4,h:2,lid:'crease'},brow:{t:2,len:5,arch:0,y:-4},nose:{k:'flared',l:5},mouth:{k:'lopsided',w:3}},
   tam:{eye:{w:4,h:1,lid:'thick'},brow:{t:1,len:6,arch:1},nose:{k:'roman',l:6},mouth:{k:'content',w:3}},
   hattie:{eye:{w:3,h:2,lid:'lash',tilt:1},brow:{t:2,len:5,arch:1,a:.1,y:-5},nose:{k:'button',l:3},mouth:{k:'cheer',w:3}},
   desmond:{eye:{w:4,h:1,lid:'hood',low:1},brow:{t:3,len:5,arch:1},nose:{k:'flared',l:7},mouth:{k:'beam',w:3}},
@@ -4203,7 +4207,15 @@ function portrait(id){if(PORT[id])return PORT[id];
   for(let k=0;k<5;k++){for(let x=CX-NK+k;x<=CX+NK-k;x++)put(x,CY+15+k,x>CX+1?sk(-.16):sk(-.06));}
   const col=shade(SHIRT,.28),colD=shade(SHIRT,-.1),cy0=CY+14;
   for(let k=0;k<5;k++){put(CX-NK-1-k,cy0+k,col);put(CX-NK-k,cy0+1+k,col);put(CX-NK-1+k,cy0+1+k,colD);put(CX+NK+1+k,cy0+k,colD);put(CX+NK+k,cy0+1+k,colD);put(CX+NK+1-k,cy0+1+k,col);}
-  if(fc.outfit==='coveralls'){/* mechanic's coveralls: pointed collar, zip down the front, a name patch, a pen in the pocket, oil stains */
+  if(fc.outfit==='climber'){/* technical shell: high zipped collar, pack straps with a sternum strap, a coil of rope over one shoulder, a carabiner */
+    const jk=SHIRT,jkL=shade(jk,.2),jkD=shade(jk,-.22),strap='#2a2a34',strapL='#4a4a58',rope='#3f8fc0',ropeL='#8fd0f0';
+    for(let y=NY+2;y<=cy0+3;y++)for(let x=CX-NK-1;x<=CX+NK+1;x++)put(x,y,y===NY+2?jkL:(x>CX+1?jkD:jk));
+    for(let y=NY+3;y<N;y++)put(CX,y,'#c8ccd4');put(CX,NY+2,'#e8ecf0');put(CX+1,NY+3,'#e8ecf0');
+    for(const s of [-1,1]){for(let y=cy0+2;y<N;y++){const x=CX+s*(9-Math.max(0,(y-cy0-2)>>2));put(x,y,strap);put(x+s,y,strapL);}}
+    for(let x=CX-8;x<=CX+8;x++)put(x,cy0+11,x===CX?'#c8ccd4':strap);
+    for(let k=0;k<14;k++){const x=CX-17+k,y=cy0+1+Math.round(k*.7);for(let t=0;t<3;t++)put(x,y+t,((k+t)%3===0)?ropeL:rope);}
+    put(CX+12,cy0+8,'#d8dce4');put(CX+13,cy0+8,'#d8dce4');put(CX+12,cy0+9,'#d8dce4');put(CX+13,cy0+10,'#a8acb4');put(CX+12,cy0+10,'#d8dce4');}
+  else   if(fc.outfit==='coveralls'){/* mechanic's coveralls: pointed collar, zip down the front, a name patch, a pen in the pocket, oil stains */
     const cv=SHIRT,cvL=shade(cv,.22),cvD=shade(cv,-.2),oil='#2a2228',oilL='#4a3e44';
     for(let k=0;k<5;k++){for(let x=CX-NK+k;x<=CX+NK-k;x++)put(x,cy0+k,x>CX+1?sk(-.16):sk(-.06));}
     for(let k=0;k<5;k++){put(CX-NK-1-k,cy0+k,cvL);put(CX-NK-k,cy0+1+k,cvL);put(CX-NK+k-1,cy0+2+k,cvL);put(CX+NK+1+k,cy0+k,cv);put(CX+NK+k,cy0+1+k,cv);put(CX+NK-k+1,cy0+2+k,cv);}
@@ -4244,7 +4256,7 @@ function portrait(id){if(PORT[id])return PORT[id];
       for(let r=0;r<eh;r++)for(let k=0;k<iw;k++)put(ic+k,EY+r,r===2?eyeC:Ei);
       // solid pupils; a glint only where the iris is big enough (3x3) to keep a full pupil around it
       if(iw===1)for(let r=0;r<eh;r++)put(ic,EY+r,'#1c1620');
-      else{for(let r=0;r<eh;r++)for(let k=0;k<iw;k++)put(ic+k,EY+r,r===0&&eh>1?shade(eyeC,-.15):shade(eyeC,-.42));if(iw===3&&eh===3)put(ic,EY,'#ffffff');}
+      else{for(let r=0;r<eh;r++)for(let k=0;k<iw;k++)put(ic+k,EY+r,r===0&&eh>1?shade(eyeC,dark?-.5:-.3):'#1c1620');if(iw===3&&eh===3)put(ic,EY,'#ffffff');}
       const lid=EYE.lid||'thin';
       if(lid==='hood')rect(x0,EY-2,ew,1,sk(-.15));
       if(lid==='crease')for(let i=1;i<ew-1;i++)put(x0+i,EY-3,sk(-.13));
@@ -4285,7 +4297,15 @@ function portrait(id){if(PORT[id])return PORT[id];
   for(const s of [-1,1]){const bx=s<0?EYX(s)-1:EYX(s)+ew-2;for(let i=0;i<3;i++){tint(bx+i,ch,blush,bk);tint(bx+i,ch+1,blush,bk*.6);}}
   if(sp.freckles)for(const [a,b] of [[-6,4],[-4,5],[-7,6],[3,4],[5,5],[6,4],[-2,3],[2,3],[4,6]])put(CX+a,EY+b,sk(-.24));
   if(fc.mole)put(CX+fc.mole[0],EY+fc.mole[1],sk(-.42));
-  if(fc.outfit==='coveralls'){tint(CX+fc.sep+3,EY+5,'#2a2228',.35);tint(CX+fc.sep+4,EY+5,'#2a2228',.25);tint(CX+fc.sep+4,EY+6,'#2a2228',.2);}
+  if(fc.outfit==='climber'){/* technical shell: high zipped collar, pack straps with a sternum strap, a coil of rope over one shoulder, a carabiner */
+    const jk=SHIRT,jkL=shade(jk,.2),jkD=shade(jk,-.22),strap='#2a2a34',strapL='#4a4a58',rope='#3f8fc0',ropeL='#8fd0f0';
+    for(let y=NY+2;y<=cy0+3;y++)for(let x=CX-NK-1;x<=CX+NK+1;x++)put(x,y,y===NY+2?jkL:(x>CX+1?jkD:jk));
+    for(let y=NY+3;y<N;y++)put(CX,y,'#c8ccd4');put(CX,NY+2,'#e8ecf0');put(CX+1,NY+3,'#e8ecf0');
+    for(const s of [-1,1]){for(let y=cy0+2;y<N;y++){const x=CX+s*(9-Math.max(0,(y-cy0-2)>>2));put(x,y,strap);put(x+s,y,strapL);}}
+    for(let x=CX-8;x<=CX+8;x++)put(x,cy0+11,x===CX?'#c8ccd4':strap);
+    for(let k=0;k<14;k++){const x=CX-17+k,y=cy0+1+Math.round(k*.7);for(let t=0;t<3;t++)put(x,y+t,((k+t)%3===0)?ropeL:rope);}
+    put(CX+12,cy0+8,'#d8dce4');put(CX+13,cy0+8,'#d8dce4');put(CX+12,cy0+9,'#d8dce4');put(CX+13,cy0+10,'#a8acb4');put(CX+12,cy0+10,'#d8dce4');}
+  else   if(fc.outfit==='coveralls'){tint(CX+fc.sep+3,EY+5,'#2a2228',.35);tint(CX+fc.sep+4,EY+5,'#2a2228',.25);tint(CX+fc.sep+4,EY+6,'#2a2228',.2);}
   if(fc.nosering){put(CX-4,EY+fc.nl,'#f1c84a');}
   if(fc.dimple){const y=CY+Math.round(fc.bot)-2;put(CX,y,sk(-.16));}
   /* mouth */
