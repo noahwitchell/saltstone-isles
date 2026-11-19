@@ -26,7 +26,7 @@ const UPG=[
 const PLANES=[
   {id:'cub',name:'Puddle Jumper',cost:0,desc:'The old faithful. Steady, forgiving, good at everything.',T:1,cd:1,S:1,vp:0,roll:1,pitch:1,mass:1,parcels:0,pips:[3,3,3,4]},
   {id:'bi',name:'Bluebird',cost:250,desc:'A biplane. Slow and floaty, and it rolls and loops like nothing else.',T:.95,cd:1.3,S:1.3,vp:-6,roll:1.6,pitch:1.35,mass:.95,parcels:0,pips:[2,3,5,5]},
-  {id:'float',name:'Pelican',cost:350,desc:'A big floatplane. Lands on any calm water and carries two extra parcels for air drops.',T:1.18,cd:1.2,S:1.3,vp:-2,roll:.85,pitch:.9,mass:1.12,parcels:2,floats:true,pips:[2,3,2,4]},
+  {id:'float',name:'Pelican',cost:350,desc:'A big floatplane. Lands on any calm water and carries two extra parcels for air drops. Gus swears there are sea caves only a floatplane can get into.',T:1.18,cd:1.2,S:1.3,vp:-2,roll:.85,pitch:.9,mass:1.12,parcels:2,floats:true,pips:[2,3,2,4]},
   {id:'racer',name:'Gannet',cost:450,desc:'A low-wing racer. Fast and slippery. It lands hot, so mind your speed.',T:1.3,cd:.68,S:.85,vp:20,roll:1.35,pitch:1.05,mass:1,parcels:0,pips:[5,4,4,2]},
 ];
 

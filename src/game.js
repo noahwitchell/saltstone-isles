@@ -60,6 +60,8 @@ const GOALS=[
   {id:'bullseye',name:'Bullseye',hint:'Land a parcel within 5 m of the middle of a drop target.'},
   {id:'drops',name:'Air mail',hint:'Deliver ten air drops.'},
   {id:'floatplane',name:'Splashdown',hint:'Pull the floats and land on the water.'},
+  {id:'cave',name:'Sea caver',hint:'Find a secret sea cave. Only floats will get you in.'},
+  {id:'caves3',name:'Cave collector',hint:'Find all three secret sea caves.'},
   {id:'honk',name:'Hello down there',hint:'Honk the horn at three or more people at once.'},
   {id:'errand',name:'Good neighbour',hint:'Finish an errand for an islander.'},
   {id:'errands',name:'Everybody\'s favourite',hint:'Finish every islander\'s errand.'},
