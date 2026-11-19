@@ -5,9 +5,9 @@ function wallpaper(id,bg,hs,mixH){const L=shade(bg,.14),LL=shade(bg,.26),D=shade
   const rnd=(i,j)=>{let h=(i*374761393+j*668265263+hs*1442695)>>>0;h=Math.imul(h^(h>>>13),1274126177)>>>0;return ((h^(h>>>16))>>>0)/4294967296;};
   const M=(a,b)=>((a%b)+b)%b;
   const P={
-    // post office: rows of postage stamps with perforated edges
-    mabel:(i,j)=>{const u=M(i+(Math.floor(j/12)%2)*6,12),v=M(j,12);if(u<1||u>9||v<1||v>9)return null;const edge=u===1||u===9||v===1||v===9;if(edge)return (u+v)%2?LL:null;
-      if(u>2&&u<8&&v>2&&v<8)return [A('#d2493c'),A('#3f6fb0'),A('#3f8f6a')][(Math.floor(i/12)+Math.floor(j/12))%3];return LL;},
+    // post office: the wall of little brass-fronted PO boxes behind the counter, a letter poking out here and there
+    mabel:(i,j)=>{const W='#8a5a34',u=M(i,8),v=M(j,7),bx=Math.floor(i/8),by=Math.floor(j/7);if(u===0||v===0)return A(W,.75);if(u===1||v===1)return A(W,.5);
+      const brass=A('#c8a050',.55),glass=A('#3a3040',.35);if(v>=2&&v<=3&&u>=3&&u<=6)return (rnd(bx,by)<.3&&v===2)?'#f6f0e2':glass;if(v===5&&u===6)return A('#3a3030',.6);if(v===5&&u===3)return A('#e8d8b0',.6);return u===7||v===6?A('#a07a30',.55):brass;},
     // retired pilot: puffy clouds drifting across the sky
     bea:(i,j)=>{for(const [cx,cy,r] of [[8,8,5],[13,7,4],[34,20,6],[40,18,4],[18,40,5],[24,38,4],[46,42,4],[2,30,4]]){const d=Math.hypot(i-cx,(j-cy)*1.5);if(d<r)return d>r-1.2?L:LL;}return null;},
     // mechanic: pegboard with a wrench and a screwdriver hung on it
