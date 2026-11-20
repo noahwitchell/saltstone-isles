@@ -155,6 +155,8 @@ const TOD={
     deep:0x0a1430,mid:0x122448,shal:0x1d3c58,glint:0xdfe6ff,con:1.1,sat:.85,vig:.35,stars:1,lights:1,disc:.99975,beam:.42},
   storm:{name:'Stormy',sunAz:200,sunEl:40,sun:0xc8ced8,sunI:.62,sky:0x7c8696,gnd:0x3a4038,hemiI:.5,zen:0x2a3240,high:0x404a5a,hor:0x6a7480,haze:0x76808a,sunc:0xa8b0b8,fogN:600,fogF:4600,
     deep:0x142c44,mid:0x1f4560,shal:0x356a70,glint:0xa8b0b8,con:1.08,sat:.9,vig:.62,stars:0,lights:1,disc:2,beam:.4},
+  fog:{name:'Foggy',sunAz:200,sunEl:50,sun:0xf2efe4,sunI:.22,sky:0xd4d8d6,gnd:0x6a7062,hemiI:.95,zen:0xb6c0c6,high:0xc2c8c8,hor:0xc8ccc6,haze:0xd6d8d0,sunc:0xe6e4da,fogN:0,fogF:520,
+    deep:0x3a5866,mid:0x557680,shal:0x7a9c9c,glint:0xd8dad2,con:1.0,sat:.78,vig:.34,stars:0,lights:1,disc:2,beam:.5},
 };
 const hemi=new THREE.HemisphereLight(0xffffff,0x888888,.6); scene.add(hemi);
 const sunL=new THREE.DirectionalLight(0xffffff,1); scene.add(sunL); scene.add(sunL.target);
@@ -165,9 +167,9 @@ const sunDir=new V3();
 /* sky dome */
 const skyMat=new THREE.ShaderMaterial({depthWrite:false,depthTest:false,side:THREE.BackSide,
   uniforms:{sunDir:{value:sunDir},cZen:{value:new THREE.Color()},cHigh:{value:new THREE.Color()},cHor:{value:new THREE.Color()},
-    cHaze:{value:new THREE.Color()},cSun:{value:new THREE.Color()},uTime:{value:0},uStars:{value:0},uDisc:{value:.99935}},
+    cHaze:{value:new THREE.Color()},cSun:{value:new THREE.Color()},uTime:{value:0},uStars:{value:0},uDisc:{value:.99935},uCl:{value:1}},
   vertexShader:`varying vec3 vDir;void main(){vDir=position;vec4 p=projectionMatrix*modelViewMatrix*vec4(position,1.);gl_Position=p.xyww;}`,
-  fragmentShader:`uniform vec3 sunDir,cZen,cHigh,cHor,cHaze,cSun;uniform float uTime,uStars,uDisc;varying vec3 vDir;
+  fragmentShader:`uniform vec3 sunDir,cZen,cHigh,cHor,cHaze,cSun;uniform float uTime,uStars,uDisc,uCl;varying vec3 vDir;
   float h1(vec2 p){return fract(sin(dot(p,vec2(41.3,289.1)))*43758.5453);}
   float n1(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(h1(i),h1(i+vec2(1,0)),f.x),mix(h1(i+vec2(0,1)),h1(i+vec2(1,1)),f.x),f.y);}
   void main(){vec3 d=normalize(vDir);float y=d.y;float sd=max(dot(d,sunDir),0.);
@@ -177,7 +179,7 @@ const skyMat=new THREE.ShaderMaterial({depthWrite:false,depthTest:false,side:THR
     float cl=n1(uv*3.+vec2(uTime*.004,0.))*.65+n1(uv*9.)*.35;
     cl=smoothstep(.56,.6,cl)*smoothstep(.015,.06,y)*(1.-smoothstep(.25,.5,y));
     vec3 cc=mix(mix(cHor,vec3(1.),.45),cHaze,pow(sd,3.)*.7);
-    c=mix(c,cc,cl*.75);
+    c=mix(c,cc,cl*.75*uCl);
     vec3 q=floor(d*260.);float st=fract(sin(dot(q,vec3(12.9898,78.233,37.719)))*43758.5453);c+=vec3(.95,.93,1.)*step(.9982,st)*uStars*smoothstep(.02,.2,y)*(.55+.45*sin(uTime*1.7+st*80.));
     c+=cSun*pow(sd,28.)*.55; c=mix(c,cSun,step(uDisc,sd));
     if(y<0.)c=cHor; gl_FragColor=vec4(c,1.);}`});
@@ -880,9 +882,9 @@ function cloudMist(p){let m=0;const gx=cloudGroup.position.x,gz=cloudGroup.posit
 /* ---------------- post-process ---------------- */
 let LW=320,LH=180,PS=2,rt;
 const postMat=new THREE.ShaderMaterial({
-  uniforms:{tColor:{value:null},tDepth:{value:null},res:{value:new THREE.Vector2()},cNear:{value:.4},cFar:{value:14000},outline:{value:1},levels:{value:14},dither:{value:1},con:{value:1},sat:{value:1},vig:{value:.2},mist:{value:0},mistC:{value:new THREE.Color(0xf2eef4)},uSpot:{value:new THREE.Vector3()},uSpotR:{value:40},uSpotK:{value:new THREE.Vector3(1,1,1)},uSpotOn:{value:0},uInvProj:{value:new THREE.Matrix4()},uCamW:{value:new THREE.Matrix4()}},
+  uniforms:{tColor:{value:null},tDepth:{value:null},res:{value:new THREE.Vector2()},cNear:{value:.4},cFar:{value:14000},outline:{value:1},levels:{value:14},dither:{value:1},con:{value:1},sat:{value:1},vig:{value:.2},mist:{value:0},mistC:{value:new THREE.Color(0xf2eef4)},uSpot:{value:new THREE.Vector3()},uSpotR:{value:40},uSpotK:{value:new THREE.Vector3(1,1,1)},uSpotOn:{value:0},fN:{value:700},fF:{value:5600},uInvProj:{value:new THREE.Matrix4()},uCamW:{value:new THREE.Matrix4()}},
   vertexShader:`varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position.xy,0.,1.);}`,
-  fragmentShader:`uniform sampler2D tColor,tDepth;uniform vec2 res;uniform float cNear,cFar,outline,levels,dither,con,sat,vig,mist,uSpotR,uSpotOn;uniform vec3 mistC,uSpot,uSpotK;uniform mat4 uInvProj,uCamW;varying vec2 vUv;
+  fragmentShader:`uniform sampler2D tColor,tDepth;uniform vec2 res;uniform float cNear,cFar,outline,levels,dither,con,sat,vig,mist,uSpotR,uSpotOn,fN,fF;uniform vec3 mistC,uSpot,uSpotK;uniform mat4 uInvProj,uCamW;varying vec2 vUv;
   float lin(float d){float z=d*2.-1.;return 2.*cNear*cFar/(cFar+cNear-z*(cFar-cNear));}
   float b2(vec2 a){a=floor(a);return fract(a.x*.5+a.y*a.y*.75);}
   float b4(vec2 a){return b2(.5*a)*.25+b2(a);}
@@ -892,7 +894,7 @@ const postMat=new THREE.ShaderMaterial({
       float r=length(wp.xz-uSpot.xz),k=(1.-smoothstep(uSpotR*.72,uSpotR,r))*(1.-smoothstep(60.,140.,abs(wp.y-uSpot.y)));c=mix(c,min(c*uSpotK,vec3(1.)),k*uSpotOn);}}
     if(outline>.5){float dc=lin(texture2D(tDepth,vUv).r);
       float dn=max(max(lin(texture2D(tDepth,vUv+vec2(px.x,0.)).r),lin(texture2D(tDepth,vUv-vec2(px.x,0.)).r)),max(lin(texture2D(tDepth,vUv+vec2(0.,px.y)).r),lin(texture2D(tDepth,vUv-vec2(0.,px.y)).r)));
-      float e=step(dc*.07+1.2,dn-dc)*(1.-smoothstep(250.,2600.,dc));
+      float e=step(dc*.07+1.2,dn-dc)*(1.-smoothstep(250.,2600.,dc))*(1.-smoothstep(fN,fF,dc));   // no ink lines on things the fog has swallowed
       c=mix(c,c*vec3(.45,.38,.52),e*.85*c4.a);}
     c=mix(c,mistC,mist*(.5+.25*smoothstep(.2,.9,vUv.y))*smoothstep(1.5,4.,lin(texture2D(tDepth,vUv).r)));   // the cockpit stays clear in a cloud
     float l=dot(c,vec3(.299,.587,.114));c=mix(vec3(l),c,sat);c=(c-.5)*con+.5;

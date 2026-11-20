@@ -16,11 +16,12 @@ function setTOD(k){tod=k;const T=TOD[k];
   sunL.color.setHex(T.sun);sunL.intensity=T.sunI;
   hemi.color.setHex(T.sky);hemi.groundColor.setHex(T.gnd);hemi.intensity=T.hemiI;
   scene.fog.color.setHex(T.hor);scene.fog.near=T.fogN;scene.fog.far=T.fogF;
-  const u=skyMat.uniforms;u.cZen.value.setHex(T.zen);u.cHigh.value.setHex(T.high);u.cHor.value.setHex(T.hor);u.cHaze.value.setHex(T.haze);u.cSun.value.setHex(T.sunc);u.uStars.value=T.stars;u.uDisc.value=T.disc;
+  const u=skyMat.uniforms;u.cZen.value.setHex(T.zen);u.cHigh.value.setHex(T.high);u.cHor.value.setHex(T.hor);u.cHaze.value.setHex(T.haze);u.cSun.value.setHex(T.sunc);u.uStars.value=T.stars;u.uDisc.value=T.disc;u.uCl.value=k==='fog'?0:1;cloudGroup.visible=k!=='fog';   // in fog the sky is one blank grey: no wisps, no cloud banks
+  
   const w=waterMat.uniforms;w.fogColor.value.setHex(T.hor);w.fogNear.value=T.fogN;w.fogFar.value=T.fogF;w.cDeep.value.setHex(T.deep);w.cMid.value.setHex(T.mid);w.cShal.value.setHex(T.shal);w.cGlint.value.setHex(T.glint);
   const pu=postMat.uniforms;pu.con.value=T.con;pu.sat.value=T.sat;pu.vig.value=T.vig;
   lightPts.visible=T.lights>0;lightPts.material.color.setScalar(T.lights);navPts.visible=T.lights>0;
-  NIGHT_GLOW.set(T.lights>=1?1:0);bakeTerrainShadow(sunDir,{noon:0,golden:0,sunset:0,dusk:.6,night:.3,storm:.6}[k]||0);fogK=-1;if(typeof applyWeather==='function')applyWeather();}
+  NIGHT_GLOW.set(T.lights>=1?1:0);bakeTerrainShadow(sunDir,{noon:0,golden:0,sunset:0,dusk:.6,night:.3,storm:.6,fog:.7}[k]||0);fogK=-1;if(typeof applyWeather==='function')applyWeather();}
 
 /* ---------- save data ---------- */
 const sightOn=v=>!v.night||TOD[tod].lights>=1;
@@ -1225,7 +1226,7 @@ function loop(now){
   const dt=clamp((now-last)/1000,0,.05);last=now;const t=now/1000;
   skyMat.uniforms.uTime.value=t;waterMat.uniforms.uTime.value=t;for(const a of anims)a(t);
   cloudGroup.position.set((t*2.2)%4000,0,-(t*.8)%4000);
-  {const pu=postMat.uniforms;pu.mist.value=lerp(pu.mist.value,cloudMist(camera.position),1-Math.exp(-dt*9));pu.mistC.value.copy(scene.fog.color).lerp(_mistW,.3);}
+  {const pu=postMat.uniforms;pu.mist.value=lerp(pu.mist.value,cloudMist(camera.position),1-Math.exp(-dt*9));pu.mistC.value.copy(scene.fog.color).lerp(_mistW,.3);pu.fN.value=scene.fog.near;pu.fF.value=scene.fog.far;}
   if(mode==='fly'){readInput(dt);acc+=dt;const H_=1/120;let n=0;while(acc>=H_&&n<10){if(ac.ground)stepGround(H_);else{stepAir(H_);stepBoost(H_);stepUp(H_);stepBumps(H_);if(typeof stepWeather==='function')stepWeather(H_);if(typeof stepGuard==='function')stepGuard(H_);}simT+=H_;acc-=H_;n++;if(mode!=='fly')break;}if(n>=10)acc=0;
     if(!Number.isFinite(ac.pos.x+ac.pos.y+ac.pos.z+ac.vel.x+ac.vel.y+ac.vel.z+ac.q.x+ac.q.w)){console.warn('sim NaN, respawning');spawnField(stripById(ac.lastField)||STRIPS[0]);}
     if(mode==='fly'){gameChecks(dt);playChecks(dt);}runTips(dt);}

@@ -573,6 +573,8 @@ const TOD={
     deep:0x0a1430,mid:0x122448,shal:0x1d3c58,glint:0xdfe6ff,con:1.1,sat:.85,vig:.35,stars:1,lights:1,disc:.99975,beam:.42},
   storm:{name:'Stormy',sunAz:200,sunEl:40,sun:0xc8ced8,sunI:.62,sky:0x7c8696,gnd:0x3a4038,hemiI:.5,zen:0x2a3240,high:0x404a5a,hor:0x6a7480,haze:0x76808a,sunc:0xa8b0b8,fogN:600,fogF:4600,
     deep:0x142c44,mid:0x1f4560,shal:0x356a70,glint:0xa8b0b8,con:1.08,sat:.9,vig:.62,stars:0,lights:1,disc:2,beam:.4},
+  fog:{name:'Foggy',sunAz:200,sunEl:50,sun:0xf2efe4,sunI:.22,sky:0xd4d8d6,gnd:0x6a7062,hemiI:.95,zen:0xb6c0c6,high:0xc2c8c8,hor:0xc8ccc6,haze:0xd6d8d0,sunc:0xe6e4da,fogN:0,fogF:520,
+    deep:0x3a5866,mid:0x557680,shal:0x7a9c9c,glint:0xd8dad2,con:1.0,sat:.78,vig:.34,stars:0,lights:1,disc:2,beam:.5},
 };
 const hemi=new THREE.HemisphereLight(0xffffff,0x888888,.6); scene.add(hemi);
 const sunL=new THREE.DirectionalLight(0xffffff,1); scene.add(sunL); scene.add(sunL.target);
@@ -583,9 +585,9 @@ const sunDir=new V3();
 /* sky dome */
 const skyMat=new THREE.ShaderMaterial({depthWrite:false,depthTest:false,side:THREE.BackSide,
   uniforms:{sunDir:{value:sunDir},cZen:{value:new THREE.Color()},cHigh:{value:new THREE.Color()},cHor:{value:new THREE.Color()},
-    cHaze:{value:new THREE.Color()},cSun:{value:new THREE.Color()},uTime:{value:0},uStars:{value:0},uDisc:{value:.99935}},
+    cHaze:{value:new THREE.Color()},cSun:{value:new THREE.Color()},uTime:{value:0},uStars:{value:0},uDisc:{value:.99935},uCl:{value:1}},
   vertexShader:`varying vec3 vDir;void main(){vDir=position;vec4 p=projectionMatrix*modelViewMatrix*vec4(position,1.);gl_Position=p.xyww;}`,
-  fragmentShader:`uniform vec3 sunDir,cZen,cHigh,cHor,cHaze,cSun;uniform float uTime,uStars,uDisc;varying vec3 vDir;
+  fragmentShader:`uniform vec3 sunDir,cZen,cHigh,cHor,cHaze,cSun;uniform float uTime,uStars,uDisc,uCl;varying vec3 vDir;
   float h1(vec2 p){return fract(sin(dot(p,vec2(41.3,289.1)))*43758.5453);}
   float n1(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(h1(i),h1(i+vec2(1,0)),f.x),mix(h1(i+vec2(0,1)),h1(i+vec2(1,1)),f.x),f.y);}
   void main(){vec3 d=normalize(vDir);float y=d.y;float sd=max(dot(d,sunDir),0.);
@@ -595,7 +597,7 @@ const skyMat=new THREE.ShaderMaterial({depthWrite:false,depthTest:false,side:THR
     float cl=n1(uv*3.+vec2(uTime*.004,0.))*.65+n1(uv*9.)*.35;
     cl=smoothstep(.56,.6,cl)*smoothstep(.015,.06,y)*(1.-smoothstep(.25,.5,y));
     vec3 cc=mix(mix(cHor,vec3(1.),.45),cHaze,pow(sd,3.)*.7);
-    c=mix(c,cc,cl*.75);
+    c=mix(c,cc,cl*.75*uCl);
     vec3 q=floor(d*260.);float st=fract(sin(dot(q,vec3(12.9898,78.233,37.719)))*43758.5453);c+=vec3(.95,.93,1.)*step(.9982,st)*uStars*smoothstep(.02,.2,y)*(.55+.45*sin(uTime*1.7+st*80.));
     c+=cSun*pow(sd,28.)*.55; c=mix(c,cSun,step(uDisc,sd));
     if(y<0.)c=cHor; gl_FragColor=vec4(c,1.);}`});
@@ -2036,9 +2038,9 @@ function cloudMist(p){let m=0;const gx=cloudGroup.position.x,gz=cloudGroup.posit
 /* ---------------- post-process ---------------- */
 let LW=320,LH=180,PS=2,rt;
 const postMat=new THREE.ShaderMaterial({
-  uniforms:{tColor:{value:null},tDepth:{value:null},res:{value:new THREE.Vector2()},cNear:{value:.4},cFar:{value:14000},outline:{value:1},levels:{value:14},dither:{value:1},con:{value:1},sat:{value:1},vig:{value:.2},mist:{value:0},mistC:{value:new THREE.Color(0xf2eef4)},uSpot:{value:new THREE.Vector3()},uSpotR:{value:40},uSpotK:{value:new THREE.Vector3(1,1,1)},uSpotOn:{value:0},uInvProj:{value:new THREE.Matrix4()},uCamW:{value:new THREE.Matrix4()}},
+  uniforms:{tColor:{value:null},tDepth:{value:null},res:{value:new THREE.Vector2()},cNear:{value:.4},cFar:{value:14000},outline:{value:1},levels:{value:14},dither:{value:1},con:{value:1},sat:{value:1},vig:{value:.2},mist:{value:0},mistC:{value:new THREE.Color(0xf2eef4)},uSpot:{value:new THREE.Vector3()},uSpotR:{value:40},uSpotK:{value:new THREE.Vector3(1,1,1)},uSpotOn:{value:0},fN:{value:700},fF:{value:5600},uInvProj:{value:new THREE.Matrix4()},uCamW:{value:new THREE.Matrix4()}},
   vertexShader:`varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position.xy,0.,1.);}`,
-  fragmentShader:`uniform sampler2D tColor,tDepth;uniform vec2 res;uniform float cNear,cFar,outline,levels,dither,con,sat,vig,mist,uSpotR,uSpotOn;uniform vec3 mistC,uSpot,uSpotK;uniform mat4 uInvProj,uCamW;varying vec2 vUv;
+  fragmentShader:`uniform sampler2D tColor,tDepth;uniform vec2 res;uniform float cNear,cFar,outline,levels,dither,con,sat,vig,mist,uSpotR,uSpotOn,fN,fF;uniform vec3 mistC,uSpot,uSpotK;uniform mat4 uInvProj,uCamW;varying vec2 vUv;
   float lin(float d){float z=d*2.-1.;return 2.*cNear*cFar/(cFar+cNear-z*(cFar-cNear));}
   float b2(vec2 a){a=floor(a);return fract(a.x*.5+a.y*a.y*.75);}
   float b4(vec2 a){return b2(.5*a)*.25+b2(a);}
@@ -2048,7 +2050,7 @@ const postMat=new THREE.ShaderMaterial({
       float r=length(wp.xz-uSpot.xz),k=(1.-smoothstep(uSpotR*.72,uSpotR,r))*(1.-smoothstep(60.,140.,abs(wp.y-uSpot.y)));c=mix(c,min(c*uSpotK,vec3(1.)),k*uSpotOn);}}
     if(outline>.5){float dc=lin(texture2D(tDepth,vUv).r);
       float dn=max(max(lin(texture2D(tDepth,vUv+vec2(px.x,0.)).r),lin(texture2D(tDepth,vUv-vec2(px.x,0.)).r)),max(lin(texture2D(tDepth,vUv+vec2(0.,px.y)).r),lin(texture2D(tDepth,vUv-vec2(0.,px.y)).r)));
-      float e=step(dc*.07+1.2,dn-dc)*(1.-smoothstep(250.,2600.,dc));
+      float e=step(dc*.07+1.2,dn-dc)*(1.-smoothstep(250.,2600.,dc))*(1.-smoothstep(fN,fF,dc));   // no ink lines on things the fog has swallowed
       c=mix(c,c*vec3(.45,.38,.52),e*.85*c4.a);}
     c=mix(c,mistC,mist*(.5+.25*smoothstep(.2,.9,vUv.y))*smoothstep(1.5,4.,lin(texture2D(tDepth,vUv).r)));   // the cockpit stays clear in a cloud
     float l=dot(c,vec3(.299,.587,.114));c=mix(vec3(l),c,sat);c=(c-.5)*con+.5;
@@ -2214,11 +2216,12 @@ function setTOD(k){tod=k;const T=TOD[k];
   sunL.color.setHex(T.sun);sunL.intensity=T.sunI;
   hemi.color.setHex(T.sky);hemi.groundColor.setHex(T.gnd);hemi.intensity=T.hemiI;
   scene.fog.color.setHex(T.hor);scene.fog.near=T.fogN;scene.fog.far=T.fogF;
-  const u=skyMat.uniforms;u.cZen.value.setHex(T.zen);u.cHigh.value.setHex(T.high);u.cHor.value.setHex(T.hor);u.cHaze.value.setHex(T.haze);u.cSun.value.setHex(T.sunc);u.uStars.value=T.stars;u.uDisc.value=T.disc;
+  const u=skyMat.uniforms;u.cZen.value.setHex(T.zen);u.cHigh.value.setHex(T.high);u.cHor.value.setHex(T.hor);u.cHaze.value.setHex(T.haze);u.cSun.value.setHex(T.sunc);u.uStars.value=T.stars;u.uDisc.value=T.disc;u.uCl.value=k==='fog'?0:1;cloudGroup.visible=k!=='fog';   // in fog the sky is one blank grey: no wisps, no cloud banks
+  
   const w=waterMat.uniforms;w.fogColor.value.setHex(T.hor);w.fogNear.value=T.fogN;w.fogFar.value=T.fogF;w.cDeep.value.setHex(T.deep);w.cMid.value.setHex(T.mid);w.cShal.value.setHex(T.shal);w.cGlint.value.setHex(T.glint);
   const pu=postMat.uniforms;pu.con.value=T.con;pu.sat.value=T.sat;pu.vig.value=T.vig;
   lightPts.visible=T.lights>0;lightPts.material.color.setScalar(T.lights);navPts.visible=T.lights>0;
-  NIGHT_GLOW.set(T.lights>=1?1:0);bakeTerrainShadow(sunDir,{noon:0,golden:0,sunset:0,dusk:.6,night:.3,storm:.6}[k]||0);fogK=-1;if(typeof applyWeather==='function')applyWeather();}
+  NIGHT_GLOW.set(T.lights>=1?1:0);bakeTerrainShadow(sunDir,{noon:0,golden:0,sunset:0,dusk:.6,night:.3,storm:.6,fog:.7}[k]||0);fogK=-1;if(typeof applyWeather==='function')applyWeather();}
 
 /* ---------- save data ---------- */
 const sightOn=v=>!v.night||TOD[tod].lights>=1;
@@ -3243,7 +3246,7 @@ function settingsCard(){
   const mv=[['OFF',0],['SOFT',.5],['ON',1]].map(([n,v])=>`<button data-mv="${v}" class="${(settings.music??.5)==v?'primary':''}">${n}</button>`).join('');
   const st=STATIONS.map(S=>`<button data-st="${S.id}" class="${settings.station===S.id?'primary':''}">${S.fq} ${S.name.toUpperCase()}</button>`).join('');
   const lt=Object.keys(TOD).map(k=>`<button data-lt="${k}" class="${settings.light===k?'primary':''}">${TOD[k].name.toUpperCase()}</button>`).join('');
-  showCard(`<h2>Settings</h2><div class="sub">ASSISTS · TURN THEM OFF ONE AT A TIME AS YOU IMPROVE</div>${rows}<h3>ENGINE VOLUME</h3><div class="btns">${ev}</div><h3>RADIO VOLUME</h3><div class="btns">${mv}</div><h3>RADIO STATION · OR TAP THE DIAL UP TOP WHILE FLYING</h3><div class="btns">${st}</div><h3>SKY · OR TAP THE SUN BUTTON UP TOP</h3><div class="btns">${lt}</div><h3>PIXELS</h3><div class="btns">${px}</div><div class="sub" style="margin-top:14px">BUILD 4705035</div>`,[['Back',back,true]]);
+  showCard(`<h2>Settings</h2><div class="sub">ASSISTS · TURN THEM OFF ONE AT A TIME AS YOU IMPROVE</div>${rows}<h3>ENGINE VOLUME</h3><div class="btns">${ev}</div><h3>RADIO VOLUME</h3><div class="btns">${mv}</div><h3>RADIO STATION · OR TAP THE DIAL UP TOP WHILE FLYING</h3><div class="btns">${st}</div><h3>SKY · OR TAP THE SUN BUTTON UP TOP</h3><div class="btns">${lt}</div><h3>PIXELS</h3><div class="btns">${px}</div><div class="sub" style="margin-top:14px">BUILD 5fda69f</div>`,[['Back',back,true]]);
   const cb=$('cardBody');
   cb.querySelectorAll('[data-k]').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.k;if(k==='tilt'){if(!settings.tilt){settings.tilt=true;saveS();enableTilt().then(()=>{updTiltUI();settingsCard();});}else{settings.tilt=false;saveS();disableTilt();updTiltUI();settingsCard();}return;}settings[k]=!settings[k];saveS();if(k==='sound')snd.setOn(settings.sound);if(k==='fps'){$('fps').hidden=!settings.fps;$('fps').textContent='FPS: measuring…';fpsN=fpsT=0;fpsLast=0;}if(k==='sound')music.setVol();settingsCard();}));
   cb.querySelectorAll('[data-px]').forEach(b=>b.addEventListener('click',()=>{settings.pixels=b.dataset.px;pixMode=settings.pixels;saveS();resize();settingsCard();}));
@@ -3586,7 +3589,7 @@ const dogPic=(()=>{const c=document.createElement('canvas');c.width=c.height=32;
 let dogPopT=0;
 function dogPopTick(dt){if(dog.bark>1.5&&dogPopT<=0){dogPopT=2.2;$('dogpop').hidden=false;}if(dogPopT>0){dogPopT-=dt;if(dogPopT<=0)$('dogpop').hidden=true;}}
 
-/* time of day: a little button in the top bar that steps sunrise → noon → golden → sunset → blue hour → night → stormy → sunrise */
+/* time of day: a little button in the top bar that steps sunrise → noon → golden → sunset → blue hour → night → stormy → foggy → sunrise */
 const TOD_ICON=(()=>{const out={},I='#241c2e';
   const draw=(k,fn)=>{const c=document.createElement('canvas');c.width=c.height=16;const x=c.getContext('2d'),P=(col,a,b,w=1,h=1)=>{x.fillStyle=col;x.fillRect(a,b,w,h);};
     const disc=(cx,cy,r,col)=>{for(let j=-r;j<=r;j++)for(let i=-r;i<=r;i++)if(i*i+j*j<=r*r+r*.6)P(col,cx+i,cy+j);};fn(P,disc);out[k]=c.toDataURL();};
@@ -3597,6 +3600,7 @@ const TOD_ICON=(()=>{const out={},I='#241c2e';
   draw('dusk',(P,d)=>{for(let y=0;y<16;y++)P(y<7?'#3a3a78':y<11?'#6b6aa8':'#c88aa8',0,y,16,1);P('#1d3560',0,12,16,4);P('#ffffff',3,3);P('#ffffff',11,2);P('#ffc8a8',4,12,8,1);});
   draw('night',(P,d)=>{P('#151a38',0,0,16,16);d(8,7,5,'#f4ecd0');d(10,5,4,'#151a38');for(const [a,b] of [[2,2],[13,3],[3,12],[12,12],[14,8]])P('#ffffff',a,b);});
   draw('storm',(P,d)=>{P('#5a6678',0,0,16,16);d(5,6,3,'#2e3442');d(10,5,4,'#2e3442');P('#2e3442',2,7,12,3);d(5,5,2,'#454c5c');d(10,4,3,'#454c5c');P('#ffe07a',8,10,2,2);P('#ffe07a',7,12,2,1);P('#ffe07a',8,13,1,2);for(const [a,b] of [[3,11],[4,14],[12,11],[11,14],[5,12],[13,13]])P('#b8dcf4',a,b,1,2);});
+  draw('fog',(P,d)=>{P('#c8ccc6',0,0,16,16);d(8,6,3,'#e6e4da');for(const [y,a,b] of [[3,1,9],[6,5,15],[9,0,11],[11,4,14],[13,1,8],[13,10,15]])P('#eef0ea',a,y,b-a,1);P('#9aaab0',0,15,16,1);});
   return out;})();
 function updTodBtn(){const b=$('todBtn');if(!b)return;b.innerHTML=`<img src="${TOD_ICON[tod]||TOD_ICON.noon}" alt="${(TOD[tod]||{}).name||''}">`;b.title=(TOD[tod]||{}).name||'';}
 $('todBtn').addEventListener('click',e=>{e.stopPropagation();const ks=Object.keys(TOD),k=ks[(ks.indexOf(tod)+1)%ks.length];settings.light=k;saveS();setTOD(k);updTodBtn();toast(TOD[k].name,1.2);});
@@ -3656,7 +3660,7 @@ const streaks=(()=>{const SRC=[[-5.2,.8,.3,1],[5.2,.8,.3,1],[-5.2,.95,.3,1],[5.2
    new version. When the game comes back to the front (and every ten minutes), check the build number on the site; if
    it's changed, reload straight away from the title screen, or offer a one-tap update in flight (the flight is saved
    first, so "Pick up where you left off" puts you right back) */
-const BUILD_ID='4705035';let updOffered=false;
+const BUILD_ID='5fda69f';let updOffered=false;
 function checkUpdate(){if(!/^https?:/.test(location.protocol)||/claude/.test(location.hostname))return;
   fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.text():null).then(v=>{v=v&&v.trim();if(!v||v===BUILD_ID||v.length>12)return;
     if(mode==='title'){location.reload();return;}if(updOffered)return;updOffered=true;
@@ -5059,7 +5063,7 @@ function loop(now){
   const dt=clamp((now-last)/1000,0,.05);last=now;const t=now/1000;
   skyMat.uniforms.uTime.value=t;waterMat.uniforms.uTime.value=t;for(const a of anims)a(t);
   cloudGroup.position.set((t*2.2)%4000,0,-(t*.8)%4000);
-  {const pu=postMat.uniforms;pu.mist.value=lerp(pu.mist.value,cloudMist(camera.position),1-Math.exp(-dt*9));pu.mistC.value.copy(scene.fog.color).lerp(_mistW,.3);}
+  {const pu=postMat.uniforms;pu.mist.value=lerp(pu.mist.value,cloudMist(camera.position),1-Math.exp(-dt*9));pu.mistC.value.copy(scene.fog.color).lerp(_mistW,.3);pu.fN.value=scene.fog.near;pu.fF.value=scene.fog.far;}
   if(mode==='fly'){readInput(dt);acc+=dt;const H_=1/120;let n=0;while(acc>=H_&&n<10){if(ac.ground)stepGround(H_);else{stepAir(H_);stepBoost(H_);stepUp(H_);stepBumps(H_);if(typeof stepWeather==='function')stepWeather(H_);if(typeof stepGuard==='function')stepGuard(H_);}simT+=H_;acc-=H_;n++;if(mode!=='fly')break;}if(n>=10)acc=0;
     if(!Number.isFinite(ac.pos.x+ac.pos.y+ac.pos.z+ac.vel.x+ac.vel.y+ac.vel.z+ac.q.x+ac.q.w)){console.warn('sim NaN, respawning');spawnField(stripById(ac.lastField)||STRIPS[0]);}
     if(mode==='fly'){gameChecks(dt);playChecks(dt);}runTips(dt);}
