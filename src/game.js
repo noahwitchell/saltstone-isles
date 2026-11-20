@@ -240,7 +240,9 @@ function updTask(){const t=$('task');if(!t)return;const parts=[];
     const dl=(mail.drops||[]).filter(d=>!d.done).length;if(dl)parts.push(`<b>${dl}</b> ${dl>1?'drops':'drop'}`);}
   if(typeof activeErrands==='function'){const er=activeErrands();if(er.length)parts.push(er.map(errLine).join(', '));}
   t.hidden=!parts.length;if(parts.length)t.innerHTML=`<img src="${TASK_IMG}" alt="">`+parts.join(' <span class="dim">/</span> ');}
-function refreshBag(){const b=$('bag');updJob();updTask();if(!mail.active){b.hidden=true;return;}
+let mailDestId='';
+function refreshBag(){const b=$('bag');if(mail.active){const md=mailDest();if(md&&md.id!==mailDestId){mailDestId=md.id;dest=md;}}else mailDestId='';
+  updJob();updTask();if(!mail.active){b.hidden=true;return;}
   const n=mail.bag.length,nx=mailDest();b.hidden=false;b.textContent=n?`✉ ${n} → ${nx.name.toUpperCase()}`:'✉ BAG EMPTY → HOME';}
 /* the little "today's jobs" panel: mail, air drops, errands. Tap it for the mail bag */
 function updJob(){const jd=$('jDay');if(!jd)return;jd.textContent=mail.active?'DAY '+mail.day:'FREE FLIGHT';
@@ -504,7 +506,7 @@ function spawnField(s,dirSign){
   const p=toWorld(s,-dirSign*(s.len/2-18),0);
   ac.pos.set(p.x,groundH(p.x,p.z)+AC.gearH,p.z);ac.gYaw=-((s.hdg+(dirSign<0?180:0))*DEG);ac.gPitch=0;ac.u=0;
   ac.q.setFromEuler(_e.set(0,ac.gYaw,0,'YXZ'));ac.vel.set(0,0,0);ac.ground=true;ac.throttle=0;ac.flaps=0;ac.trim=.06;
-  ac.from=s.id;ac.lastField=s.id;pickDest(s.id);if(typeof lightStrip==='function')lightStrip(s,2,true);if(spawnQuiet)return;startFly();
+  ac.from=s.id;ac.lastField=s.id;pickDest(s.id);if(typeof lightStrip==='function'&&TOD[tod].lights>0)lightStrip(s,2,true);if(spawnQuiet)return;startFly();
   tip('start','Push the throttle lever all the way up to start rolling. Push the stick sideways to steer.',1.2);
 }
 function approachClear(s,dir){const aimS=-dir*(s.len/2-s.len*.22),gs=Math.tan(4*DEG);for(let d=100;d<=1600;d+=50){const p=toWorld(s,aimS-dir*d,0);if(surfH(p.x,p.z)>s.elev+gs*d-Math.min(25,gs*d*.5))return false;}return true;}
@@ -563,11 +565,15 @@ function finishLanding(){
   mode='card';
 }
 function deliverAt(s){
-  const here=bagFor(s.id);const queue=[];
-  for(const it of here){if(!log.met[it.to])queue.push({kind:'meet',who:it.to});queue.push({kind:'give',it});}
+  let here=bagFor(s.id);const queue=[],pick=[],given=new Set();
+  const enqueue=list=>{for(const it of list){if(!log.met[it.to]&&!queue.some(q=>q.who===it.to))queue.push({kind:'meet',who:it.to});queue.push({kind:'give',it});}};
+  enqueue(here);
   const step=()=>{const q=queue.shift();
     if(!q){mail.bag=mail.bag.filter(it=>CHARS[it.to].home!==s.id);
-      const day=DAYS[mail.day-1];const pick=[];for(const it of here){const out=(day&&day.out&&day.out[it.to])||[];for(const o of out){if(!mail.bag.some(b=>b.item===o.item)){mail.bag.push({...o,from:it.to});pick.push(o);}}}
+      const day=DAYS[mail.day-1],local=[];for(const it of here){const out=(day&&day.out&&day.out[it.to])||[];for(const o of out){if(given.has(o.item)||mail.bag.some(b=>b.item===o.item))continue;
+        // something for a neighbor on this same field: walk it over now rather than loading it and pointing you back here
+        if(CHARS[o.to].home===s.id){given.add(o.item);local.push({...o,from:it.to});}else{mail.bag.push({...o,from:it.to});pick.push(o);}}}
+      if(local.length){here=local;enqueue(local);step();return;}
       saveL();refreshBag();const md=mailDest();if(md)dest=md;
       const homeDone=s.id==='harbor'&&!mail.bag.length;
       const nxt=mail.bag.length?`Next stop: <b>${dest.name}</b>.`:homeDone?'That\'s everything. Mabel is waiting to close the day.':'The bag is empty. Head home to Harbor Field.';

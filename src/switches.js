@@ -37,8 +37,10 @@ function radioTalk(t0,dur,pitch,stat){const c=snd.ctx;if(!c)return;
     if(Math.random()<.18)ng.gain.setValueAtTime(.18*stat,t+L*.5),ng.gain.setValueAtTime(.05*stat,t+L*.5+.03);
     t+=L+(Math.random()<.2?.12:.02);}
   o.start(t0);n.start(t0,Math.random());o.stop(end+.3);n.stop(end+.3);}
+/* who answers the mic: a field you're right by (2.5 km), else the one you're headed for if it's in radio range, else the closest */
+function micTarget(){const dd=s=>Math.hypot(s.x-ac.pos.x,s.z-ac.pos.z),near=STRIPS.reduce((a,s)=>dd(s)<dd(a)?s:a);return dd(near)>2500&&dest&&RWY[dest.id]&&dd(dest)<9000?dest:near;}
 function keyMic(){if(mode!=='fly'||micBusy)return;
-  const near=STRIPS.reduce((a,s)=>Math.hypot(s.x-ac.pos.x,s.z-ac.pos.z)<Math.hypot(a.x-ac.pos.x,a.z-ac.pos.z)?s:a),far=Math.hypot(near.x-ac.pos.x,near.z-ac.pos.z)>12000;
+  const near=micTarget(),far=Math.hypot(near.x-ac.pos.x,near.z-ac.pos.z)>12000;
   const r=RWY[near.id],lvl=r?r.level:0,next=Math.min(3,lvl+1);
   micBusy=true;updMicUI();const c=snd.ctx;
   const ask=['lights please, over','could we have the lights a touch brighter','one more notch on the lights, please'][Math.min(lvl,2)];
@@ -48,14 +50,17 @@ function keyMic(){if(mode!=='fly'||micBusy)return;
   if(far)return;
   setTimeout(()=>{toast(`${near.name}: "${lvl>=3?'They\'re all the way up already. Good flying.':['Lights coming on now.','Brighter it is.','Full bright. Enjoy the view.'][next-1]}"`,2.4);},1900);
   setTimeout(()=>{micBusy=false;lightStrip(near,next,true);snd.clunk();updMicUI(near);
-    if(TOD[tod].lights<=0)tip('micday','The runway lights are on, but you\'ll only really see them from sunset on.');},3400);}
-function updMicUI(){const b=$('micBtn');if(!b)return;const near=STRIPS.reduce((a,s)=>Math.hypot(s.x-ac.pos.x,s.z-ac.pos.z)<Math.hypot(a.x-ac.pos.x,a.z-ac.pos.z)?s:a),r=RWY[near.id],l=r?r.level:0;
+},3400);}
+function updMicUI(){const b=$('micBtn');if(!b)return;const near=micTarget(),r=RWY[near.id],l=r?r.level:0;
   b.querySelector('em').textContent=micBusy?'...':'●'.repeat(l)+'○'.repeat(3-l);b.classList.toggle('talk',micBusy);}
+let micUiT=0;
 function updRunwayLights(dt){const dark=TOD[tod].lights>0;
+  /* keep the MIC dots honest: they show the field that would answer right now, and drop when its lights time out */
+  micUiT-=dt;if(micUiT<=0&&!micBusy){micUiT=.5;updMicUI();}
   for(const s of STRIPS){const r=RWY[s.id];if(!r)continue;if(r.level&&simT>r.until)r.level=0;
-    const want=r.level&&dark;r.on=want?Math.min(1,r.on+dt/.8):0;r.m.visible=want;if(want)r.m.geometry.setDrawRange(0,Math.ceil(r.n*r.on));}
+    const want=!!r.level;   /* once they're switched on you see them in any light, not just after sunset */ r.on=want?Math.min(1,r.on+dt/.8):0;r.m.visible=want;if(want)r.m.geometry.setDrawRange(0,Math.ceil(r.n*r.on));}
   if(dark&&mode==='fly'&&!ac.ground&&dest&&!rwyLit(dest)&&Math.hypot(dest.x-ac.pos.x,dest.z-ac.pos.z)<5000)
-    tip('pcl','Dark runway? Little airfields have pilot-controlled lights. Tap MIC (top right) to call the nearest field and they\'ll switch the runway lights on. Call again for brighter.');}
+    tip('pcl','Dark runway? Little airfields have pilot-controlled lights. Tap MIC (top right) to call the field you\'re headed for and they\'ll switch the runway lights on. Call again for brighter.');}
 
 /* ---- smoke trail ---- */
 const SMOKE_N=1600,SMOKE_LIFE=120,SMOKE_EVERY=.075;let smokeOn=false,smokeAcc=0,smokeI=0;

@@ -208,7 +208,7 @@ function saveResume(){if(mode==='crashed'){store.set(RESUME,null);return;}if(!['
 let resT=0;anims.push(t=>{if(t-resT>3){resT=t;saveResume();}});
 addEventListener('pagehide',saveResume);document.addEventListener('visibilitychange',()=>{if(document.hidden)saveResume();});
 function resumeFlight(r){resetAc();ac.pos.fromArray(r.pos);ac.vel.fromArray(r.vel);ac.q.fromArray(r.q);ac.ground=!!r.ground;ac.gYaw=r.gYaw||0;ac.gPitch=r.gPitch||0;ac.u=r.u||0;ac.throttle=r.throttle||0;ac.flaps=r.flaps||0;ac.trim=r.trim??.06;ac.light=!!r.light;
-  ac.lastField=stripById(r.lastField)?r.lastField:'harbor';ac.from=r.from==='__approach'?ac.lastField:(r.from||ac.lastField);dest=stripById(r.dest)||null;if(!dest)pickDest(ac.lastField);
+  ac.lastField=stripById(r.lastField)?r.lastField:'harbor';ac.from=r.from==='__approach'?ac.lastField:(r.from||ac.lastField);dest=(mail.active&&mailDest())||stripById(r.dest)||null;if(!dest)pickDest(ac.lastField);
   $('title').hidden=true;startFly();setView(r.cam==='cockpit'?'cockpit':camMode);snapCam=true;toast('Welcome back. Picking up right where you left off.',2.6);}
 /* title screen: two buttons. With a saved flight: pick up where you left off, or start at a field.
    Without one: start the day at Harbor Field, or start at a field. Everything else lives in the pause menu. */

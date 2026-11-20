@@ -2455,7 +2455,9 @@ function updTask(){const t=$('task');if(!t)return;const parts=[];
     const dl=(mail.drops||[]).filter(d=>!d.done).length;if(dl)parts.push(`<b>${dl}</b> ${dl>1?'drops':'drop'}`);}
   if(typeof activeErrands==='function'){const er=activeErrands();if(er.length)parts.push(er.map(errLine).join(', '));}
   t.hidden=!parts.length;if(parts.length)t.innerHTML=`<img src="${TASK_IMG}" alt="">`+parts.join(' <span class="dim">/</span> ');}
-function refreshBag(){const b=$('bag');updJob();updTask();if(!mail.active){b.hidden=true;return;}
+let mailDestId='';
+function refreshBag(){const b=$('bag');if(mail.active){const md=mailDest();if(md&&md.id!==mailDestId){mailDestId=md.id;dest=md;}}else mailDestId='';
+  updJob();updTask();if(!mail.active){b.hidden=true;return;}
   const n=mail.bag.length,nx=mailDest();b.hidden=false;b.textContent=n?`✉ ${n} → ${nx.name.toUpperCase()}`:'✉ BAG EMPTY → HOME';}
 /* the little "today's jobs" panel: mail, air drops, errands. Tap it for the mail bag */
 function updJob(){const jd=$('jDay');if(!jd)return;jd.textContent=mail.active?'DAY '+mail.day:'FREE FLIGHT';
@@ -2719,7 +2721,7 @@ function spawnField(s,dirSign){
   const p=toWorld(s,-dirSign*(s.len/2-18),0);
   ac.pos.set(p.x,groundH(p.x,p.z)+AC.gearH,p.z);ac.gYaw=-((s.hdg+(dirSign<0?180:0))*DEG);ac.gPitch=0;ac.u=0;
   ac.q.setFromEuler(_e.set(0,ac.gYaw,0,'YXZ'));ac.vel.set(0,0,0);ac.ground=true;ac.throttle=0;ac.flaps=0;ac.trim=.06;
-  ac.from=s.id;ac.lastField=s.id;pickDest(s.id);if(typeof lightStrip==='function')lightStrip(s,2,true);if(spawnQuiet)return;startFly();
+  ac.from=s.id;ac.lastField=s.id;pickDest(s.id);if(typeof lightStrip==='function'&&TOD[tod].lights>0)lightStrip(s,2,true);if(spawnQuiet)return;startFly();
   tip('start','Push the throttle lever all the way up to start rolling. Push the stick sideways to steer.',1.2);
 }
 function approachClear(s,dir){const aimS=-dir*(s.len/2-s.len*.22),gs=Math.tan(4*DEG);for(let d=100;d<=1600;d+=50){const p=toWorld(s,aimS-dir*d,0);if(surfH(p.x,p.z)>s.elev+gs*d-Math.min(25,gs*d*.5))return false;}return true;}
@@ -2778,11 +2780,15 @@ function finishLanding(){
   mode='card';
 }
 function deliverAt(s){
-  const here=bagFor(s.id);const queue=[];
-  for(const it of here){if(!log.met[it.to])queue.push({kind:'meet',who:it.to});queue.push({kind:'give',it});}
+  let here=bagFor(s.id);const queue=[],pick=[],given=new Set();
+  const enqueue=list=>{for(const it of list){if(!log.met[it.to]&&!queue.some(q=>q.who===it.to))queue.push({kind:'meet',who:it.to});queue.push({kind:'give',it});}};
+  enqueue(here);
   const step=()=>{const q=queue.shift();
     if(!q){mail.bag=mail.bag.filter(it=>CHARS[it.to].home!==s.id);
-      const day=DAYS[mail.day-1];const pick=[];for(const it of here){const out=(day&&day.out&&day.out[it.to])||[];for(const o of out){if(!mail.bag.some(b=>b.item===o.item)){mail.bag.push({...o,from:it.to});pick.push(o);}}}
+      const day=DAYS[mail.day-1],local=[];for(const it of here){const out=(day&&day.out&&day.out[it.to])||[];for(const o of out){if(given.has(o.item)||mail.bag.some(b=>b.item===o.item))continue;
+        // something for a neighbor on this same field: walk it over now rather than loading it and pointing you back here
+        if(CHARS[o.to].home===s.id){given.add(o.item);local.push({...o,from:it.to});}else{mail.bag.push({...o,from:it.to});pick.push(o);}}}
+      if(local.length){here=local;enqueue(local);step();return;}
       saveL();refreshBag();const md=mailDest();if(md)dest=md;
       const homeDone=s.id==='harbor'&&!mail.bag.length;
       const nxt=mail.bag.length?`Next stop: <b>${dest.name}</b>.`:homeDone?'That\'s everything. Mabel is waiting to close the day.':'The bag is empty. Head home to Harbor Field.';
@@ -3261,7 +3267,7 @@ function settingsCard(){
   const mv=[['OFF',0],['SOFT',.5],['ON',1]].map(([n,v])=>`<button data-mv="${v}" class="${(settings.music??.5)==v?'primary':''}">${n}</button>`).join('');
   const st=STATIONS.map(S=>`<button data-st="${S.id}" class="${settings.station===S.id?'primary':''}">${S.fq} ${S.name.toUpperCase()}</button>`).join('');
   const lt=Object.keys(TOD).map(k=>`<button data-lt="${k}" class="${settings.light===k?'primary':''}">${TOD[k].name.toUpperCase()}</button>`).join('');
-  showCard(`<h2>Settings</h2><div class="sub">ASSISTS · TURN THEM OFF ONE AT A TIME AS YOU IMPROVE</div>${rows}<h3>ENGINE VOLUME</h3><div class="btns">${ev}</div><h3>RADIO VOLUME</h3><div class="btns">${mv}</div><h3>RADIO STATION · OR TAP THE DIAL UP TOP WHILE FLYING</h3><div class="btns">${st}</div><h3>SKY · OR TAP THE SUN BUTTON UP TOP</h3><div class="btns">${lt}</div><h3>PIXELS</h3><div class="btns">${px}</div><div class="sub" style="margin-top:14px">BUILD 5fda69f</div>`,[['Back',back,true]]);
+  showCard(`<h2>Settings</h2><div class="sub">ASSISTS · TURN THEM OFF ONE AT A TIME AS YOU IMPROVE</div>${rows}<h3>ENGINE VOLUME</h3><div class="btns">${ev}</div><h3>RADIO VOLUME</h3><div class="btns">${mv}</div><h3>RADIO STATION · OR TAP THE DIAL UP TOP WHILE FLYING</h3><div class="btns">${st}</div><h3>SKY · OR TAP THE SUN BUTTON UP TOP</h3><div class="btns">${lt}</div><h3>PIXELS</h3><div class="btns">${px}</div><div class="sub" style="margin-top:14px">BUILD cae8b61</div>`,[['Back',back,true]]);
   const cb=$('cardBody');
   cb.querySelectorAll('[data-k]').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.k;if(k==='tilt'){if(!settings.tilt){settings.tilt=true;saveS();enableTilt().then(()=>{updTiltUI();settingsCard();});}else{settings.tilt=false;saveS();disableTilt();updTiltUI();settingsCard();}return;}settings[k]=!settings[k];saveS();if(k==='sound')snd.setOn(settings.sound);if(k==='fps'){$('fps').hidden=!settings.fps;$('fps').textContent='FPS: measuring…';fpsN=fpsT=0;fpsLast=0;}if(k==='sound')music.setVol();settingsCard();}));
   cb.querySelectorAll('[data-px]').forEach(b=>b.addEventListener('click',()=>{settings.pixels=b.dataset.px;pixMode=settings.pixels;saveS();resize();settingsCard();}));
@@ -3643,7 +3649,7 @@ function saveResume(){if(mode==='crashed'){store.set(RESUME,null);return;}if(!['
 let resT=0;anims.push(t=>{if(t-resT>3){resT=t;saveResume();}});
 addEventListener('pagehide',saveResume);document.addEventListener('visibilitychange',()=>{if(document.hidden)saveResume();});
 function resumeFlight(r){resetAc();ac.pos.fromArray(r.pos);ac.vel.fromArray(r.vel);ac.q.fromArray(r.q);ac.ground=!!r.ground;ac.gYaw=r.gYaw||0;ac.gPitch=r.gPitch||0;ac.u=r.u||0;ac.throttle=r.throttle||0;ac.flaps=r.flaps||0;ac.trim=r.trim??.06;ac.light=!!r.light;
-  ac.lastField=stripById(r.lastField)?r.lastField:'harbor';ac.from=r.from==='__approach'?ac.lastField:(r.from||ac.lastField);dest=stripById(r.dest)||null;if(!dest)pickDest(ac.lastField);
+  ac.lastField=stripById(r.lastField)?r.lastField:'harbor';ac.from=r.from==='__approach'?ac.lastField:(r.from||ac.lastField);dest=(mail.active&&mailDest())||stripById(r.dest)||null;if(!dest)pickDest(ac.lastField);
   $('title').hidden=true;startFly();setView(r.cam==='cockpit'?'cockpit':camMode);snapCam=true;toast('Welcome back. Picking up right where you left off.',2.6);}
 /* title screen: two buttons. With a saved flight: pick up where you left off, or start at a field.
    Without one: start the day at Harbor Field, or start at a field. Everything else lives in the pause menu. */
@@ -3675,7 +3681,7 @@ const streaks=(()=>{const SRC=[[-5.2,.8,.3,1],[5.2,.8,.3,1],[-5.2,.95,.3,1],[5.2
    new version. When the game comes back to the front (and every ten minutes), check the build number on the site; if
    it's changed, reload straight away from the title screen, or offer a one-tap update in flight (the flight is saved
    first, so "Pick up where you left off" puts you right back) */
-const BUILD_ID='5fda69f';let updOffered=false;
+const BUILD_ID='cae8b61';let updOffered=false;
 function checkUpdate(){if(!/^https?:/.test(location.protocol)||/claude/.test(location.hostname))return;
   fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.text():null).then(v=>{v=v&&v.trim();if(!v||v===BUILD_ID||v.length>12)return;
     if(mode==='title'){location.reload();return;}if(updOffered)return;updOffered=true;
@@ -3884,8 +3890,10 @@ function radioTalk(t0,dur,pitch,stat){const c=snd.ctx;if(!c)return;
     if(Math.random()<.18)ng.gain.setValueAtTime(.18*stat,t+L*.5),ng.gain.setValueAtTime(.05*stat,t+L*.5+.03);
     t+=L+(Math.random()<.2?.12:.02);}
   o.start(t0);n.start(t0,Math.random());o.stop(end+.3);n.stop(end+.3);}
+/* who answers the mic: a field you're right by (2.5 km), else the one you're headed for if it's in radio range, else the closest */
+function micTarget(){const dd=s=>Math.hypot(s.x-ac.pos.x,s.z-ac.pos.z),near=STRIPS.reduce((a,s)=>dd(s)<dd(a)?s:a);return dd(near)>2500&&dest&&RWY[dest.id]&&dd(dest)<9000?dest:near;}
 function keyMic(){if(mode!=='fly'||micBusy)return;
-  const near=STRIPS.reduce((a,s)=>Math.hypot(s.x-ac.pos.x,s.z-ac.pos.z)<Math.hypot(a.x-ac.pos.x,a.z-ac.pos.z)?s:a),far=Math.hypot(near.x-ac.pos.x,near.z-ac.pos.z)>12000;
+  const near=micTarget(),far=Math.hypot(near.x-ac.pos.x,near.z-ac.pos.z)>12000;
   const r=RWY[near.id],lvl=r?r.level:0,next=Math.min(3,lvl+1);
   micBusy=true;updMicUI();const c=snd.ctx;
   const ask=['lights please, over','could we have the lights a touch brighter','one more notch on the lights, please'][Math.min(lvl,2)];
@@ -3895,14 +3903,17 @@ function keyMic(){if(mode!=='fly'||micBusy)return;
   if(far)return;
   setTimeout(()=>{toast(`${near.name}: "${lvl>=3?'They\'re all the way up already. Good flying.':['Lights coming on now.','Brighter it is.','Full bright. Enjoy the view.'][next-1]}"`,2.4);},1900);
   setTimeout(()=>{micBusy=false;lightStrip(near,next,true);snd.clunk();updMicUI(near);
-    if(TOD[tod].lights<=0)tip('micday','The runway lights are on, but you\'ll only really see them from sunset on.');},3400);}
-function updMicUI(){const b=$('micBtn');if(!b)return;const near=STRIPS.reduce((a,s)=>Math.hypot(s.x-ac.pos.x,s.z-ac.pos.z)<Math.hypot(a.x-ac.pos.x,a.z-ac.pos.z)?s:a),r=RWY[near.id],l=r?r.level:0;
+},3400);}
+function updMicUI(){const b=$('micBtn');if(!b)return;const near=micTarget(),r=RWY[near.id],l=r?r.level:0;
   b.querySelector('em').textContent=micBusy?'...':'●'.repeat(l)+'○'.repeat(3-l);b.classList.toggle('talk',micBusy);}
+let micUiT=0;
 function updRunwayLights(dt){const dark=TOD[tod].lights>0;
+  /* keep the MIC dots honest: they show the field that would answer right now, and drop when its lights time out */
+  micUiT-=dt;if(micUiT<=0&&!micBusy){micUiT=.5;updMicUI();}
   for(const s of STRIPS){const r=RWY[s.id];if(!r)continue;if(r.level&&simT>r.until)r.level=0;
-    const want=r.level&&dark;r.on=want?Math.min(1,r.on+dt/.8):0;r.m.visible=want;if(want)r.m.geometry.setDrawRange(0,Math.ceil(r.n*r.on));}
+    const want=!!r.level;   /* once they're switched on you see them in any light, not just after sunset */ r.on=want?Math.min(1,r.on+dt/.8):0;r.m.visible=want;if(want)r.m.geometry.setDrawRange(0,Math.ceil(r.n*r.on));}
   if(dark&&mode==='fly'&&!ac.ground&&dest&&!rwyLit(dest)&&Math.hypot(dest.x-ac.pos.x,dest.z-ac.pos.z)<5000)
-    tip('pcl','Dark runway? Little airfields have pilot-controlled lights. Tap MIC (top right) to call the nearest field and they\'ll switch the runway lights on. Call again for brighter.');}
+    tip('pcl','Dark runway? Little airfields have pilot-controlled lights. Tap MIC (top right) to call the field you\'re headed for and they\'ll switch the runway lights on. Call again for brighter.');}
 
 /* ---- smoke trail ---- */
 const SMOKE_N=1600,SMOKE_LIFE=120,SMOKE_EVERY=.075;let smokeOn=false,smokeAcc=0,smokeI=0;
