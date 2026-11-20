@@ -1,6 +1,6 @@
 /* ---------- the fun switches: things you flick that change the world around you ----------
    MIC          pilot-controlled runway lights, like real quiet airfields: key the mic 3 times fast for low, 5 for medium,
-                7 for bright. The nearest field's edge lights come on, running down the runway, for 15 minutes.
+                7 for bright. The nearest field's edge lights come on, running down the runway, for 5 minutes.
    SMOKE        airshow smoke: a white trail that hangs in the air and drifts with the wind, so you can draw in the sky.
    SEARCHLIGHT  a narrow sBeam under the nose that swings into your turns (and drifts gently side to side),
                 so banking paints it across the ground.
@@ -11,10 +11,10 @@ const RWY={};
 for(const s of STRIPS){const L=RWY_L[s.id];if(!L)continue;const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(L.p,3));g.setAttribute('color',new THREE.Float32BufferAttribute(L.c,3));
   const m=new THREE.Points(g,new THREE.PointsMaterial({size:2,sizeAttenuation:false,vertexColors:true,fog:false}));m.frustumCulled=false;m.visible=false;g.setDrawRange(0,0);scene.add(m);
   RWY[s.id]={m,n:L.p.length/3,on:0,until:0,level:0};}
-const RWY_ON=900,LEVELS=['','LOW','MEDIUM','HIGH'];
+const RWY_ON=300,LEVELS=['','LOW','MEDIUM','HIGH'];
 function rwyLit(s){const r=s&&RWY[s.id];return !!r&&r.level>0;}
 function lightStrip(s,level,quiet){const r=RWY[s.id];if(!r)return;const was=r.level;r.level=Math.max(level,1);r.until=simT+RWY_ON;if(!was)r.on=0;
-  r.m.material.size=r.level>=3?3:2;r.m.material.color.setScalar(1);if(!quiet){snd.clunk();toast(`${s.name}: runway lights ${LEVELS[r.level]}. They stay on for 15 minutes.`,2.6);}}
+  r.m.material.size=r.level>=3?3:2;r.m.material.color.setScalar(1);if(!quiet){snd.clunk();toast(`${s.name}: runway lights ${LEVELS[r.level]}. They stay on for 5 minutes.`,2.6);}}
 /* ---- the radio call: press MIC once, you mumble a request through the static, the field mumbles back,
    and the lights come up a step (low, then medium, then bright) ---- */
 let micBusy=false;

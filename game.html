@@ -3252,7 +3252,7 @@ function settingsCard(){
   const mv=[['OFF',0],['SOFT',.5],['ON',1]].map(([n,v])=>`<button data-mv="${v}" class="${(settings.music??.5)==v?'primary':''}">${n}</button>`).join('');
   const st=STATIONS.map(S=>`<button data-st="${S.id}" class="${settings.station===S.id?'primary':''}">${S.fq} ${S.name.toUpperCase()}</button>`).join('');
   const lt=Object.keys(TOD).map(k=>`<button data-lt="${k}" class="${settings.light===k?'primary':''}">${TOD[k].name.toUpperCase()}</button>`).join('');
-  showCard(`<h2>Settings</h2><div class="sub">ASSISTS · TURN THEM OFF ONE AT A TIME AS YOU IMPROVE</div>${rows}<h3>ENGINE VOLUME</h3><div class="btns">${ev}</div><h3>RADIO VOLUME</h3><div class="btns">${mv}</div><h3>RADIO STATION · OR TAP THE DIAL UP TOP WHILE FLYING</h3><div class="btns">${st}</div><h3>SKY · OR TAP THE SUN BUTTON UP TOP</h3><div class="btns">${lt}</div><h3>PIXELS</h3><div class="btns">${px}</div><div class="sub" style="margin-top:14px">BUILD cae8b61</div>`,[['Back',back,true]]);
+  showCard(`<h2>Settings</h2><div class="sub">ASSISTS · TURN THEM OFF ONE AT A TIME AS YOU IMPROVE</div>${rows}<h3>ENGINE VOLUME</h3><div class="btns">${ev}</div><h3>RADIO VOLUME</h3><div class="btns">${mv}</div><h3>RADIO STATION · OR TAP THE DIAL UP TOP WHILE FLYING</h3><div class="btns">${st}</div><h3>SKY · OR TAP THE SUN BUTTON UP TOP</h3><div class="btns">${lt}</div><h3>PIXELS</h3><div class="btns">${px}</div><div class="sub" style="margin-top:14px">BUILD 884a345</div>`,[['Back',back,true]]);
   const cb=$('cardBody');
   cb.querySelectorAll('[data-k]').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.k;if(k==='tilt'){if(!settings.tilt){settings.tilt=true;saveS();enableTilt().then(()=>{updTiltUI();settingsCard();});}else{settings.tilt=false;saveS();disableTilt();updTiltUI();settingsCard();}return;}settings[k]=!settings[k];saveS();if(k==='sound')snd.setOn(settings.sound);if(k==='fps'){$('fps').hidden=!settings.fps;$('fps').textContent='FPS: measuring…';fpsN=fpsT=0;fpsLast=0;}if(k==='sound')music.setVol();settingsCard();}));
   cb.querySelectorAll('[data-px]').forEach(b=>b.addEventListener('click',()=>{settings.pixels=b.dataset.px;pixMode=settings.pixels;saveS();resize();settingsCard();}));
@@ -3666,7 +3666,7 @@ const streaks=(()=>{const SRC=[[-5.2,.8,.3,1],[5.2,.8,.3,1],[-5.2,.95,.3,1],[5.2
    new version. When the game comes back to the front (and every ten minutes), check the build number on the site; if
    it's changed, reload straight away from the title screen, or offer a one-tap update in flight (the flight is saved
    first, so "Pick up where you left off" puts you right back) */
-const BUILD_ID='cae8b61';let updOffered=false;
+const BUILD_ID='884a345';let updOffered=false;
 function checkUpdate(){if(!/^https?:/.test(location.protocol)||/claude/.test(location.hostname))return;
   fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.text():null).then(v=>{v=v&&v.trim();if(!v||v===BUILD_ID||v.length>12)return;
     if(mode==='title'){location.reload();return;}if(updOffered)return;updOffered=true;
@@ -3838,7 +3838,7 @@ syncSites();parcelsLeft=parcelCap();
 
 /* ---------- the fun switches: things you flick that change the world around you ----------
    MIC          pilot-controlled runway lights, like real quiet airfields: key the mic 3 times fast for low, 5 for medium,
-                7 for bright. The nearest field's edge lights come on, running down the runway, for 15 minutes.
+                7 for bright. The nearest field's edge lights come on, running down the runway, for 5 minutes.
    SMOKE        airshow smoke: a white trail that hangs in the air and drifts with the wind, so you can draw in the sky.
    SEARCHLIGHT  a narrow sBeam under the nose that swings into your turns (and drifts gently side to side),
                 so banking paints it across the ground.
@@ -3849,10 +3849,10 @@ const RWY={};
 for(const s of STRIPS){const L=RWY_L[s.id];if(!L)continue;const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(L.p,3));g.setAttribute('color',new THREE.Float32BufferAttribute(L.c,3));
   const m=new THREE.Points(g,new THREE.PointsMaterial({size:2,sizeAttenuation:false,vertexColors:true,fog:false}));m.frustumCulled=false;m.visible=false;g.setDrawRange(0,0);scene.add(m);
   RWY[s.id]={m,n:L.p.length/3,on:0,until:0,level:0};}
-const RWY_ON=900,LEVELS=['','LOW','MEDIUM','HIGH'];
+const RWY_ON=300,LEVELS=['','LOW','MEDIUM','HIGH'];
 function rwyLit(s){const r=s&&RWY[s.id];return !!r&&r.level>0;}
 function lightStrip(s,level,quiet){const r=RWY[s.id];if(!r)return;const was=r.level;r.level=Math.max(level,1);r.until=simT+RWY_ON;if(!was)r.on=0;
-  r.m.material.size=r.level>=3?3:2;r.m.material.color.setScalar(1);if(!quiet){snd.clunk();toast(`${s.name}: runway lights ${LEVELS[r.level]}. They stay on for 15 minutes.`,2.6);}}
+  r.m.material.size=r.level>=3?3:2;r.m.material.color.setScalar(1);if(!quiet){snd.clunk();toast(`${s.name}: runway lights ${LEVELS[r.level]}. They stay on for 5 minutes.`,2.6);}}
 /* ---- the radio call: press MIC once, you mumble a request through the static, the field mumbles back,
    and the lights come up a step (low, then medium, then bright) ---- */
 let micBusy=false;
