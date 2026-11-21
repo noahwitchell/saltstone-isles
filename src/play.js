@@ -36,7 +36,16 @@ const errState=id=>log.errands[id]||(log.errands[id]={st:'new',found:[]});
 function errCount(id){const e=ERRANDS[id],s=errState(id);return e.set?{n:Math.min(s.found.length,FINDS[e.set].length),of:FINDS[e.set].length}:{n:log.sights[e.sight]?1:0,of:1};}
 function errLine(id){const e=ERRANDS[id],c=errCount(id);return e.set?`${c.n} of ${c.of} ${e.what}`:(c.n?`Found ${e.what}`:`Looking for ${e.what}`);}
 function activeErrands(){return Object.keys(ERRANDS).filter(k=>errState(k).st==='active');}
-function updErrandUI(){const b=$('errand');if(!b)return;const a=activeErrands();if(!a.length){b.hidden=true;return;}b.hidden=false;b.textContent=a.map(k=>{const c=errCount(k),g=CHARS[ERRANDS[k].giver];return `${g.name.split(' ')[0].toUpperCase()}: ${ERRANDS[k].set?c.n+'/'+c.of:(c.n?'FOUND':'?')}`;}).join(' · ');}
+/* each running errand gets its own numbered, colored badge: the same badge sits by it in the top line, the jobs panel
+   and on Bea's chart over the field where the islander who asked lives */
+const ERR_COL=['#ff7ad0','#b8f06a','#c9a2ff','#fff07a','#ff9a8a','#9ad8ff'];
+function errNum(id){return activeErrands().indexOf(id);}
+function errBadge(id){const i=errNum(id);return i<0?'':`<span class="eb" style="background:${ERR_COL[i%ERR_COL.length]}">${i+1}</span>`;}
+function errandMarks(x,P,sc){activeErrands().forEach((k,i)=>{const S=stripById(CHARS[ERRANDS[k].giver].home);if(!S)return;
+  const dup=activeErrands().slice(0,i).filter(q=>CHARS[ERRANDS[q].giver].home===S.id).length;let [a,b]=P(S.x,S.z);a+=(10+dup*15)*sc;b+=10*sc;const r=6*sc;
+  x.fillStyle='#241c2e';x.fillRect(a-r-sc,b-r-sc,2*r+2*sc,2*r+2*sc);x.fillStyle=ERR_COL[i%ERR_COL.length];x.fillRect(a-r,b-r,2*r,2*r);
+  x.fillStyle='#241c2e';x.textAlign='center';x.textBaseline='middle';x.fillText(String(i+1),a,b+sc*.5);});}
+function updErrandUI(){const b=$('errand');if(!b)return;const a=activeErrands();if(!a.length){b.hidden=true;return;}b.hidden=false;b.innerHTML=a.map(k=>{const c=errCount(k),g=CHARS[ERRANDS[k].giver];return `${errBadge(k)}${g.name.split(' ')[0].toUpperCase()} · ${stripById(g.home).name.replace(/ (Field|Strip|Airstrip)$/,'').toUpperCase()}: ${ERRANDS[k].set?c.n+'/'+c.of:(c.n?'FOUND':'?')}`;}).join('<br>');}
 let findT=0;
 function checkFinds(dt){findT+=dt;if(findT<.3)return;findT=0;
   for(const id of activeErrands()){const e=ERRANDS[id],s=errState(id);

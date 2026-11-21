@@ -53,6 +53,8 @@ button:focus-visible{outline:2px solid #fff;outline-offset:2px}
 #task{pointer-events:auto;font-family:var(--mono);font-size:15px;line-height:1;padding:5px 9px;background:var(--glass);border:2px solid var(--line);color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;display:flex;gap:6px;align-items:center}
 #task img{width:14px;height:14px;image-rendering:pixelated;flex:none}
 #task b{color:#ffd36b}#task .dim{opacity:.7}
+#task{color:var(--paper);background:rgba(28,22,36,.86);box-shadow:none;text-shadow:1px 1px 0 #0009}
+.eb{display:inline-block;min-width:13px;height:13px;line-height:13px;margin-right:4px;padding:0 1px;text-align:center;color:#241c2e;font-family:var(--mono);font-size:12px;border:1px solid #241c2e;vertical-align:1px;text-shadow:none}
 #todBtn,#radioBtn{pointer-events:auto;padding:3px 5px;line-height:0}#todBtn img,#radioBtn img{width:32px;height:32px;image-rendering:pixelated;display:block}
 #view,#pause,#center{pointer-events:auto;font-family:var(--mono);font-size:15px;padding:8px 10px}
 #stallBan{z-index:5;position:fixed;left:50%;top:calc(var(--st) + 44px);transform:translateX(-50%);font-family:var(--mono);font-size:20px;background:var(--bad);color:#fff;padding:5px 12px;letter-spacing:.1em;pointer-events:none}
@@ -2453,7 +2455,7 @@ const TASK_IMG=(()=>{const c=document.createElement('canvas');c.width=c.height=8
 function updTask(){const t=$('task');if(!t)return;const parts=[];
   if(mail.active){const n=mail.bag.length,nx=mailDest();parts.push(n?`<b>${n}</b> ${n>1?'letters':'letter'} <span class="dim">next</span> ${nx?nx.name:''}`:`Bag empty <span class="dim">head home to</span> Harbor Field`);
     const dl=(mail.drops||[]).filter(d=>!d.done).length;if(dl)parts.push(`<b>${dl}</b> ${dl>1?'drops':'drop'}`);}
-  if(typeof activeErrands==='function'){const er=activeErrands();if(er.length)parts.push(er.map(errLine).join(', '));}
+  if(typeof activeErrands==='function'){const er=activeErrands();if(er.length)parts.push(er.map(k=>errBadge(k)+' '+errLine(k)).join(', '));}
   t.hidden=!parts.length;if(parts.length)t.innerHTML=`<img src="${TASK_IMG}" alt="">`+parts.join(' <span class="dim">/</span> ');}
 let mailDestId='';
 function refreshBag(){const b=$('bag');if(mail.active){const md=mailDest();if(md&&md.id!==mailDestId){mailDestId=md.id;dest=md;}}else mailDestId='';
@@ -2948,7 +2950,9 @@ function readInput(dt){
   if(keys.KeyS||keys.ControlLeft){ac.throttle=clamp(ac.throttle-dt*.6,0,1);setThrottleUI();}
   const ex=v=>Math.sign(v)*Math.pow(Math.abs(v),1.3);
   const useTilt=stick.id===null&&settings.tilt&&tilt.ok;const sx=stick.id!==null?stick.x:useTilt?tilt.roll:kb.r,sy=stick.id!==null?stick.y:useTilt?tilt.pitch:kb.p;
-  inp.roll=ex(sx);inp.pitch=ex(sy)*(settings.invert?-1:1);inp.yaw=(keys.KeyE?1:0)-(keys.KeyQ?1:0);
+  /* the cockpit view is twitchier to the eye (no plane in front of you to read), so the stick is softer there */
+  const ck=camMode==='cockpit',ex2=v=>ck?.62*Math.sign(v)*Math.pow(Math.abs(v),1.6):ex(v);
+  inp.roll=ex2(sx);inp.pitch=ex2(sy)*(settings.invert?-1:1);inp.yaw=(keys.KeyE?1:0)-(keys.KeyQ?1:0);
   ac.brake=ac.brakeHeld?Math.min(1,ac.brake+dt*1.25):0;brk.style.setProperty('--b',Math.round(ac.brake*100)+'%');
 }
 
@@ -3170,7 +3174,7 @@ function chartResize(){if($('chartOv'))drawChart();}
 function bigMap(){hideModal();if(mode==='fly')mode='paused';let o=$('chartOv');
   if(!o){o=document.createElement('div');o.id='chartOv';o.innerHTML=`<canvas id="bigmap"></canvas><div id="chartLeg"></div><button id="chartX" aria-label="Close the chart">✕</button>`;document.body.appendChild(o);
     $('chartX').addEventListener('click',e=>{e.stopPropagation();closeChart();});addEventListener('resize',chartResize);}
-  $('chartLeg').innerHTML=`<b>BEA'S CHART</b> · ★ ${log.score.toLocaleString()}<br>${ISLE_IDS.filter(q=>log.chart[q]===2).length}/${ISLE_IDS.length} islands charted · ${Object.keys(sights).filter(q=>log.sights[q]).length}/${Object.keys(sights).length} landmarks (orange) · ${FLYGATES.filter(g=>log.gates[g.id]).length}/${FLYGATES.length} gaps (cyan)${activeDrops().length?' · '+activeDrops().length+' air drops (orange rings)':''}${activeErrands().length?'<br>Errands: '+activeErrands().map(errLine).join(', '):''}`;
+  $('chartLeg').innerHTML=`<b>BEA'S CHART</b> · ★ ${log.score.toLocaleString()}<br>${ISLE_IDS.filter(q=>log.chart[q]===2).length}/${ISLE_IDS.length} islands charted · ${Object.keys(sights).filter(q=>log.sights[q]).length}/${Object.keys(sights).length} landmarks (orange) · ${FLYGATES.filter(g=>log.gates[g.id]).length}/${FLYGATES.length} gaps (cyan)${activeDrops().length?' · '+activeDrops().length+' air drops (orange rings)':''}${activeErrands().length?'<br>Errands: '+activeErrands().map(k=>errBadge(k)+' '+CHARS[ERRANDS[k].giver].name.split(' ')[0]+' at '+stripById(CHARS[ERRANDS[k].giver].home).name+' · '+errLine(k)).join(', '):''}`;
   drawChart();}
 function drawChart(){const c=$('bigmap'),r=rectL(c),W=Math.max(200,Math.round(r.width)),H=Math.max(150,Math.round(r.height));c.width=W;c.height=H;
   const x=c.getContext('2d');x.imageSmoothingEnabled=false;const k=Math.min(W/45200,H/20600),CX=0,CZ=500,sc=clamp(Math.min(W/512,H/384),1,2.2);
@@ -3183,6 +3187,7 @@ function drawChart(){const c=$('bigmap'),r=rectL(c),W=Math.max(200,Math.round(r.
   for(const [k_,v] of Object.entries(sights)){if(!log.sights[k_])continue;const [a,b]=P(v.x,v.z);x.fillStyle='#241c2e';x.fillRect(a-3*sc,b-3*sc,6*sc,6*sc);x.fillStyle='#ffb02e';x.fillRect(a-2*sc,b-2*sc,4*sc,4*sc);}
   for(const g of FLYGATES){if(!log.gates[g.id])continue;const [a,b]=P(g.x,g.z),q=4*sc;x.fillStyle='#8ff0e8';x.beginPath();x.moveTo(a,b-q);x.lineTo(a+q,b);x.lineTo(a,b+q);x.lineTo(a-q,b);x.closePath();x.fill();}
   dropMarks(x,P,sc);
+  if(typeof errandMarks==='function')errandMarks(x,P,sc);
   for(const [id,I] of Object.entries(ISLES))if(log.chart[id]===2)label(I.name.toUpperCase(),I.x,I.z+(I.r?Math.min(I.r*.6,600)+260:1500),'#ffd890',0);
   if(dest)label(charted(dest)?dest.name.toUpperCase():dest.name.toUpperCase()+' (UNCHARTED)',dest.x,dest.z,'#8ff0e8',charted(dest)?-11:-16);
   const [px,pz]=P(ac.pos.x,ac.pos.z);axes();const hdg=ac.ground?-ac.gYaw:Math.atan2(_f.x,-_f.z);x.save();x.translate(px,pz);x.rotate(hdg);x.scale(sc,sc);x.fillStyle='#fff8ec';x.strokeStyle='#241c2e';x.lineWidth=1.5;x.beginPath();x.moveTo(0,-9);x.lineTo(-6,6);x.lineTo(0,3);x.lineTo(6,6);x.closePath();x.fill();x.stroke();x.restore();
@@ -3267,7 +3272,7 @@ function settingsCard(){
   const mv=[['OFF',0],['SOFT',.5],['ON',1]].map(([n,v])=>`<button data-mv="${v}" class="${(settings.music??.5)==v?'primary':''}">${n}</button>`).join('');
   const st=STATIONS.map(S=>`<button data-st="${S.id}" class="${settings.station===S.id?'primary':''}">${S.fq} ${S.name.toUpperCase()}</button>`).join('');
   const lt=Object.keys(TOD).map(k=>`<button data-lt="${k}" class="${settings.light===k?'primary':''}">${TOD[k].name.toUpperCase()}</button>`).join('');
-  showCard(`<h2>Settings</h2><div class="sub">ASSISTS · TURN THEM OFF ONE AT A TIME AS YOU IMPROVE</div>${rows}<h3>ENGINE VOLUME</h3><div class="btns">${ev}</div><h3>RADIO VOLUME</h3><div class="btns">${mv}</div><h3>RADIO STATION · OR TAP THE DIAL UP TOP WHILE FLYING</h3><div class="btns">${st}</div><h3>SKY · OR TAP THE SUN BUTTON UP TOP</h3><div class="btns">${lt}</div><h3>PIXELS</h3><div class="btns">${px}</div><div class="sub" style="margin-top:14px">BUILD 884a345</div>`,[['Back',back,true]]);
+  showCard(`<h2>Settings</h2><div class="sub">ASSISTS · TURN THEM OFF ONE AT A TIME AS YOU IMPROVE</div>${rows}<h3>ENGINE VOLUME</h3><div class="btns">${ev}</div><h3>RADIO VOLUME</h3><div class="btns">${mv}</div><h3>RADIO STATION · OR TAP THE DIAL UP TOP WHILE FLYING</h3><div class="btns">${st}</div><h3>SKY · OR TAP THE SUN BUTTON UP TOP</h3><div class="btns">${lt}</div><h3>PIXELS</h3><div class="btns">${px}</div><div class="sub" style="margin-top:14px">BUILD 293f5cd</div>`,[['Back',back,true]]);
   const cb=$('cardBody');
   cb.querySelectorAll('[data-k]').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.k;if(k==='tilt'){if(!settings.tilt){settings.tilt=true;saveS();enableTilt().then(()=>{updTiltUI();settingsCard();});}else{settings.tilt=false;saveS();disableTilt();updTiltUI();settingsCard();}return;}settings[k]=!settings[k];saveS();if(k==='sound')snd.setOn(settings.sound);if(k==='fps'){$('fps').hidden=!settings.fps;$('fps').textContent='FPS: measuring…';fpsN=fpsT=0;fpsLast=0;}if(k==='sound')music.setVol();settingsCard();}));
   cb.querySelectorAll('[data-px]').forEach(b=>b.addEventListener('click',()=>{settings.pixels=b.dataset.px;pixMode=settings.pixels;saveS();resize();settingsCard();}));
@@ -3477,7 +3482,16 @@ const errState=id=>log.errands[id]||(log.errands[id]={st:'new',found:[]});
 function errCount(id){const e=ERRANDS[id],s=errState(id);return e.set?{n:Math.min(s.found.length,FINDS[e.set].length),of:FINDS[e.set].length}:{n:log.sights[e.sight]?1:0,of:1};}
 function errLine(id){const e=ERRANDS[id],c=errCount(id);return e.set?`${c.n} of ${c.of} ${e.what}`:(c.n?`Found ${e.what}`:`Looking for ${e.what}`);}
 function activeErrands(){return Object.keys(ERRANDS).filter(k=>errState(k).st==='active');}
-function updErrandUI(){const b=$('errand');if(!b)return;const a=activeErrands();if(!a.length){b.hidden=true;return;}b.hidden=false;b.textContent=a.map(k=>{const c=errCount(k),g=CHARS[ERRANDS[k].giver];return `${g.name.split(' ')[0].toUpperCase()}: ${ERRANDS[k].set?c.n+'/'+c.of:(c.n?'FOUND':'?')}`;}).join(' · ');}
+/* each running errand gets its own numbered, colored badge: the same badge sits by it in the top line, the jobs panel
+   and on Bea's chart over the field where the islander who asked lives */
+const ERR_COL=['#ff7ad0','#b8f06a','#c9a2ff','#fff07a','#ff9a8a','#9ad8ff'];
+function errNum(id){return activeErrands().indexOf(id);}
+function errBadge(id){const i=errNum(id);return i<0?'':`<span class="eb" style="background:${ERR_COL[i%ERR_COL.length]}">${i+1}</span>`;}
+function errandMarks(x,P,sc){activeErrands().forEach((k,i)=>{const S=stripById(CHARS[ERRANDS[k].giver].home);if(!S)return;
+  const dup=activeErrands().slice(0,i).filter(q=>CHARS[ERRANDS[q].giver].home===S.id).length;let [a,b]=P(S.x,S.z);a+=(10+dup*15)*sc;b+=10*sc;const r=6*sc;
+  x.fillStyle='#241c2e';x.fillRect(a-r-sc,b-r-sc,2*r+2*sc,2*r+2*sc);x.fillStyle=ERR_COL[i%ERR_COL.length];x.fillRect(a-r,b-r,2*r,2*r);
+  x.fillStyle='#241c2e';x.textAlign='center';x.textBaseline='middle';x.fillText(String(i+1),a,b+sc*.5);});}
+function updErrandUI(){const b=$('errand');if(!b)return;const a=activeErrands();if(!a.length){b.hidden=true;return;}b.hidden=false;b.innerHTML=a.map(k=>{const c=errCount(k),g=CHARS[ERRANDS[k].giver];return `${errBadge(k)}${g.name.split(' ')[0].toUpperCase()} · ${stripById(g.home).name.replace(/ (Field|Strip|Airstrip)$/,'').toUpperCase()}: ${ERRANDS[k].set?c.n+'/'+c.of:(c.n?'FOUND':'?')}`;}).join('<br>');}
 let findT=0;
 function checkFinds(dt){findT+=dt;if(findT<.3)return;findT=0;
   for(const id of activeErrands()){const e=ERRANDS[id],s=errState(id);
@@ -3681,7 +3695,7 @@ const streaks=(()=>{const SRC=[[-5.2,.8,.3,1],[5.2,.8,.3,1],[-5.2,.95,.3,1],[5.2
    new version. When the game comes back to the front (and every ten minutes), check the build number on the site; if
    it's changed, reload straight away from the title screen, or offer a one-tap update in flight (the flight is saved
    first, so "Pick up where you left off" puts you right back) */
-const BUILD_ID='884a345';let updOffered=false;
+const BUILD_ID='293f5cd';let updOffered=false;
 function checkUpdate(){if(!/^https?:/.test(location.protocol)||/claude/.test(location.hostname))return;
   fetch('version.txt?'+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.text():null).then(v=>{v=v&&v.trim();if(!v||v===BUILD_ID||v.length>12)return;
     if(mode==='title'){location.reload();return;}if(updOffered)return;updOffered=true;

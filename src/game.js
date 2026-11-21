@@ -238,7 +238,7 @@ const TASK_IMG=(()=>{const c=document.createElement('canvas');c.width=c.height=8
 function updTask(){const t=$('task');if(!t)return;const parts=[];
   if(mail.active){const n=mail.bag.length,nx=mailDest();parts.push(n?`<b>${n}</b> ${n>1?'letters':'letter'} <span class="dim">next</span> ${nx?nx.name:''}`:`Bag empty <span class="dim">head home to</span> Harbor Field`);
     const dl=(mail.drops||[]).filter(d=>!d.done).length;if(dl)parts.push(`<b>${dl}</b> ${dl>1?'drops':'drop'}`);}
-  if(typeof activeErrands==='function'){const er=activeErrands();if(er.length)parts.push(er.map(errLine).join(', '));}
+  if(typeof activeErrands==='function'){const er=activeErrands();if(er.length)parts.push(er.map(k=>errBadge(k)+' '+errLine(k)).join(', '));}
   t.hidden=!parts.length;if(parts.length)t.innerHTML=`<img src="${TASK_IMG}" alt="">`+parts.join(' <span class="dim">/</span> ');}
 let mailDestId='';
 function refreshBag(){const b=$('bag');if(mail.active){const md=mailDest();if(md&&md.id!==mailDestId){mailDestId=md.id;dest=md;}}else mailDestId='';
@@ -733,7 +733,9 @@ function readInput(dt){
   if(keys.KeyS||keys.ControlLeft){ac.throttle=clamp(ac.throttle-dt*.6,0,1);setThrottleUI();}
   const ex=v=>Math.sign(v)*Math.pow(Math.abs(v),1.3);
   const useTilt=stick.id===null&&settings.tilt&&tilt.ok;const sx=stick.id!==null?stick.x:useTilt?tilt.roll:kb.r,sy=stick.id!==null?stick.y:useTilt?tilt.pitch:kb.p;
-  inp.roll=ex(sx);inp.pitch=ex(sy)*(settings.invert?-1:1);inp.yaw=(keys.KeyE?1:0)-(keys.KeyQ?1:0);
+  /* the cockpit view is twitchier to the eye (no plane in front of you to read), so the stick is softer there */
+  const ck=camMode==='cockpit',ex2=v=>ck?.62*Math.sign(v)*Math.pow(Math.abs(v),1.6):ex(v);
+  inp.roll=ex2(sx);inp.pitch=ex2(sy)*(settings.invert?-1:1);inp.yaw=(keys.KeyE?1:0)-(keys.KeyQ?1:0);
   ac.brake=ac.brakeHeld?Math.min(1,ac.brake+dt*1.25):0;brk.style.setProperty('--b',Math.round(ac.brake*100)+'%');
 }
 
@@ -955,7 +957,7 @@ function chartResize(){if($('chartOv'))drawChart();}
 function bigMap(){hideModal();if(mode==='fly')mode='paused';let o=$('chartOv');
   if(!o){o=document.createElement('div');o.id='chartOv';o.innerHTML=`<canvas id="bigmap"></canvas><div id="chartLeg"></div><button id="chartX" aria-label="Close the chart">✕</button>`;document.body.appendChild(o);
     $('chartX').addEventListener('click',e=>{e.stopPropagation();closeChart();});addEventListener('resize',chartResize);}
-  $('chartLeg').innerHTML=`<b>BEA'S CHART</b> · ★ ${log.score.toLocaleString()}<br>${ISLE_IDS.filter(q=>log.chart[q]===2).length}/${ISLE_IDS.length} islands charted · ${Object.keys(sights).filter(q=>log.sights[q]).length}/${Object.keys(sights).length} landmarks (orange) · ${FLYGATES.filter(g=>log.gates[g.id]).length}/${FLYGATES.length} gaps (cyan)${activeDrops().length?' · '+activeDrops().length+' air drops (orange rings)':''}${activeErrands().length?'<br>Errands: '+activeErrands().map(errLine).join(', '):''}`;
+  $('chartLeg').innerHTML=`<b>BEA'S CHART</b> · ★ ${log.score.toLocaleString()}<br>${ISLE_IDS.filter(q=>log.chart[q]===2).length}/${ISLE_IDS.length} islands charted · ${Object.keys(sights).filter(q=>log.sights[q]).length}/${Object.keys(sights).length} landmarks (orange) · ${FLYGATES.filter(g=>log.gates[g.id]).length}/${FLYGATES.length} gaps (cyan)${activeDrops().length?' · '+activeDrops().length+' air drops (orange rings)':''}${activeErrands().length?'<br>Errands: '+activeErrands().map(k=>errBadge(k)+' '+CHARS[ERRANDS[k].giver].name.split(' ')[0]+' at '+stripById(CHARS[ERRANDS[k].giver].home).name+' · '+errLine(k)).join(', '):''}`;
   drawChart();}
 function drawChart(){const c=$('bigmap'),r=rectL(c),W=Math.max(200,Math.round(r.width)),H=Math.max(150,Math.round(r.height));c.width=W;c.height=H;
   const x=c.getContext('2d');x.imageSmoothingEnabled=false;const k=Math.min(W/45200,H/20600),CX=0,CZ=500,sc=clamp(Math.min(W/512,H/384),1,2.2);
@@ -968,6 +970,7 @@ function drawChart(){const c=$('bigmap'),r=rectL(c),W=Math.max(200,Math.round(r.
   for(const [k_,v] of Object.entries(sights)){if(!log.sights[k_])continue;const [a,b]=P(v.x,v.z);x.fillStyle='#241c2e';x.fillRect(a-3*sc,b-3*sc,6*sc,6*sc);x.fillStyle='#ffb02e';x.fillRect(a-2*sc,b-2*sc,4*sc,4*sc);}
   for(const g of FLYGATES){if(!log.gates[g.id])continue;const [a,b]=P(g.x,g.z),q=4*sc;x.fillStyle='#8ff0e8';x.beginPath();x.moveTo(a,b-q);x.lineTo(a+q,b);x.lineTo(a,b+q);x.lineTo(a-q,b);x.closePath();x.fill();}
   dropMarks(x,P,sc);
+  if(typeof errandMarks==='function')errandMarks(x,P,sc);
   for(const [id,I] of Object.entries(ISLES))if(log.chart[id]===2)label(I.name.toUpperCase(),I.x,I.z+(I.r?Math.min(I.r*.6,600)+260:1500),'#ffd890',0);
   if(dest)label(charted(dest)?dest.name.toUpperCase():dest.name.toUpperCase()+' (UNCHARTED)',dest.x,dest.z,'#8ff0e8',charted(dest)?-11:-16);
   const [px,pz]=P(ac.pos.x,ac.pos.z);axes();const hdg=ac.ground?-ac.gYaw:Math.atan2(_f.x,-_f.z);x.save();x.translate(px,pz);x.rotate(hdg);x.scale(sc,sc);x.fillStyle='#fff8ec';x.strokeStyle='#241c2e';x.lineWidth=1.5;x.beginPath();x.moveTo(0,-9);x.lineTo(-6,6);x.lineTo(0,3);x.lineTo(6,6);x.closePath();x.fill();x.stroke();x.restore();
